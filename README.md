@@ -11,7 +11,7 @@
 1.7 Use generics as much as you know, and always prefer flexibility to avoid future legacy issues. \
 1.8 IMPORTANT: No direct merges to the main repository; everyone makes their branch, adds their features, and opens a merge request, which the team will review and approve/suggest changes. \
 1.9 Maintain proper documentation. \
-1.10 Escort every sensitive adjustment with proper testing; otherwise, I will not approve the Pull Request. \
+1.10 Escort every sensitive adjustment with proper testing; otherwise, I will not approve the Pull Request.
 
 **2. Pull Request Guidelines**
 
@@ -23,6 +23,6 @@ e.g., `feat merge_sort: enabling custom data_types` \
 
 3.1 Do not litter the holy repository with AI trash unless you're 100% sure of what is happening there. \
 3.2 Only use AI as a search engine, not a code generator; it may hallucinate, and if we accept such a change, we may get fucked later. \
-3.3 Use Cursor if you want to generate code with AI. \
+3.3 Use Cursor if you want to generate code with AI.
 
 ---
