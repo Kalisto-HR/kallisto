@@ -1,0 +1,25 @@
+paths:
+  /admin/notifications:
+    get:
+      tags: [Admin]
+      summary: Get admin notifications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    message:
+                      type: string
+                    createdAt:
+                      type: string
+                      format: date-time

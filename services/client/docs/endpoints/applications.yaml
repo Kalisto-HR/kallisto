@@ -1,0 +1,61 @@
+paths:
+  /applications:
+    get:
+      tags: [Client]
+      summary: Get list of user applications
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    collegeId:
+                      type: string
+                      format: uuid
+                    status:
+                      type: string
+                      enum: [draft, submitted, accepted, rejected]
+                    submittedAt:
+                      type: string
+                      format: date-time
+
+  /applications/{applicationId}:
+    get:
+      tags: [Client]
+      summary: Get application details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Application info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                  data:
+                    type: object
+                  createdAt:
+                    type: string
+                    format: date-time
