@@ -1,61 +1,58 @@
-paths:
-  /applications:
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+  /v1.0/applications:
     get:
       tags: [Client]
-      summary: Get list of user applications
-      security:
-        - BearerAuth: []
+      summary: List user applications
       responses:
         '200':
           description: List of applications
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uuid
-                    collegeId:
-                      type: string
-                      format: uuid
-                    status:
-                      type: string
-                      enum: [draft, submitted, accepted, rejected]
-                    submittedAt:
-                      type: string
-                      format: date-time
 
-  /applications/{applicationId}:
-    get:
-      tags: [Client]
-      summary: Get application details
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: applicationId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Application info
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  status:
-                    type: string
-                  data:
-                    type: object
-                  createdAt:
-                    type: string
-                    format: date-time
+    /v1.0/applications/{application_id}:
+      get:
+        tags: [Client]
+        summary: Get application details
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+
+    /v1.0/applications/{application_id}/submit:
+      post:
+        tags: [Client]
+        summary: Submit application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+
+    /v1.0/applications/{application_id}/update:
+      patch:
+        tags: [Client]
+        summary: Update application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+
+    /v1.0/applications/{application_id}/delete:
+      delete:
+        tags: [Client]
+        summary: Delete application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+

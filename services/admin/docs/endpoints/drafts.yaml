@@ -1,78 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+
 paths:
-  /admin/products:
+  /v1.0/drafts:
     get:
-      tags: [Admin]
-      summary: List products
-      security:
-        - BearerAuth: []
+      tags: [ Admin ]
+      summary: List drafts
       responses:
         '200':
-          description: List of products
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Product'
+          description: Drafts list
 
-    post:
-      tags: [Admin]
-      summary: Create product
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
+    /v1.0/drafts/approve:
+      post:
+        tags: [ Admin ]
+        summary: Approve draft
+        responses:
+          '200':
+            description: Approved
+
+    /v1.0/drafts/disapprove:
+      post:
+        tags: [ Admin ]
+        summary: Disapprove draft
+        responses:
+          '200':
+            description: Disapproved
+
+    /v1.0/drafts/{draft_id}:
+      delete:
+        tags: [ Admin ]
+        summary: Delete draft
+        parameters:
+          - name: draft_id
+            in: path
+            required: true
             schema:
-              $ref: '#/components/schemas/Product'
-      responses:
-        '201':
-          description: Product created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
-
-  /admin/products/{productId}:
-    put:
-      tags: [Admin]
-      summary: Update product
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Product'
-      responses:
-        '200':
-          description: Product updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
-
-    delete:
-      tags: [Admin]
-      summary: Delete product
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Product deleted
+              type: string
+        responses:
+          '204':
+            description: Deleted

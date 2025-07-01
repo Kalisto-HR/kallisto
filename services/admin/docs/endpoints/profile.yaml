@@ -1,27 +1,36 @@
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+
 paths:
-  /admin/users/{userId}:
+  /v1.0/profile:
     get:
-      tags: [Admin]
+      tags: [Client, Admin]
       summary: Get user profile
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
       responses:
         '200':
-          description: User found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          description: User profile
+    delete:
+      tags: [Client, Admin]
+      summary: Delete user profile
+      responses:
+        '204':
+          description: Profile deleted
+
+
+  /v1.0/profile/update:
+    patch:
+      tags: [Admin]
+      summary: Admin profile update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Profile updated

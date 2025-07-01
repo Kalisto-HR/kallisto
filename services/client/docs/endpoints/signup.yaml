@@ -1,15 +1,20 @@
-paths:
-  /auth/register:
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+  /v1.0/signup:
     post:
-      tags: [Client]
-      summary: Register new client account
+      tags: [ Client ]
+      summary: Register new user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email, password, fullName]
+              required: [ email, password, fullName ]
               properties:
                 email:
                   type: string
@@ -20,14 +25,4 @@ paths:
                   type: string
       responses:
         '201':
-          description: Successfully registered
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '409':
-          description: Email already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          description: User registered
