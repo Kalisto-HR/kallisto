@@ -3,7 +3,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
 # C extensions
 *.so
 
@@ -342,6 +341,7 @@ backend/sprint-planning.txt
 *.env.prod
 *.env.local
 *.env.staging
+*.env.*
 .envs/*
 !.envs/env.example
 .temp/

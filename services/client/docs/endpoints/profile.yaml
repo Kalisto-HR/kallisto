@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+
+  /v1.0/profile:
+    get:
+      tags: [ Client, Admin ]
+      summary: Get user profile
+      responses:
+        '200':
+          description: User profile
+    delete:
+      tags: [ Client, Admin ]
+      summary: Delete user profile
+      responses:
+        '204':
+          description: Profile deleted
+
+    /v1.0/profile/{section}/update:
+      patch:
+        tags: [ Client ]
+        summary: Update section of user profile
+        parameters:
+          - name: section
+            in: path
+            required: true
+            schema:
+              type: string
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+        responses:
+          '200':
+            description: Section updated
+
+

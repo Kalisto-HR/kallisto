@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+  /v1.0/applications:
+    get:
+      tags: [Client]
+      summary: List user applications
+      responses:
+        '200':
+          description: List of applications
+
+    /v1.0/applications/{application_id}:
+      get:
+        tags: [Client]
+        summary: Get application details
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+
+    /v1.0/applications/{application_id}/submit:
+      post:
+        tags: [Client]
+        summary: Submit application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+
+    /v1.0/applications/{application_id}/update:
+      patch:
+        tags: [Client]
+        summary: Update application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+
+    /v1.0/applications/{application_id}/delete:
+      delete:
+        tags: [Client]
+        summary: Delete application
+        parameters:
+          - name: application_id
+            in: path
+            required: true
+            schema:
+              type: string
+

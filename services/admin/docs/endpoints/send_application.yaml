@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info:
+  title: Kallisto Backend API
+  version: 1.0.0
+  description: OpenAPI 3.0 documentation
+
+paths:
+  /send-application:
+    post:
+      tags: [ Admin ]
+      summary: Internal handler to send application
+      responses:
+        '200':
+          description: Sent
