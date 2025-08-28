@@ -4,10 +4,18 @@ import (
     "fmt"
     "net/http"
     "kallisto/services/admin/internal/handlers"
+    "kallisto/infra/env/"
 )
 
 
 func main() {
+
+    err := env.LoadEnv("kallisto/.env")
+
+    if err != nil {
+        //FUTURE LOG
+    }
+
     // auth
     http.HandleFunc("/v1.0/login", handlers.EchoHandler)
     http.HandleFunc("/v1.0/logout", handlers.EchoHandler)
