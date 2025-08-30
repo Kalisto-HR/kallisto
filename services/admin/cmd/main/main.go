@@ -1,45 +1,42 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "kallisto/services/admin/internal/handlers"
-    "kallisto/infra/env/"
+	"fmt"
+	"kallisto/infra/env"
+	"kallisto/services/admin/internal/handlers"
+	"net/http"
 )
-
 
 func main() {
 
-    err := env.LoadEnv("kallisto/.env")
+	err := env.LoadEnv("kallisto/.env")
 
-    if err != nil {
-        //FUTURE LOG
-    }
+	if err != nil {
+		//FUTURE LOG
+	}
 
-    // auth
-    http.HandleFunc("/v1.0/login", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/logout", handlers.EchoHandler)
-    
-    // management
-    http.HandleFunc("/v1.0/generate-account", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/blacklist", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/applicants", handlers.EchoHandler)
+	// auth
+	http.HandleFunc("/v1.0/login", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/logout", handlers.EchoHandler)
 
-    
-    // profile
-    http.HandleFunc("/v1.0/profile", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/profile/update", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/profile/delete", handlers.EchoHandler)
-    
-    // drafts
-    http.HandleFunc("/v1.0/drafts", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/drafts/approve", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/drafts/disapprove", handlers.EchoHandler)
-    http.HandleFunc("/v1.0/drafts/delete", handlers.EchoHandler)
+	// management
+	http.HandleFunc("/v1.0/generate-account", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/blacklist", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/applicants", handlers.EchoHandler)
 
+	// profile
+	http.HandleFunc("/v1.0/profile", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/profile/update", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/profile/delete", handlers.EchoHandler)
 
-    fmt.Println("Server listening on 0.0.0.0:8080")
-    if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
-        panic(err)
-    }
+	// drafts
+	http.HandleFunc("/v1.0/drafts", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/drafts/approve", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/drafts/disapprove", handlers.EchoHandler)
+	http.HandleFunc("/v1.0/drafts/delete", handlers.EchoHandler)
+
+	fmt.Println("Server listening on 0.0.0.0:8080")
+	if err := http.ListenAndServe("0.0.0.0:8080", nil); err != nil {
+		panic(err)
+	}
 }

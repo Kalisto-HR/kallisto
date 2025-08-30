@@ -2,8 +2,7 @@ package usecases_impl
 
 import (
 	"errors"
-	"services/admin/internal/models"
-	"services/admin/internal/utils"
+	"kallisto/services/admin/internal/models"
 )
 
 type authUseCaseImpl struct {
@@ -35,5 +34,5 @@ func (uc *authUseCaseImpl) Login(req models.LoginRequest) (string, error) {
 		return "", errors.New("invalid credentials")
 	}
 
-	return utils.GenerateJWT(user.Email)
+	return "", nil
 }

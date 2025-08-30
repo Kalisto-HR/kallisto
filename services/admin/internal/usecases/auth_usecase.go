@@ -1,6 +1,6 @@
 package usecases
 
-import "services/admin/internal/models"
+import "kallisto/services/admin/internal/models"
 
 type AuthUseCase interface {
 	Register(req models.RegisterRequest) error

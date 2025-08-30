@@ -1,42 +1,42 @@
 package auth
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
-var IncompleteTokenError = errors.New("Failed to decode JWT content: incomplete token")
-var InvalidSignatureError = errors.New("Token verification failed")
+var ErrIncompleteToken = errors.New("failed to decode jwt content: incomplete token")
+var ErrInvalidSignature = errors.New("token verification failed: invalid signature")
+var ErrExpiredToken = errors.New("token verification failed: expired")
 
-func NewDecodingError (format string, obj any) {
-	return DecodeString{
+func NewDecodingError(format string, obj any) DecodingError {
+	return DecodingError{
 		Format: format,
-		Obj: obj, 
+		Obj:    obj,
 	}
 }
 
-func NewEncodingError (format string, obj any) {
+func NewEncodingError(format string, obj any) EncodingError {
 	return EncodingError{
 		Format: format,
-		Obj: obj,
+		Obj:    obj,
 	}
 }
 
-struct DecodingError {
+type DecodingError struct {
 	Format string
-	Obj any
+	Obj    any
 }
 
-struct EncodingError {
+type EncodingError struct {
 	Format string
-	Obj any
+	Obj    any
 }
 
 func (err DecodingError) Error() string {
-	return fmt.Sprintf("Failed to decode %v to %s", err.Obj, err.Format) 
+	return fmt.Sprintf("Failed to decode %v to %s", err.Obj, err.Format)
 }
 
 func (err EncodingError) Error() string {
 	return fmt.Sprintf("Failed to encode %v from %s", err.Obj, err.Format)
 }
-
