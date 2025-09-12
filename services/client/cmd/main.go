@@ -1,28 +1,41 @@
 package main
 
 import (
+	"context"
 	"kallisto/infra/env"
 	"kallisto/infra/logger"
 	"kallisto/services/client/internal/handlers"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 )
 
 func main() {
+	ctx := context.Background()
 	router := mux.NewRouter()
 
 	if err := logger.Init(); err != nil {
 		log.Fatal(err)
 	}
 
-	defer logger.Global.Sync()
+	defer zap.L().Sync()
 
-	if err := env.LoadEnv("kallisto/.env"); err != nil {
-		logger.Global.Fatal("Failed to set env variables")
+	if err := env.LoadEnv(".env"); err != nil {
+		zap.L().Fatal("Failed to set env variables", zap.String("error", err.Error()))
 	}
+
+	pool, err := pgxpool.New(ctx, os.Getenv("DB_CONNECTION_URL"))
+
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+
+	defer pool.Close()
 
 	// auth
 	router.HandleFunc("/v1.0/signin", handlers.SignInHandler).Methods("POST")
@@ -53,5 +66,5 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	zap.L().Fatal(srv.ListenAndServe().Error())
 }
