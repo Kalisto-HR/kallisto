@@ -14,9 +14,9 @@ import (
 var EXPIRATION_THRESHOLD int64 = 900
 
 type JWT struct {
-	TokenHeader    Header
-	TokenClaims    Claims
-	TokenSignature string
+	TokenHeader Header
+	TokenClaims Claims
+	TokenString string
 }
 
 func NewJWTFromToken(token *string) (*JWT, error) {
@@ -48,8 +48,6 @@ func NewJWTFromToken(token *string) (*JWT, error) {
 		return nil, NewDecodingError("base64", parts[1])
 	}
 
-	res.TokenSignature = parts[2]
-
 	if err := json.Unmarshal(headerByte, &res.TokenHeader); err != nil {
 
 		return nil, NewDecodingError("json", headerByte)
@@ -65,6 +63,8 @@ func NewJWTFromToken(token *string) (*JWT, error) {
 
 		return nil, ErrExpiredToken
 	}
+
+	res.TokenString = *token
 
 	return &res, nil
 }
@@ -89,19 +89,19 @@ func NewJWTFromClaims(claims *Claims) (*JWT, error) {
 	signature := signHS256(fmt.Sprintf("%s.%s", headerBase64, claimsBase64))
 
 	return &JWT{
-		TokenHeader:    HS256Header,
-		TokenClaims:    *claims,
-		TokenSignature: signature,
+		TokenString: fmt.Sprintf("%s.%s.%s", headerBase64, claimsBase64, signature),
+		TokenHeader: HS256Header,
+		TokenClaims: *claims,
 	}, nil
 }
 
-func (jwt *JWT) Extend() *JWT {
+func (jwt *JWT) Extend() {
 
 	jwt.TokenClaims.Iat = time.Now().Unix()
 
-	res, _ := NewJWTFromClaims(&jwt.TokenClaims)
+	extended, _ := NewJWTFromClaims(&jwt.TokenClaims)
 
-	return res
+	*jwt = *extended
 }
 
 func signHS256(msg string) string {

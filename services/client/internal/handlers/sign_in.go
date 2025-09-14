@@ -4,13 +4,19 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"kallisto/infra/utils"
 	"kallisto/services/client/internal/models"
 	"kallisto/services/client/internal/usecases/usecases_impl"
+
+	"go.uber.org/zap"
 )
 
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
-	var signInRequest models.SignInRequest
-	next := r.URL.Query().Get("next")
+	var (
+		signInRequest models.SignInRequest
+		next                      = r.URL.Query().Get("next")
+		log           *zap.Logger = zap.L()
+	)
 
 	if next == "" {
 		next = "/"
@@ -23,12 +29,19 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	accessToken, err := usecases_impl.NewSignInUseCase(&signInRequest).SignIn()
+	accessToken, err := usecases_impl.NewSignInUseCase(&signInRequest).SignIn(r.Context())
 
 	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
 
-		json.NewEncoder(w).Encode(map[string]string{"msg": "failed to sign in, invalid credentials"})
+		if ok {
+			status = handleFuncErr.Status()
+		}
+
+		log.Error(err.Error())
+		http.Error(w, err.Error(), status)
+
 		return
 	}
 

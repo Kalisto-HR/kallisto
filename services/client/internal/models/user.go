@@ -1,9 +1,11 @@
 package models
 
 type User struct {
-	Email    string
-	Name     string
-	Password string
+	Id        string `db:"uuid"`
+	Email     string `db:"email"`
+	FirstName string `db:"first_name"`
+	LastName  string `db:"last_name"`
+	Password  string `db:"password"`
 }
 
 type SignUpRequest struct {

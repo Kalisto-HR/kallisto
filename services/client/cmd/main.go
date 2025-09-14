@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"kallisto/infra/db"
 	"kallisto/infra/env"
 	"kallisto/infra/logger"
 	"kallisto/services/client/internal/handlers"
@@ -36,6 +37,9 @@ func main() {
 	}
 
 	defer pool.Close()
+
+	// connecting to the middleware
+	router.Use(db.PgxPoolMiddleware(pool))
 
 	// auth
 	router.HandleFunc("/v1.0/signin", handlers.SignInHandler).Methods("POST")
