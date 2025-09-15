@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	auth "kallisto/infra/auth/jwt"
-	"kallisto/infra/db"
+	"kallisto/infra/middlewares"
 	"kallisto/services/client/internal/models"
 	"time"
 
@@ -32,7 +32,7 @@ func (uc *signUpUsecaseImpl) SignUp(ctx context.Context) (string, error) {
 		}
 	)
 
-	conn, ok := ctx.Value(db.PostgresKey).(*pgxpool.Conn)
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
 
 	if !ok {
 
@@ -43,7 +43,7 @@ func (uc *signUpUsecaseImpl) SignUp(ctx context.Context) (string, error) {
 
 	err := pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		var uuid string
-		if err := tx.QueryRow(ctx, "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id", uc.request.Name, uc.request.Email, hashedPswd).Scan(&uuid); err != nil {
+		if err := tx.QueryRow(ctx, "INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4) RETURNING id", uc.request.FirstName, uc.request.LastName, uc.request.Email, hashedPswd).Scan(&uuid); err != nil {
 			return err
 		}
 

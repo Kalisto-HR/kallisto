@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	auth "kallisto/infra/auth/jwt"
-	"kallisto/infra/db"
+	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
 	"kallisto/services/client/internal/models"
 	"net/http"
@@ -34,7 +34,7 @@ func (uc *signInUsecaseImpl) SignIn(ctx context.Context) (string, error) {
 		}
 	)
 
-	conn, ok := ctx.Value(db.PostgresKey).(*pgxpool.Conn)
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
 
 	if !ok {
 		return "", errors.New("could not establish connection with the database")

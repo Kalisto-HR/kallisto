@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"kallisto/infra/db"
 	"kallisto/infra/env"
 	"kallisto/infra/logger"
+	"kallisto/infra/middlewares"
 	"kallisto/services/client/internal/handlers"
 	"log"
 	"net/http"
@@ -38,9 +38,6 @@ func main() {
 
 	defer pool.Close()
 
-	// connecting to the middleware
-	router.Use(db.PgxPoolMiddleware(pool))
-
 	// auth
 	router.HandleFunc("/v1.0/signin", handlers.SignInHandler).Methods("POST")
 	router.HandleFunc("/v1.0/signout", handlers.SignOutHandler).Methods("GET")
@@ -61,6 +58,9 @@ func main() {
 	router.HandleFunc("/v1.0/universities/{university_id}", handlers.NotImplementedHandler).Methods("GET")
 	router.HandleFunc("/v1.0/universities/{university_id}/add", handlers.NotImplementedHandler).Methods("POST")
 	router.HandleFunc("/v1.0/universities/{university_id}/remove", handlers.NotImplementedHandler).Methods("DELETE")
+
+	// connecting to the middleware
+	router.Use(middlewares.CtxMiddleware(pool, zap.L()))
 
 	srv := &http.Server{
 		Handler: router,
