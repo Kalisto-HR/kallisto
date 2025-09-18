@@ -6,7 +6,6 @@ import (
 	"kallisto/infra/logger"
 	"kallisto/infra/middlewares"
 	"kallisto/services/client/internal/handlers"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -20,9 +19,7 @@ func main() {
 	ctx := context.Background()
 	router := mux.NewRouter()
 
-	if err := logger.Init(); err != nil {
-		log.Fatal(err)
-	}
+	logger.Init()
 
 	defer zap.L().Sync()
 
@@ -44,23 +41,31 @@ func main() {
 	router.HandleFunc("/v1.0/signup", handlers.SignUpHandler).Methods("POST")
 
 	// management
-	router.HandleFunc("/v1.0/applications/{application_id}/submit", handlers.NotImplementedHandler).Methods("GET")
-	router.HandleFunc("/v1.0/applications/{application_id}/delete", handlers.NotImplementedHandler).Methods("DELETE")
-	router.HandleFunc("/v1.0/applications/{application_id}/update", handlers.NotImplementedHandler).Methods("PUT")
-	router.HandleFunc("/v1.0/applications/{application_id}", handlers.NotImplementedHandler).Methods("GET")
+	applicationsRouter := router.PathPrefix("/v1.0/applications").Subrouter()
+	applicationsRouter.HandleFunc("/{application_id}/submit", handlers.NotImplementedHandler).Methods("GET")
+	applicationsRouter.HandleFunc("/{application_id}/delete", handlers.NotImplementedHandler).Methods("DELETE")
+	applicationsRouter.HandleFunc("/{application_id}/update", handlers.NotImplementedHandler).Methods("PUT")
+	applicationsRouter.HandleFunc("/{application_id}", handlers.NotImplementedHandler).Methods("GET")
 
 	// profile
-	router.HandleFunc("/v1.0/profile", handlers.NotImplementedHandler).Methods("GET")
-	router.HandleFunc("/v1.0/profile/{section}/update", handlers.NotImplementedHandler).Methods("PUT")
-	router.HandleFunc("/v1.0/profile/delete", handlers.NotImplementedHandler).Methods("DELETE")
+	profileRouter := router.PathPrefix("/v1.0/profile").Subrouter()
+	profileRouter.HandleFunc("", handlers.NotImplementedHandler).Methods("GET")
+	profileRouter.HandleFunc("/{section}/update", handlers.NotImplementedHandler).Methods("PUT")
+	profileRouter.HandleFunc("/delete", handlers.NotImplementedHandler).Methods("DELETE")
 
 	// universities search
-	router.HandleFunc("/v1.0/universities/{university_id}", handlers.NotImplementedHandler).Methods("GET")
-	router.HandleFunc("/v1.0/universities/{university_id}/add", handlers.NotImplementedHandler).Methods("POST")
-	router.HandleFunc("/v1.0/universities/{university_id}/remove", handlers.NotImplementedHandler).Methods("DELETE")
+	universitiesRouter := router.PathPrefix("/v1.0/universities").Subrouter()
+	universitiesRouter.HandleFunc("/{university_id}", handlers.NotImplementedHandler).Methods("GET")
+	universitiesRouter.HandleFunc("/{university_id}/add", handlers.NotImplementedHandler).Methods("POST")
+	universitiesRouter.HandleFunc("/{university_id}/remove", handlers.NotImplementedHandler).Methods("DELETE")
 
-	// connecting to the middleware
-	router.Use(middlewares.CtxMiddleware(pool, zap.L()))
+	// registering middlewares
+	router.Use(middlewares.LogRequestEvent(zap.L()))
+	router.Use(middlewares.PassPgPoolConn(pool))
+
+	applicationsRouter.Use(middlewares.RequireAuth(zap.L()))
+	universitiesRouter.Use(middlewares.RequireAuth(zap.L()))
+	profileRouter.Use(middlewares.RequireAuth(zap.L()))
 
 	srv := &http.Server{
 		Handler: router,

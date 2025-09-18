@@ -95,13 +95,20 @@ func NewJWTFromClaims(claims *Claims) (*JWT, error) {
 	}, nil
 }
 
-func (jwt *JWT) Extend() {
-
+func Extend(jwt *JWT) *JWT {
 	jwt.TokenClaims.Iat = time.Now().Unix()
 
-	extended, _ := NewJWTFromClaims(&jwt.TokenClaims)
+	res, _ := NewJWTFromClaims(&jwt.TokenClaims)
 
-	*jwt = *extended
+	return res
+}
+
+func CheckExpiryAndExtend(jwt *JWT) *JWT {
+	if time.Now().Unix()-jwt.TokenClaims.Iat > EXPIRATION_THRESHOLD/4*3 {
+		return Extend(jwt)
+	}
+
+	return nil
 }
 
 func signHS256(msg string) string {

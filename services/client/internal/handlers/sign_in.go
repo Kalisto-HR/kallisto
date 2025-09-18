@@ -14,13 +14,8 @@ import (
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		signInRequest models.SignInRequest
-		next                      = r.URL.Query().Get("next")
 		log           *zap.Logger = zap.L()
 	)
-
-	if next == "" {
-		next = "/"
-	}
 
 	if err := json.NewDecoder(r.Body).Decode(&signInRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -40,13 +35,13 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Error(err.Error())
-		http.Error(w, err.Error(), status)
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
 
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "auth_token",
+		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -54,6 +49,5 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	http.Redirect(w, r, next, http.StatusFound)
-	w.Header().Set("Content-Type", "application/json")
+	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
 }

@@ -2,23 +2,26 @@ package logger
 
 import (
 	"context"
-	"fmt"
+	"os"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-func Init() error {
-	log, err := zap.NewProduction()
+func Init() {
+	encConfig := zap.NewDevelopmentEncoderConfig()
+	encConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
-	if err != nil {
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encConfig),
+		zapcore.AddSync(os.Stdout),
+		zap.InfoLevel,
+	)
 
-		return fmt.Errorf("can't initialize zap logger: %v", err)
-	}
+	log := zap.New(core, zap.AddCaller())
 
 	zap.ReplaceGlobals(log)
 	log.Info("Successfully initialized Global Logger")
-
-	return nil
 }
 
 func LoggerFromContext(ctx context.Context) *zap.Logger {

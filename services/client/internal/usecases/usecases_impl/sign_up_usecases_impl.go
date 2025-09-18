@@ -48,6 +48,8 @@ func (uc *signUpUsecaseImpl) SignUp(ctx context.Context) (string, error) {
 		}
 
 		claims.UID = uuid
+		claims.FirstName = uc.request.FirstName
+		claims.LastName = uc.request.LastName
 
 		return nil
 	})

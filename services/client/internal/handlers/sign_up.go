@@ -13,13 +13,10 @@ import (
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		signUpRequest models.SignUpRequest
-		next                      = r.URL.Query().Get("next")
 		log           *zap.Logger = zap.L()
 	)
 
-	if next == "" {
-		next = "/"
-	}
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewDecoder(r.Body).Decode(&signUpRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -39,13 +36,14 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Error(err.Error())
-		http.Error(w, err.Error(), status)
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		w.WriteHeader(status)
 
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "auth_token",
+		Name:     "access_token",
 		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
@@ -53,6 +51,6 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	http.Redirect(w, r, next, http.StatusFound)
-	w.Header().Set("Content-Type", "application/json")
+	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }

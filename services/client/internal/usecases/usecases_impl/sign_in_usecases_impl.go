@@ -64,6 +64,10 @@ func (uc *signInUsecaseImpl) SignIn(ctx context.Context) (string, error) {
 		return "", utils.NewHandlerFuncErr(http.StatusUnauthorized, fmt.Sprintf("passwords did not match: %s", err.Error()))
 	}
 
+	claims.UID = user.Id
+	claims.FirstName = user.FirstName
+	claims.LastName = user.LastName
+
 	jwt, err := auth.NewJWTFromClaims(&claims)
 
 	if err != nil {
