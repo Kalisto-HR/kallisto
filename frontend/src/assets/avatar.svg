@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kallisto avatar placeholder">
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded rectangle background (slightly rounded, not circular) -->
+  <rect x="16" y="16" width="480" height="480" rx="36" ry="36" fill="#ffffff" stroke="#006D3E" stroke-width="8" filter="url(#softShadow)"/>
+
+  <!-- Stylized person icon (rectangular-friendly, centered) -->
+  <!-- Head -->
+  <circle cx="256" cy="180" r="56" fill="#003A81"/>
+
+  <!-- Shoulders / torso -->
+  <path d="M140 370 C140 310 190 280 256 280 C322 280 372 310 372 370 Z" fill="#003A81"/>
+
+  <!-- Accent small rounded rectangle at top-left to match Kallisto badge -->
+  <rect x="36" y="36" width="96" height="28" rx="8" fill="#5FB22E"/>
+
+  <!-- Optional initial letter (hidden by default) - uncomment if you prefer a letter instead of icon -->
+  <!-- <text x="256" y="275" text-anchor="middle" font-size="120" font-family="Inter, system-ui, sans-serif" fill="#003A81" font-weight="700">U</text> -->
+
+</svg>

@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #003A81;
+  --color-secondary: #006D3E;
+  --color-accent: #5FB22E;
+}
+
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
+body, h1, h2, h3, h4, h5, h6, p, ul, ol {
+  margin: 0;
+}
+
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #1a4d3a;   
+  color: #003A81;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+
+button {
+  font-family: inherit;
+}
+
+
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+
+
+.card {
+  background-color: #1a4d3a;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--color-secondary);
+  color: white;
+}
+.btn-primary:hover {
+  background-color: var(--color-accent);
+}
+
+.btn-secondary {
+  background-color: var(--color-primary);
+  color: white;
+}
+.btn-secondary:hover {
+  background-color: #0052B0;
+}
+
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+
+h1, h2, h3 {
+  color: #003A81;
+}
+
+
+.universities-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(250px,1fr));
+  gap: 1rem;
+}
+
+.university-card {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.university-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+}
+
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem;
+  }
+}
+
+
+
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  text-align: center;
+}
+
+.error-page h1 {
+  font-size: 4rem;
+  color: var(--color-secondary);
+}
+
+.error-page p {
+  font-size: 1.5rem;
+  margin-top: 1rem;
+  color: var(--color-primary);
+}
