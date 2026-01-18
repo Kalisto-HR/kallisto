@@ -1,8 +1,20 @@
+/**
+ * SignUp.tsx
+ * User registration page with client-side validation.
+ */
 import Layout from "../components/Layout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
+import { validateEmail, validateRequired, validateMinLength } from "../utils/validation";
 import "../styles/auth.css";
+
+interface FieldErrors {
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  password: string | null;
+}
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -12,6 +24,7 @@ export default function SignUpPage() {
   const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   // Auto-hide error after 5 seconds
   useEffect(() => {
@@ -21,14 +34,40 @@ export default function SignUpPage() {
     }
   }, [error]);
 
+  // Compute field errors
+  const fieldErrors: FieldErrors = useMemo(() => ({
+    email: validateEmail(email),
+    firstName: validateRequired(firstName, "First Name"),
+    lastName: validateRequired(lastName, "Last Name"),
+    password: validateRequired(password, "Password") || validateMinLength(password, "Password", 8),
+  }), [email, firstName, lastName, password]);
+
+  // Check if form has any validation errors
+  const hasErrors = useMemo(() => {
+    return Object.values(fieldErrors).some((err) => err !== null);
+  }, [fieldErrors]);
+
+  // Mark field as touched on blur
+  const handleBlur = (field: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); // reset previous errors
 
+    // Mark all fields as touched to show errors
+    setTouched({ email: true, firstName: true, lastName: true, password: true });
+
+    // Don't submit if validation errors exist
+    if (hasErrors) {
+      return;
+    }
+
     const payload = { email, first_name: firstName, last_name: lastName, password };
 
     try {
-      const { ok, data } = await api("/v1.0/signup", {
+      const { ok, data } = await api<{ msg?: string }>("/v1.0/signup", {
         method: "POST",
         body: JSON.stringify(payload),
         headers: { "Content-Type": "application/json" },
@@ -40,6 +79,7 @@ export default function SignUpPage() {
         setFirstName("");
         setLastName("");
         setPassword("");
+        setTouched({});
         return;
       }
 
@@ -54,6 +94,7 @@ export default function SignUpPage() {
       setFirstName("");
       setLastName("");
       setPassword("");
+      setTouched({});
     }
   };
 
@@ -70,10 +111,6 @@ export default function SignUpPage() {
       </div>
     )}
 
-
-
-
-
       <div className="signin-container">
         <div className="signin-card">
           <h1 className="app-title">Kallisto</h1>
@@ -87,8 +124,12 @@ export default function SignUpPage() {
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
+                onBlur={() => handleBlur("email")}
+                className={touched.email && fieldErrors.email ? "input-error" : ""}
               />
+              {touched.email && fieldErrors.email && (
+                <span className="field-error">{fieldErrors.email}</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -98,8 +139,12 @@ export default function SignUpPage() {
                 placeholder="John"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                required
+                onBlur={() => handleBlur("firstName")}
+                className={touched.firstName && fieldErrors.firstName ? "input-error" : ""}
               />
+              {touched.firstName && fieldErrors.firstName && (
+                <span className="field-error">{fieldErrors.firstName}</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -109,8 +154,12 @@ export default function SignUpPage() {
                 placeholder="Doe"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                required
+                onBlur={() => handleBlur("lastName")}
+                className={touched.lastName && fieldErrors.lastName ? "input-error" : ""}
               />
+              {touched.lastName && fieldErrors.lastName && (
+                <span className="field-error">{fieldErrors.lastName}</span>
+              )}
             </div>
 
             <div className="form-group">
@@ -120,11 +169,15 @@ export default function SignUpPage() {
                 placeholder="........"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                onBlur={() => handleBlur("password")}
+                className={touched.password && fieldErrors.password ? "input-error" : ""}
               />
+              {touched.password && fieldErrors.password && (
+                <span className="field-error">{fieldErrors.password}</span>
+              )}
             </div>
 
-            <button type="submit" className="signin-button">
+            <button type="submit" className="signin-button" disabled={hasErrors}>
               Sign Up
             </button>
           </form>
@@ -144,6 +197,19 @@ export default function SignUpPage() {
         }
         .animate-slide-down {
           animation: slide-down 0.5s ease-out forwards;
+        }
+        .field-error {
+          color: #ef4444;
+          font-size: 0.75rem;
+          margin-top: 0.25rem;
+          display: block;
+        }
+        .input-error {
+          border-color: #ef4444 !important;
+        }
+        .signin-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
         `}
       </style>

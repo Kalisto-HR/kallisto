@@ -40,24 +40,39 @@ func main() {
 	router.HandleFunc("/v1.0/signout", handlers.SignOutHandler).Methods("GET")
 	router.HandleFunc("/v1.0/signup", handlers.SignUpHandler).Methods("POST")
 
-	// management
+	// applications
 	applicationsRouter := router.PathPrefix("/v1.0/applications").Subrouter()
-	applicationsRouter.HandleFunc("/{application_id}/submit", handlers.NotImplementedHandler).Methods("GET")
-	applicationsRouter.HandleFunc("/{application_id}/delete", handlers.NotImplementedHandler).Methods("DELETE")
-	applicationsRouter.HandleFunc("/{application_id}/update", handlers.NotImplementedHandler).Methods("PUT")
-	applicationsRouter.HandleFunc("/{application_id}", handlers.NotImplementedHandler).Methods("GET")
+	applicationsRouter.HandleFunc("", handlers.GetApplicationsHandler).Methods("GET")
+	applicationsRouter.HandleFunc("", handlers.CreateApplicationHandler).Methods("POST")
+	applicationsRouter.HandleFunc("/{universityId}/{cycle}", handlers.GetApplicationHandler).Methods("GET")
+	applicationsRouter.HandleFunc("/{universityId}/{cycle}", handlers.UpdateApplicationHandler).Methods("PUT")
+	applicationsRouter.HandleFunc("/{universityId}/{cycle}/submit", handlers.SubmitApplicationHandler).Methods("POST")
+	applicationsRouter.HandleFunc("/{universityId}/{cycle}", handlers.DeleteApplicationHandler).Methods("DELETE")
+
+	// me (lightweight auth check)
+	meRouter := router.PathPrefix("/v1.0/me").Subrouter()
+	meRouter.HandleFunc("", handlers.GetMeHandler).Methods("GET")
 
 	// profile
 	profileRouter := router.PathPrefix("/v1.0/profile").Subrouter()
-	profileRouter.HandleFunc("", handlers.NotImplementedHandler).Methods("GET")
-	profileRouter.HandleFunc("/{section}/update", handlers.NotImplementedHandler).Methods("PUT")
-	profileRouter.HandleFunc("/delete", handlers.NotImplementedHandler).Methods("DELETE")
+	profileRouter.HandleFunc("", handlers.GetProfileHandler).Methods("GET")
+	profileRouter.HandleFunc("", handlers.UpdateProfileHandler).Methods("PUT")
+	profileRouter.HandleFunc("", handlers.DeleteProfileHandler).Methods("DELETE")
 
-	// universities search
+	// universities (public)
+	router.HandleFunc("/v1.0/universities", handlers.GetUniversitiesHandler).Methods("GET")
+	router.HandleFunc("/v1.0/universities/search", handlers.SearchUniversitiesHandler).Methods("GET")
+	router.HandleFunc("/v1.0/universities/{id}", handlers.GetUniversityHandler).Methods("GET")
+
+	// universities (protected)
 	universitiesRouter := router.PathPrefix("/v1.0/universities").Subrouter()
-	universitiesRouter.HandleFunc("/{university_id}", handlers.NotImplementedHandler).Methods("GET")
-	universitiesRouter.HandleFunc("/{university_id}/add", handlers.NotImplementedHandler).Methods("POST")
-	universitiesRouter.HandleFunc("/{university_id}/remove", handlers.NotImplementedHandler).Methods("DELETE")
+	universitiesRouter.HandleFunc("/{id}/favorite", handlers.IsFavoriteHandler).Methods("GET")
+	universitiesRouter.HandleFunc("/{id}/favorite", handlers.AddFavoriteHandler).Methods("POST")
+	universitiesRouter.HandleFunc("/{id}/favorite", handlers.RemoveFavoriteHandler).Methods("DELETE")
+
+	// favorites
+	favoritesRouter := router.PathPrefix("/v1.0/favorites").Subrouter()
+	favoritesRouter.HandleFunc("", handlers.GetFavoritesHandler).Methods("GET")
 
 	// registering middlewares
 	router.Use(middlewares.LogRequestEvent(zap.L()))
@@ -65,6 +80,8 @@ func main() {
 
 	applicationsRouter.Use(middlewares.RequireAuth(zap.L()))
 	universitiesRouter.Use(middlewares.RequireAuth(zap.L()))
+	favoritesRouter.Use(middlewares.RequireAuth(zap.L()))
+	meRouter.Use(middlewares.RequireAuth(zap.L()))
 	profileRouter.Use(middlewares.RequireAuth(zap.L()))
 
 	srv := &http.Server{
