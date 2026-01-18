@@ -1,7 +1,3 @@
-# Kallisto
-
-A full-stack university application management platform that helps students discover, apply to, and track university applications.
-
 ## Features
 
 - **User Authentication** - Secure signup/signin with JWT-based sessions
@@ -247,20 +243,4 @@ psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
 2.1 In the title, first say what you're doing (refactor, feat, fix, bug, typo), followed by the domain of the changes:
 ```
 feat merge_sort: enabling custom data_types
-```
-
-2.2 Write meaningful commit messages — nothing like `"shit, should've fixed"` will be accepted.
-
-### 3. AI Guidelines
-
-3.1 Do not litter the holy repository with AI trash unless you're 100% sure of what is happening there.
-
-3.2 Only use AI as a search engine, not a code generator; it may hallucinate, and if we accept such a change, we may get fucked later.
-
-3.3 Use Cursor if you want to generate code with AI.
-
----
-
-## License
-
-MIT
+``
