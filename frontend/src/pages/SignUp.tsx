@@ -5,6 +5,7 @@
 import Layout from "../components/Layout";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
 import { validateEmail, validateRequired, validateMinLength } from "../utils/validation";
 import "../styles/auth.css";
@@ -18,6 +19,7 @@ interface FieldErrors {
 
 export default function SignUpPage() {
   const navigate = useNavigate();
+  const { checkAuth } = useAuth();
 
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -85,7 +87,8 @@ export default function SignUpPage() {
 
       console.log("Registered:", data);
 
-      // redirect to dashboard
+      // Refresh auth state and redirect to dashboard
+      await checkAuth();
       navigate("/dashboard");
     } catch (err: any) {
       console.error("Signup failed:", err);

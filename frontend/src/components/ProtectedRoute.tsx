@@ -1,5 +1,6 @@
 // Protected route wrapper - redirects to signin if not authenticated
 import { Navigate } from "react-router-dom";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -8,9 +9,15 @@ type Props = {
 };
 
 export default function ProtectedRoute({ children }: Props) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasChecked, checkAuth } = useAuth();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!hasChecked) {
+      checkAuth();
+    }
+  }, [hasChecked, checkAuth]);
+
+  if (isLoading || !hasChecked) {
     return <div>Loading...</div>;
   }
 

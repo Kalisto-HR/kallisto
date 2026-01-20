@@ -31,12 +31,15 @@ psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
 psql -U postgres -d client_db -f scripts/seeds/universities_seed.sql
 psql -U postgres -d admin_db -f scripts/seeds/admin_seed.sql
 ```
-
+### ACCESSING THE DATABASE
+psql -U postgres -d client_db
+type your own password
 ### 3. Environment Configuration
 
 Create `.env` in project root:
 ```env
 # Client Service Database
+# MAKE SURE YOU TYPE YOUR OWN POSTGRE PASSWORD IN THE DB CONNECTION URL
 DB_CONNECTION_URL=postgres://postgres:yourpassword@localhost:5432/client_db
 
 # Admin Service Database

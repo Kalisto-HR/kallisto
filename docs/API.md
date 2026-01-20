@@ -27,8 +27,8 @@ Create a new applicant account.
 {
   "email": "student@example.com",
   "password": "password123",
-  "first_name": "John",
-  "last_name": "Doe"
+  "first_name": "Test",
+  "last_name": "TestLast"
 }
 ```
 

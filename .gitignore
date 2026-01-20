@@ -348,3 +348,4 @@ backend/sprint-planning.txt
 *.sql.gz
 vacancies.json
 .serviceAccountKey.json
+.envs/env.example
