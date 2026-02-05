@@ -1,0 +1,34 @@
+services:
+  client-db-test:
+    image: postgres:16
+    container_name: kallisto_client_db_test
+    environment:
+      POSTGRES_USER: kallisto
+      POSTGRES_PASSWORD: kallisto
+      POSTGRES_DB: client_db
+    ports:
+      - "55432:5432"
+    volumes:
+      - ./scripts/migrations/client_db.sql:/docker-entrypoint-initdb.d/001_client_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kallisto -d client_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  admin-db-test:
+    image: postgres:16
+    container_name: kallisto_admin_db_test
+    environment:
+      POSTGRES_USER: kallisto
+      POSTGRES_PASSWORD: kallisto
+      POSTGRES_DB: admin_db
+    ports:
+      - "55433:5432"
+    volumes:
+      - ./scripts/migrations/admin_db.sql:/docker-entrypoint-initdb.d/001_admin_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kallisto -d admin_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

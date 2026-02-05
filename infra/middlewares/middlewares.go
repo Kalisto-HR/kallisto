@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"errors"
 	auth "kallisto/infra/auth/jwt"
 	"kallisto/infra/utils"
 	"net/http"
@@ -14,7 +15,17 @@ import (
 type CtxKey string
 
 const CtxPostgresKey CtxKey = "postgres"
+const CtxClaimsKey CtxKey = "claims" // JWT claims injected by RequireAuth middleware
 const AccessTokenKey = "access_token"
+
+// GetClaimsFromContext extracts JWT claims from context. Returns error if claims not found.
+func GetClaimsFromContext(ctx context.Context) (*auth.Claims, error) {
+	claims, ok := ctx.Value(CtxClaimsKey).(*auth.Claims)
+	if !ok {
+		return nil, errors.New("could not retrieve claims from context")
+	}
+	return claims, nil
+}
 
 func LogRequestEvent(log *zap.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
@@ -70,7 +81,8 @@ func RequireAuth(log *zap.Logger) mux.MiddlewareFunc {
 				})
 			}
 
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), CtxClaimsKey, &jwt.TokenClaims)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

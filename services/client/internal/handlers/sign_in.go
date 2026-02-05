@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"kallisto/infra/utils"
+	"kallisto/infra/validation"
 	"kallisto/services/client/internal/models"
 	"kallisto/services/client/internal/usecases/usecases_impl"
 
@@ -23,6 +24,16 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer r.Body.Close()
+
+	errors := validation.Validate(
+		validation.ValidateRequired(signInRequest.Email, "email"),
+		validation.ValidateEmail(signInRequest.Email, "email"),
+		validation.ValidateRequired(signInRequest.Password, "password"),
+	)
+	if len(errors) > 0 {
+		validation.WriteValidationErrors(w, errors)
+		return
+	}
 
 	accessToken, err := usecases_impl.NewSignInUseCase(&signInRequest).SignIn(r.Context())
 
@@ -45,8 +56,8 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   false, // false for local dev, true in production
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
