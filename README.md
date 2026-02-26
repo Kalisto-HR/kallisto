@@ -59,7 +59,7 @@ go run services/client/cmd/main.go
 
 # Terminal 2: Admin Service
 go run services/admin/cmd/main/main.go
-# Runs on http://localhost:8081
+# Runs on http://localhost:8082
 
 # Terminal 3: Frontend
 cd frontend
@@ -94,7 +94,7 @@ kallisto/
 │   │   ├── cmd/            # Entry point
 │   │   └── internal/       # Handlers, models, usecases
 │   │
-│   └── admin/              # Admin API (port 8081)
+│   └── admin/              # Admin API (port 8082)
 │       └── (same structure)
 │
 ├── infra/                  # Shared infrastructure
@@ -137,7 +137,7 @@ kallisto/
         ▼                                       ▼
 ┌───────────────────┐               ┌───────────────────┐
 │  CLIENT SERVICE   │──────────────▶│  ADMIN SERVICE    │
-│    Port 8080      │  (forwards    │    Port 8081      │
+│    Port 8080      │  (forwards    │    Port 8082      │
 │                   │  applications)│                   │
 │  - Auth           │               │  - Auth           │
 │  - Profile        │               │  - Applications   │
@@ -178,7 +178,7 @@ kallisto/
 | POST | /v1.0/applications/{uid}/{cycle}/submit | Submit |
 | DELETE | /v1.0/applications/{uid}/{cycle} | Delete |
 
-### Admin Service (Port 8081)
+### Admin Service (Port 8082)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -244,3 +244,4 @@ psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
 ```
 feat merge_sort: enabling custom data_types
 ``
+

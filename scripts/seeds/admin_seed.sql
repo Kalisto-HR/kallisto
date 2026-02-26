@@ -7,9 +7,14 @@
 INSERT INTO users (email, password, first_name, last_name, role, created_at)
 VALUES (
     'admin@kallisto.uz',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqcBrBwKbKpW9FfJf/JqLZkVKbVLi',
+    '$2a$10$izwy57AAb.X.R4K09No64.QqDJt2LJx6Qe/InDHzriICaDjs8urtq',
     'System',
     'Administrator',
     'staff',
     NOW()
-) ON CONFLICT (email) DO NOTHING;
+) ON CONFLICT (email) DO UPDATE
+SET
+    password = EXCLUDED.password,
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    role = EXCLUDED.role;

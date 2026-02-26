@@ -17,7 +17,7 @@
    | application submit (POST /applications/receive)
    v
 [Admin Service: Go API]
-   |  http://localhost:8081/v1.0
+   |  http://localhost:8082/v1.0
    |  - admin auth, review workflow, university mgmt
    v
 [Admin DB: admin_db]
@@ -27,5 +27,6 @@
 ## Ports
 - Frontend (Vite dev): 5173
 - Client API: 8080
-- Admin API: 8081
+- Admin API: 8082
 - PostgreSQL: 5432 (default)
+

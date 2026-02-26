@@ -1,0 +1,412 @@
+[
+  {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "National University of Uzbekistan",
+    "description": "The oldest and largest university in Uzbekistan, offering programs in sciences, humanities, and engineering.",
+    "province": "Tashkent",
+    "city": "Tashkent",
+    "country": "Uzbekistan",
+    "ranking": 356,
+    "applicationFee": 50.0,
+    "acceptanceRate": 32.4,
+    "tuitionFee": 2800.0,
+    "livingCost": 2100.0,
+    "totalCost": 4900.0,
+    "applicationDeadline": "2026-07-15",
+    "ieltsMin": 6.0,
+    "toeflMin": 80,
+    "scholarshipAvailable": true,
+    "competitiveness": "match",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "academic",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "essay", "type": "text", "required": true },
+        { "name": "recommendations", "type": "number", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@nuu.uz", "phone": "+998 71 246 0240" },
+      "website": "https://nuu.uz",
+      "programs": ["Computer Science", "Economics", "Law"]
+    }
+  },
+  {
+    "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "name": "Tashkent State Technical University",
+    "description": "Leading technical university specializing in engineering and technology programs.",
+    "province": "Tashkent",
+    "city": "Tashkent",
+    "country": "Uzbekistan",
+    "ranking": 402,
+    "applicationFee": 45.0,
+    "acceptanceRate": 39.8,
+    "tuitionFee": 2600.0,
+    "livingCost": 2050.0,
+    "totalCost": 4650.0,
+    "applicationDeadline": "2026-07-10",
+    "ieltsMin": 5.5,
+    "toeflMin": 72,
+    "scholarshipAvailable": true,
+    "competitiveness": "match",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "technical",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "math_score", "type": "number", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "info@tdtu.uz", "phone": "+998 71 246 4646" },
+      "website": "https://tdtu.uz",
+      "programs": ["Mechanical Engineering", "Civil Engineering", "Software Engineering"]
+    }
+  },
+  {
+    "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "name": "University of World Economy and Diplomacy",
+    "description": "Premier institution for international relations, economics, and diplomatic studies.",
+    "province": "Tashkent",
+    "city": "Tashkent",
+    "country": "Uzbekistan",
+    "ranking": 451,
+    "applicationFee": 60.0,
+    "acceptanceRate": 24.6,
+    "tuitionFee": 4200.0,
+    "livingCost": 2300.0,
+    "totalCost": 6500.0,
+    "applicationDeadline": "2026-06-30",
+    "ieltsMin": 6.5,
+    "toeflMin": 88,
+    "scholarshipAvailable": true,
+    "competitiveness": "reach",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "professional",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "language_score", "type": "number", "required": true },
+        { "name": "motivation_letter", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admission@uwed.uz", "phone": "+998 71 267 6700" },
+      "website": "https://uwed.uz",
+      "programs": ["International Relations", "Global Economics", "Diplomacy"]
+    }
+  },
+  {
+    "id": "d4e5f6a7-b8c9-0123-def0-234567890123",
+    "name": "Samarkand State University",
+    "description": "Historic university in the ancient city of Samarkand, known for humanities and natural sciences programs.",
+    "province": "Samarkand",
+    "city": "Samarkand",
+    "country": "Uzbekistan",
+    "ranking": 621,
+    "applicationFee": 40.0,
+    "acceptanceRate": 47.1,
+    "tuitionFee": 2100.0,
+    "livingCost": 1600.0,
+    "totalCost": 3700.0,
+    "applicationDeadline": "2026-08-01",
+    "ieltsMin": 5.5,
+    "toeflMin": 70,
+    "scholarshipAvailable": true,
+    "competitiveness": "safety",
+    "cityType": "suburban",
+    "safetyLevel": "high",
+    "campusVibe": "historic",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "essay", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "info@samdu.uz", "phone": "+998 66 239 1636" },
+      "website": "https://samdu.uz",
+      "programs": ["Mathematics", "Philology", "Biology"]
+    }
+  },
+  {
+    "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
+    "name": "Bukhara State University",
+    "description": "Regional university offering diverse programs in education, agriculture, and applied sciences.",
+    "province": "Bukhara",
+    "city": "Bukhara",
+    "country": "Uzbekistan",
+    "ranking": 770,
+    "applicationFee": 35.0,
+    "acceptanceRate": 53.2,
+    "tuitionFee": 1800.0,
+    "livingCost": 1450.0,
+    "totalCost": 3250.0,
+    "applicationDeadline": "2026-08-10",
+    "ieltsMin": 5.0,
+    "toeflMin": 65,
+    "scholarshipAvailable": false,
+    "competitiveness": "safety",
+    "cityType": "suburban",
+    "safetyLevel": "high",
+    "campusVibe": "community",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admission@buxdu.uz", "phone": "+998 65 221 2914" },
+      "website": "https://buxdu.uz",
+      "programs": ["Education", "Agriculture", "Applied Mathematics"]
+    }
+  },
+  {
+    "id": "f6a7b8c9-d0e1-2345-f012-456789012345",
+    "name": "Tashkent University of Information Technologies",
+    "description": "Modern university focused on computer science, IT, and telecommunications.",
+    "province": "Tashkent",
+    "city": "Tashkent",
+    "country": "Uzbekistan",
+    "ranking": 498,
+    "applicationFee": 55.0,
+    "acceptanceRate": 34.0,
+    "tuitionFee": 3600.0,
+    "livingCost": 2150.0,
+    "totalCost": 5750.0,
+    "applicationDeadline": "2026-07-20",
+    "ieltsMin": 6.0,
+    "toeflMin": 79,
+    "scholarshipAvailable": true,
+    "competitiveness": "match",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "innovation",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "programming_score", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "info@tuit.uz", "phone": "+998 71 238 6464" },
+      "website": "https://tuit.uz",
+      "programs": ["Computer Science", "Cybersecurity", "AI"]
+    }
+  },
+  {
+    "id": "a7b8c9d0-e1f2-3456-0123-567890123456",
+    "name": "Fergana State University",
+    "description": "Leading university in the Fergana Valley, offering programs in sciences, arts, and teacher education.",
+    "province": "Fergana",
+    "city": "Fergana",
+    "country": "Uzbekistan",
+    "ranking": 801,
+    "applicationFee": 38.0,
+    "acceptanceRate": 56.7,
+    "tuitionFee": 1900.0,
+    "livingCost": 1350.0,
+    "totalCost": 3250.0,
+    "applicationDeadline": "2026-08-12",
+    "ieltsMin": 5.0,
+    "toeflMin": 64,
+    "scholarshipAvailable": false,
+    "competitiveness": "safety",
+    "cityType": "suburban",
+    "safetyLevel": "medium",
+    "campusVibe": "classical",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "motivation_letter", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "rector@fdu.uz", "phone": "+998 73 244 4044" },
+      "website": "https://fdu.uz",
+      "programs": ["Physics", "English Language", "History"]
+    }
+  },
+  {
+    "id": "b8c9d0e1-f2a3-4567-1234-678901234567",
+    "name": "Westminster International University in Tashkent",
+    "description": "International university offering UK-accredited degrees in business, economics, and law.",
+    "province": "Tashkent",
+    "city": "Tashkent",
+    "country": "Uzbekistan",
+    "ranking": 289,
+    "applicationFee": 150.0,
+    "acceptanceRate": 18.4,
+    "tuitionFee": 9800.0,
+    "livingCost": 2600.0,
+    "totalCost": 12400.0,
+    "applicationDeadline": "2026-06-20",
+    "ieltsMin": 6.5,
+    "toeflMin": 90,
+    "scholarshipAvailable": true,
+    "competitiveness": "reach",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "international",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "ielts_score", "type": "number", "required": true },
+        { "name": "personal_statement", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@wiut.uz", "phone": "+998 71 238 7400" },
+      "website": "https://wiut.uz",
+      "programs": ["Business Administration", "Finance", "Law"]
+    }
+  },
+  {
+    "id": "c9d0e1f2-a3b4-5678-2345-789012345678",
+    "name": "Nukus State Pedagogical Institute",
+    "description": "Teacher training institution serving the Karakalpakstan region with education and humanities programs.",
+    "province": "Karakalpakstan",
+    "city": "Nukus",
+    "country": "Uzbekistan",
+    "ranking": 910,
+    "applicationFee": 30.0,
+    "acceptanceRate": 62.5,
+    "tuitionFee": 1600.0,
+    "livingCost": 1200.0,
+    "totalCost": 2800.0,
+    "applicationDeadline": "2026-08-15",
+    "ieltsMin": 5.0,
+    "toeflMin": 61,
+    "scholarshipAvailable": false,
+    "competitiveness": "safety",
+    "cityType": "rural",
+    "safetyLevel": "medium",
+    "campusVibe": "teaching-focused",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "info@ndpi.uz", "phone": "+998 61 222 1555" },
+      "website": "https://ndpi.uz",
+      "programs": ["Pedagogy", "Psychology", "Primary Education"]
+    }
+  },
+  {
+    "id": "d0e1f2a3-b4c5-6789-3456-890123456789",
+    "name": "Tashkent State University of Economics",
+    "description": "Specialized university for economics, finance, banking, and business administration.",
+    "province": "Tashkent",
+    "city": "Tashkent",
+    "country": "Uzbekistan",
+    "ranking": 540,
+    "applicationFee": 48.0,
+    "acceptanceRate": 29.9,
+    "tuitionFee": 3900.0,
+    "livingCost": 2200.0,
+    "totalCost": 6100.0,
+    "applicationDeadline": "2026-07-05",
+    "ieltsMin": 6.0,
+    "toeflMin": 78,
+    "scholarshipAvailable": true,
+    "competitiveness": "match",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "career-driven",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "math_score", "type": "number", "required": true },
+        { "name": "motivation_essay", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "info@tsue.uz", "phone": "+998 71 232 7050" },
+      "website": "https://tsue.uz",
+      "programs": ["Economics", "Banking", "Business Analytics"]
+    }
+  },
+  {
+    "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
+    "name": "Kazakh-British Technical University",
+    "description": "A regional technical university with strong petroleum, IT, and data programs.",
+    "province": "Almaty",
+    "city": "Almaty",
+    "country": "Kazakhstan",
+    "ranking": 367,
+    "applicationFee": 90.0,
+    "acceptanceRate": 27.2,
+    "tuitionFee": 7200.0,
+    "livingCost": 3000.0,
+    "totalCost": 10200.0,
+    "applicationDeadline": "2026-07-08",
+    "ieltsMin": 6.0,
+    "toeflMin": 79,
+    "scholarshipAvailable": true,
+    "competitiveness": "reach",
+    "cityType": "urban",
+    "safetyLevel": "high",
+    "campusVibe": "startup",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "technical_statement", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@kbtu.kz", "phone": "+7 727 272 4242" },
+      "website": "https://kbtu.edu.kz",
+      "programs": ["Data Science", "Petroleum Engineering", "FinTech"]
+    }
+  },
+  {
+    "id": "f2a3b4c5-d6e7-8901-5678-012345678901",
+    "name": "Middle East Technical University Northern Cyprus Campus",
+    "description": "International campus known for engineering and architecture with English-medium instruction.",
+    "province": "Nicosia",
+    "city": "Northern Nicosia",
+    "country": "Cyprus",
+    "ranking": 336,
+    "applicationFee": 75.0,
+    "acceptanceRate": 31.0,
+    "tuitionFee": 6400.0,
+    "livingCost": 3400.0,
+    "totalCost": 9800.0,
+    "applicationDeadline": "2026-07-01",
+    "ieltsMin": 6.0,
+    "toeflMin": 79,
+    "scholarshipAvailable": true,
+    "competitiveness": "reach",
+    "cityType": "suburban",
+    "safetyLevel": "high",
+    "campusVibe": "international",
+    "visaRequired": true,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "portfolio_or_project", "type": "text", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@metu.edu.tr", "phone": "+90 312 210 2000" },
+      "website": "https://ncc.metu.edu.tr",
+      "programs": ["Architecture", "Electrical Engineering", "Computer Engineering"]
+    }
+  }
+]

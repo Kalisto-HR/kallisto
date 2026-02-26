@@ -57,6 +57,9 @@ func main() {
 	profileRouter := router.PathPrefix("/v1.0/profile").Subrouter()
 	profileRouter.HandleFunc("", handlers.GetProfileHandler).Methods("GET")
 	profileRouter.HandleFunc("", handlers.UpdateProfileHandler).Methods("PUT")
+	profileRouter.HandleFunc("/password", handlers.UpdatePasswordHandler).Methods("PUT")
+	profileRouter.HandleFunc("/photo", handlers.UpdateProfilePhotoHandler).Methods("PUT")
+	profileRouter.HandleFunc("/photo", handlers.GetProfilePhotoHandler).Methods("GET")
 	profileRouter.HandleFunc("", handlers.DeleteProfileHandler).Methods("DELETE")
 
 	// universities (public)
@@ -74,6 +77,13 @@ func main() {
 	favoritesRouter := router.PathPrefix("/v1.0/favorites").Subrouter()
 	favoritesRouter.HandleFunc("", handlers.GetFavoritesHandler).Methods("GET")
 
+	// compare
+	compareRouter := router.PathPrefix("/v1.0/compare").Subrouter()
+	compareRouter.HandleFunc("", handlers.GetCompareHandler).Methods("GET")
+	compareRouter.HandleFunc("", handlers.ClearCompareHandler).Methods("DELETE")
+	compareRouter.HandleFunc("/{id}", handlers.AddCompareHandler).Methods("POST")
+	compareRouter.HandleFunc("/{id}", handlers.RemoveCompareHandler).Methods("DELETE")
+
 	// registering middlewares
 	router.Use(middlewares.LogRequestEvent(zap.L()))
 	router.Use(middlewares.PassPgPoolConn(pool))
@@ -81,6 +91,7 @@ func main() {
 	applicationsRouter.Use(middlewares.RequireAuth(zap.L()))
 	universitiesRouter.Use(middlewares.RequireAuth(zap.L()))
 	favoritesRouter.Use(middlewares.RequireAuth(zap.L()))
+	compareRouter.Use(middlewares.RequireAuth(zap.L()))
 	meRouter.Use(middlewares.RequireAuth(zap.L()))
 	profileRouter.Use(middlewares.RequireAuth(zap.L()))
 

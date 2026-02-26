@@ -22,6 +22,11 @@ type ProfileUpdateRequest struct {
 	Data      json.RawMessage `json:"data,omitempty"`
 }
 
+type ProfilePasswordUpdateRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
 type MeResponse struct {
 	Id        string `json:"id"`
 	Email     string `json:"email"`

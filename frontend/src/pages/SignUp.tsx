@@ -90,7 +90,7 @@ export default function SignUpPage() {
       // Refresh auth state and redirect to dashboard
       await checkAuth();
       navigate("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Signup failed:", err);
       setError("Signup failed due to network error");
       setEmail("");

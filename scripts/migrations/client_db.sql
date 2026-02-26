@@ -29,11 +29,37 @@ CREATE TABLE IF NOT EXISTS universities (
     logo BYTEA,
     description TEXT,
     province TEXT,
+    city TEXT,
+    country TEXT,
     application_schema JSONB,
     ranking INT,
+    acceptance_rate NUMERIC(5,2),
+    tuition_fee NUMERIC(12,2),
+    living_cost NUMERIC(12,2),
+    total_cost NUMERIC(12,2),
+    application_deadline DATE,
+    ielts_min NUMERIC(3,1),
+    toefl_min INT,
+    scholarship_available BOOLEAN DEFAULT FALSE,
+    competitiveness TEXT CHECK (competitiveness in ('reach', 'match', 'safety')),
+    city_type TEXT CHECK (city_type in ('urban', 'suburban', 'rural')),
+    safety_level TEXT CHECK (safety_level in ('high', 'medium', 'low')),
+    campus_vibe TEXT,
+    visa_required BOOLEAN,
     created_at TIMESTAMP DEFAULT NOW(),
     metadata JSONB,
     application_fee FLOAT
+);
+
+CREATE TABLE IF NOT EXISTS user_compare (
+    user_id UUID NOT NULL,
+    university_id UUID NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, university_id),
+    CONSTRAINT fk_compare_user FOREIGN KEY (user_id)
+        REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_compare_university FOREIGN KEY (university_id)
+        REFERENCES universities(id) ON DELETE CASCADE
 );
 
 -- =============================
@@ -62,6 +88,18 @@ CREATE TABLE IF NOT EXISTS applications (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_application_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_universities_ranking ON universities(ranking);
+CREATE INDEX IF NOT EXISTS idx_universities_country ON universities(country);
+CREATE INDEX IF NOT EXISTS idx_universities_city ON universities(city);
+CREATE INDEX IF NOT EXISTS idx_universities_acceptance_rate ON universities(acceptance_rate);
+CREATE INDEX IF NOT EXISTS idx_universities_tuition_fee ON universities(tuition_fee);
+CREATE INDEX IF NOT EXISTS idx_universities_total_cost ON universities(total_cost);
+CREATE INDEX IF NOT EXISTS idx_universities_application_deadline ON universities(application_deadline);
+CREATE INDEX IF NOT EXISTS idx_universities_ielts_min ON universities(ielts_min);
+CREATE INDEX IF NOT EXISTS idx_universities_toefl_min ON universities(toefl_min);
+CREATE INDEX IF NOT EXISTS idx_universities_scholarship_available ON universities(scholarship_available);
+CREATE INDEX IF NOT EXISTS idx_universities_competitiveness ON universities(competitiveness);
+CREATE INDEX IF NOT EXISTS idx_universities_safety_level ON universities(safety_level);
+CREATE INDEX IF NOT EXISTS idx_user_compare_user_id ON user_compare(user_id);
 
 -- =============================
 -- UUID Autogeneration
@@ -73,5 +111,21 @@ ALTER TABLE users
 
 ALTER TABLE universities
     ALTER COLUMN id SET DEFAULT uuid_generate_v4();
+
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS country TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS acceptance_rate NUMERIC(5,2);
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS tuition_fee NUMERIC(12,2);
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS living_cost NUMERIC(12,2);
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS total_cost NUMERIC(12,2);
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS application_deadline DATE;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS ielts_min NUMERIC(3,1);
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS toefl_min INT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS scholarship_available BOOLEAN DEFAULT FALSE;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS competitiveness TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS city_type TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS safety_level TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS campus_vibe TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS visa_required BOOLEAN;
 
 COMMIT;

@@ -3,6 +3,7 @@ package usecases_impl
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"kallisto/infra/middlewares"
@@ -31,7 +32,10 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 	// Get paginated results
 	offset := (page - 1) * limit
 	rows, err := conn.Query(ctx,
-		`SELECT id, manager_id, name, logo, description, province, application_schema,
+		`SELECT id, manager_id, name, logo, description, province, city, country,
+		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
+		        ielts_min, toefl_min, scholarship_available, competitiveness, city_type,
+		        safety_level, campus_vibe, visa_required, application_schema,
 		        ranking, created_at, metadata, application_fee
 		 FROM universities
 		 ORDER BY ranking ASC NULLS LAST, name ASC
@@ -59,7 +63,10 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 	}
 
 	rows, err := conn.Query(ctx,
-		`SELECT id, manager_id, name, logo, description, province, application_schema,
+		`SELECT id, manager_id, name, logo, description, province, city, country,
+		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
+		        ielts_min, toefl_min, scholarship_available, competitiveness, city_type,
+		        safety_level, campus_vibe, visa_required, application_schema,
 		        ranking, created_at, metadata, application_fee
 		 FROM universities WHERE id = $1`,
 		id,
@@ -94,12 +101,34 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 
 	var universityId string
 	err := conn.QueryRow(ctx,
-		`INSERT INTO universities (name, description, province, application_schema, ranking, metadata, application_fee)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`INSERT INTO universities (
+			name, description, province, city, country, acceptance_rate, tuition_fee, living_cost,
+			total_cost, application_deadline, ielts_min, toefl_min, scholarship_available,
+			competitiveness, city_type, safety_level, campus_vibe, visa_required,
+			application_schema, ranking, metadata, application_fee
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+		)
 		 RETURNING id`,
 		req.Name,
 		req.Description,
 		req.Province,
+		req.City,
+		req.Country,
+		req.AcceptanceRate,
+		req.TuitionFee,
+		req.LivingCost,
+		req.TotalCost,
+		req.ApplicationDeadline,
+		req.IeltsMin,
+		req.ToeflMin,
+		req.ScholarshipAvailable,
+		req.Competitiveness,
+		req.CityType,
+		req.SafetyLevel,
+		req.CampusVibe,
+		req.VisaRequired,
 		req.ApplicationSchema,
 		req.Ranking,
 		req.Metadata,
@@ -140,6 +169,81 @@ func UpdateUniversity(ctx context.Context, id string, req *models.UpdateUniversi
 		argCount++
 		updates = append(updates, fmt.Sprintf("province = $%d", argCount))
 		args = append(args, *req.Province)
+	}
+	if req.City != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("city = $%d", argCount))
+		args = append(args, *req.City)
+	}
+	if req.Country != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("country = $%d", argCount))
+		args = append(args, *req.Country)
+	}
+	if req.AcceptanceRate != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("acceptance_rate = $%d", argCount))
+		args = append(args, *req.AcceptanceRate)
+	}
+	if req.TuitionFee != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("tuition_fee = $%d", argCount))
+		args = append(args, *req.TuitionFee)
+	}
+	if req.LivingCost != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("living_cost = $%d", argCount))
+		args = append(args, *req.LivingCost)
+	}
+	if req.TotalCost != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("total_cost = $%d", argCount))
+		args = append(args, *req.TotalCost)
+	}
+	if req.ApplicationDeadline != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("application_deadline = $%d", argCount))
+		args = append(args, *req.ApplicationDeadline)
+	}
+	if req.IeltsMin != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("ielts_min = $%d", argCount))
+		args = append(args, *req.IeltsMin)
+	}
+	if req.ToeflMin != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("toefl_min = $%d", argCount))
+		args = append(args, *req.ToeflMin)
+	}
+	if req.ScholarshipAvailable != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("scholarship_available = $%d", argCount))
+		args = append(args, *req.ScholarshipAvailable)
+	}
+	if req.Competitiveness != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("competitiveness = $%d", argCount))
+		args = append(args, *req.Competitiveness)
+	}
+	if req.CityType != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("city_type = $%d", argCount))
+		args = append(args, *req.CityType)
+	}
+	if req.SafetyLevel != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("safety_level = $%d", argCount))
+		args = append(args, *req.SafetyLevel)
+	}
+	if req.CampusVibe != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("campus_vibe = $%d", argCount))
+		args = append(args, *req.CampusVibe)
+	}
+	if req.VisaRequired != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("visa_required = $%d", argCount))
+		args = append(args, *req.VisaRequired)
 	}
 	if req.ApplicationSchema != nil {
 		argCount++
@@ -215,6 +319,175 @@ func AssignManager(ctx context.Context, universityId string, managerId string) e
 	)
 	if err != nil {
 		return fmt.Errorf("failed to assign manager: %s", err.Error())
+	}
+
+	if result.RowsAffected() == 0 {
+		return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
+	}
+
+	return nil
+}
+
+func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityRequest) (int, error) {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return 0, errors.New("could not establish connection with the database")
+	}
+
+	if len(reqs) == 0 {
+		return 0, utils.NewHandlerFuncErr(http.StatusBadRequest, "universities payload is empty")
+	}
+
+	imported := 0
+	err := pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+		for _, req := range reqs {
+			if req.Name == "" {
+				return utils.NewHandlerFuncErr(http.StatusBadRequest, "university name is required")
+			}
+
+			if req.Id != nil && *req.Id != "" {
+				_, err := tx.Exec(ctx, `
+					INSERT INTO universities (
+						id, name, description, province, city, country, acceptance_rate, tuition_fee, living_cost,
+						total_cost, application_deadline, ielts_min, toefl_min, scholarship_available,
+						competitiveness, city_type, safety_level, campus_vibe, visa_required,
+						application_schema, ranking, metadata, application_fee
+					)
+					VALUES (
+						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+					)
+					ON CONFLICT (id) DO UPDATE SET
+						name = EXCLUDED.name,
+						description = EXCLUDED.description,
+						province = EXCLUDED.province,
+						city = EXCLUDED.city,
+						country = EXCLUDED.country,
+						acceptance_rate = EXCLUDED.acceptance_rate,
+						tuition_fee = EXCLUDED.tuition_fee,
+						living_cost = EXCLUDED.living_cost,
+						total_cost = EXCLUDED.total_cost,
+						application_deadline = EXCLUDED.application_deadline,
+						ielts_min = EXCLUDED.ielts_min,
+						toefl_min = EXCLUDED.toefl_min,
+						scholarship_available = EXCLUDED.scholarship_available,
+						competitiveness = EXCLUDED.competitiveness,
+						city_type = EXCLUDED.city_type,
+						safety_level = EXCLUDED.safety_level,
+						campus_vibe = EXCLUDED.campus_vibe,
+						visa_required = EXCLUDED.visa_required,
+						application_schema = EXCLUDED.application_schema,
+						ranking = EXCLUDED.ranking,
+						metadata = EXCLUDED.metadata,
+						application_fee = EXCLUDED.application_fee
+				`,
+					*req.Id,
+					req.Name,
+					req.Description,
+					req.Province,
+					req.City,
+					req.Country,
+					req.AcceptanceRate,
+					req.TuitionFee,
+					req.LivingCost,
+					req.TotalCost,
+					req.ApplicationDeadline,
+					req.IeltsMin,
+					req.ToeflMin,
+					req.ScholarshipAvailable,
+					req.Competitiveness,
+					req.CityType,
+					req.SafetyLevel,
+					req.CampusVibe,
+					req.VisaRequired,
+					req.ApplicationSchema,
+					req.Ranking,
+					req.Metadata,
+					req.ApplicationFee,
+				)
+				if err != nil {
+					return fmt.Errorf("failed to upsert university %s: %s", *req.Id, err.Error())
+				}
+			} else {
+				_, err := tx.Exec(ctx, `
+					INSERT INTO universities (
+						name, description, province, city, country, acceptance_rate, tuition_fee, living_cost,
+						total_cost, application_deadline, ielts_min, toefl_min, scholarship_available,
+						competitiveness, city_type, safety_level, campus_vibe, visa_required,
+						application_schema, ranking, metadata, application_fee
+					)
+					VALUES (
+						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+					)
+				`,
+					req.Name,
+					req.Description,
+					req.Province,
+					req.City,
+					req.Country,
+					req.AcceptanceRate,
+					req.TuitionFee,
+					req.LivingCost,
+					req.TotalCost,
+					req.ApplicationDeadline,
+					req.IeltsMin,
+					req.ToeflMin,
+					req.ScholarshipAvailable,
+					req.Competitiveness,
+					req.CityType,
+					req.SafetyLevel,
+					req.CampusVibe,
+					req.VisaRequired,
+					req.ApplicationSchema,
+					req.Ranking,
+					req.Metadata,
+					req.ApplicationFee,
+				)
+				if err != nil {
+					return fmt.Errorf("failed to insert university: %s", err.Error())
+				}
+			}
+
+			imported++
+		}
+
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return imported, nil
+}
+
+// GetUniversityApplicationStructure returns only the application schema for a university.
+func GetUniversityApplicationStructure(ctx context.Context, id string) (json.RawMessage, error) {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return nil, errors.New("could not establish connection with the database")
+	}
+
+	var schema json.RawMessage
+	err := conn.QueryRow(ctx, "SELECT application_schema FROM universities WHERE id = $1", id).Scan(&schema)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
+		}
+		return nil, fmt.Errorf("failed to fetch application structure: %s", err.Error())
+	}
+
+	return schema, nil
+}
+
+// UpdateUniversityApplicationStructure updates only the application schema for a university.
+func UpdateUniversityApplicationStructure(ctx context.Context, id string, schema json.RawMessage) error {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return errors.New("could not establish connection with the database")
+	}
+
+	result, err := conn.Exec(ctx, "UPDATE universities SET application_schema = $1 WHERE id = $2", schema, id)
+	if err != nil {
+		return fmt.Errorf("failed to update application structure: %s", err.Error())
 	}
 
 	if result.RowsAffected() == 0 {

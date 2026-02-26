@@ -60,18 +60,23 @@ func main() {
 	// Universities
 	protected.HandleFunc("/universities", handlers.GetUniversitiesHandler).Methods("GET")
 	protected.HandleFunc("/universities", handlers.CreateUniversityHandler).Methods("POST")
+	protected.HandleFunc("/universities/import", handlers.ImportUniversitiesHandler).Methods("POST")
 	protected.HandleFunc("/universities/{id}", handlers.GetUniversityHandler).Methods("GET")
 	protected.HandleFunc("/universities/{id}", handlers.UpdateUniversityHandler).Methods("PUT")
 	protected.HandleFunc("/universities/{id}", handlers.DeleteUniversityHandler).Methods("DELETE")
+	protected.HandleFunc("/universities/{id}/application-structure", handlers.GetUniversityApplicationStructureHandler).Methods("GET")
+	protected.HandleFunc("/universities/{id}/application-structure", handlers.UpdateUniversityApplicationStructureHandler).Methods("PUT")
+	protected.HandleFunc("/universities/{id}/users", handlers.GetUniversityUsersHandler).Methods("GET")
+	protected.HandleFunc("/universities/{id}/users", handlers.CreateUniversityUserHandler).Methods("POST")
 	protected.HandleFunc("/universities/{id}/manager", handlers.AssignManagerHandler).Methods("PUT")
 
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         "0.0.0.0:8081",
+		Addr:         "0.0.0.0:8082",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
-	zap.L().Info("Admin service starting on port 8081")
+	zap.L().Info("Admin service starting on port 8082")
 	zap.L().Fatal(srv.ListenAndServe().Error())
 }

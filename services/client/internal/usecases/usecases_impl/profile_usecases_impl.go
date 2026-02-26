@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func GetUserById(ctx context.Context, userId string) (*models.ProfileResponse, error) {
@@ -60,8 +61,8 @@ func UpdateUserProfile(ctx context.Context, userId string, req *models.ProfileUp
 		argIndex++
 	}
 	if req.Data != nil {
-		setClauses = append(setClauses, fmt.Sprintf("data=$%d", argIndex))
-		args = append(args, req.Data)
+		setClauses = append(setClauses, fmt.Sprintf("data=COALESCE(data, '{}'::jsonb) || $%d::jsonb", argIndex))
+		args = append(args, string(req.Data))
 		argIndex++
 	}
 
@@ -82,6 +83,80 @@ func UpdateUserProfile(ctx context.Context, userId string, req *models.ProfileUp
 	}
 
 	return nil
+}
+
+func ChangeUserPassword(ctx context.Context, userId, currentPassword, newPassword string) error {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return errors.New("could not establish connection with the database")
+	}
+
+	var currentHash string
+	if err := conn.QueryRow(ctx, "SELECT password FROM users WHERE id=$1", userId).Scan(&currentHash); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return utils.NewHandlerFuncErr(http.StatusNotFound, "user not found")
+		}
+		return fmt.Errorf("failed to fetch current password hash: %s", err.Error())
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(currentPassword)); err != nil {
+		return utils.NewHandlerFuncErr(http.StatusUnauthorized, "current password is incorrect")
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash new password: %s", err.Error())
+	}
+
+	result, err := conn.Exec(ctx, "UPDATE users SET password=$1 WHERE id=$2", string(newHash), userId)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %s", err.Error())
+	}
+
+	if result.RowsAffected() == 0 {
+		return utils.NewHandlerFuncErr(http.StatusNotFound, "user not found")
+	}
+
+	return nil
+}
+
+func UpdateUserPhoto(ctx context.Context, userId string, photo []byte) error {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return errors.New("could not establish connection with the database")
+	}
+
+	result, err := conn.Exec(ctx, "UPDATE users SET photo=$1 WHERE id=$2", photo, userId)
+	if err != nil {
+		return fmt.Errorf("failed to update profile photo: %s", err.Error())
+	}
+
+	if result.RowsAffected() == 0 {
+		return utils.NewHandlerFuncErr(http.StatusNotFound, "user not found")
+	}
+
+	return nil
+}
+
+func GetUserPhoto(ctx context.Context, userId string) ([]byte, error) {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return nil, errors.New("could not establish connection with the database")
+	}
+
+	var photo []byte
+	if err := conn.QueryRow(ctx, "SELECT photo FROM users WHERE id=$1", userId).Scan(&photo); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "user not found")
+		}
+		return nil, fmt.Errorf("failed to fetch profile photo: %s", err.Error())
+	}
+
+	if len(photo) == 0 {
+		return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "profile photo not found")
+	}
+
+	return photo, nil
 }
 
 func DeleteUser(ctx context.Context, userId string) error {

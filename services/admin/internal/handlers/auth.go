@@ -143,16 +143,31 @@ func AdminSignUpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAdminMeHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
 	claims, err := middlewares.GetClaimsFromContext(r.Context())
 	if err != nil {
 		utils.WriteJSONResponseWithMsg(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
+	user, err := usecases_impl.GetAdminUserById(r.Context(), claims.UID)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
 	utils.WriteJSONResponse(w, map[string]interface{}{
-		"id":         claims.UID,
-		"first_name": claims.FirstName,
-		"last_name":  claims.LastName,
-		"role":       claims.Role,
+		"id":                claims.UID,
+		"first_name":        claims.FirstName,
+		"last_name":         claims.LastName,
+		"role":              claims.Role,
+		"university_linked": user.UniversityLinked,
 	}, http.StatusOK)
 }

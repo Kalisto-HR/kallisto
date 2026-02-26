@@ -5,7 +5,7 @@
 | Service | URL |
 |---------|-----|
 | Client API | http://localhost:8080/v1.0 |
-| Admin API | http://localhost:8081/v1.0 |
+| Admin API | http://localhost:8082/v1.0 |
 
 ## Authentication
 
@@ -780,7 +780,7 @@ curl -X POST http://localhost:8080/v1.0/applications \
 
 ### Admin Sign In
 ```bash
-curl -X POST http://localhost:8081/v1.0/signin \
+curl -X POST http://localhost:8082/v1.0/signin \
   -H "Content-Type: application/json" \
   -c admin-cookies.txt \
   -d '{"email":"admin@kallisto.uz","password":"admin123"}'
@@ -788,8 +788,9 @@ curl -X POST http://localhost:8081/v1.0/signin \
 
 ### Review Application (Admin)
 ```bash
-curl -X PUT http://localhost:8081/v1.0/applications/uuid-here/review \
+curl -X PUT http://localhost:8082/v1.0/applications/uuid-here/review \
   -H "Content-Type: application/json" \
   -b admin-cookies.txt \
   -d '{"status":"accepted","notes":"Great candidate"}'
 ```
+

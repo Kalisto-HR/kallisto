@@ -1,0 +1,194 @@
+import type {
+  AdminSubmittedApplication,
+  ApiEnvelope,
+  Pagination,
+  Profile,
+  StudentApplication,
+  StudentApplicationListItem,
+  University,
+  UniversityListItem,
+} from "../../types/domain";
+
+export function toPortalRole(role: string): "student" | "partner" | "staff" {
+  if (role === "partner") {
+    return "partner";
+  }
+  if (role === "staff") {
+    return "staff";
+  }
+  return "student";
+}
+
+export function normalizeEnvelope<T>(value: unknown): ApiEnvelope<T> {
+  const fallback: ApiEnvelope<T> = {
+    success: false,
+    data: null as T,
+    message: "Unexpected API response shape",
+  };
+
+  if (!value || typeof value !== "object") {
+    return fallback;
+  }
+
+  const source = value as Record<string, unknown>;
+  if (typeof source.success !== "boolean") {
+    return fallback;
+  }
+
+  return {
+    success: source.success,
+    data: (source.data as T) ?? (null as T),
+    message: typeof source.message === "string" ? source.message : "",
+    timestamp: typeof source.timestamp === "number" ? source.timestamp : undefined,
+  };
+}
+
+export function normalizePagination<T>(value: unknown): Pagination<T> {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    items: Array.isArray(source.items) ? (source.items as T[]) : [],
+    total: toNumber(source.total),
+    page: toNumber(source.page, 1),
+    limit: toNumber(source.limit, 10),
+    totalPages: toNumber(source.total_pages ?? source.totalPages, 1),
+  };
+}
+
+export function normalizeUniversityListItem(value: unknown): UniversityListItem {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    name: toString(source.name),
+    province: toNullableString(source.province),
+    city: toNullableString(source.city),
+    country: toNullableString(source.country),
+    ranking: toNullableNumber(source.ranking),
+    applicationFee: toNullableNumber(source.application_fee ?? source.applicationFee),
+    acceptanceRate: toNullableNumber(source.acceptance_rate ?? source.acceptanceRate),
+    tuitionFee: toNullableNumber(source.tuition_fee ?? source.tuitionFee),
+    livingCost: toNullableNumber(source.living_cost ?? source.livingCost),
+    totalCost: toNullableNumber(source.total_cost ?? source.totalCost),
+    applicationDeadline: toNullableString(source.application_deadline ?? source.applicationDeadline),
+    ieltsMin: toNullableNumber(source.ielts_min ?? source.ieltsMin),
+    toeflMin: toNullableNumber(source.toefl_min ?? source.toeflMin),
+    scholarshipAvailable: toNullableBool(source.scholarship_available ?? source.scholarshipAvailable),
+    competitiveness: toNullableString(source.competitiveness),
+    cityType: toNullableString(source.city_type ?? source.cityType),
+    safetyLevel: toNullableString(source.safety_level ?? source.safetyLevel),
+    campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
+    visaRequired: toNullableBool(source.visa_required ?? source.visaRequired),
+  };
+}
+
+export function normalizeUniversity(value: unknown): University {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    managerId: toNullableString(source.manager_id ?? source.managerId),
+    name: toString(source.name),
+    description: toNullableString(source.description),
+    province: toNullableString(source.province),
+    city: toNullableString(source.city),
+    country: toNullableString(source.country),
+    ranking: toNullableNumber(source.ranking),
+    applicationFee: toNullableNumber(source.application_fee ?? source.applicationFee),
+    acceptanceRate: toNullableNumber(source.acceptance_rate ?? source.acceptanceRate),
+    tuitionFee: toNullableNumber(source.tuition_fee ?? source.tuitionFee),
+    livingCost: toNullableNumber(source.living_cost ?? source.livingCost),
+    totalCost: toNullableNumber(source.total_cost ?? source.totalCost),
+    applicationDeadline: toNullableString(source.application_deadline ?? source.applicationDeadline),
+    ieltsMin: toNullableNumber(source.ielts_min ?? source.ieltsMin),
+    toeflMin: toNullableNumber(source.toefl_min ?? source.toeflMin),
+    scholarshipAvailable: toNullableBool(source.scholarship_available ?? source.scholarshipAvailable),
+    competitiveness: toNullableString(source.competitiveness),
+    cityType: toNullableString(source.city_type ?? source.cityType),
+    safetyLevel: toNullableString(source.safety_level ?? source.safetyLevel),
+    campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
+    visaRequired: toNullableBool(source.visa_required ?? source.visaRequired),
+    applicationSchema: toRecord(source.application_schema ?? source.applicationSchema),
+    metadata: toRecord(source.metadata),
+    createdAt: toString(source.created_at ?? source.createdAt),
+  };
+}
+
+export function normalizeProfile(value: unknown): Profile {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    email: toString(source.email),
+    firstName: toString(source.first_name ?? source.firstName),
+    lastName: toString(source.last_name ?? source.lastName),
+    data: toRecord(source.data),
+    lastSeen: toNullableString(source.last_seen ?? source.lastSeen),
+  };
+}
+
+export function normalizeStudentApplicationListItem(value: unknown): StudentApplicationListItem {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    universityId: toString(source.university_id ?? source.universityId),
+    universityName: toString(source.university_name ?? source.universityName),
+    applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
+    status: toString(source.status) as StudentApplicationListItem["status"],
+    createdAt: toString(source.created_at ?? source.createdAt),
+    submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
+  };
+}
+
+export function normalizeStudentApplication(value: unknown): StudentApplication {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    userId: toString(source.user_id ?? source.userId),
+    universityId: toString(source.university_id ?? source.universityId),
+    applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
+    status: toString(source.status) as StudentApplication["status"],
+    data: toRecord(source.data),
+    submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
+    createdAt: toString(source.created_at ?? source.createdAt),
+  };
+}
+
+export function normalizeAdminSubmittedApplication(value: unknown): AdminSubmittedApplication {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    userId: toString(source.user_id ?? source.userId),
+    universityId: toString(source.university_id ?? source.universityId),
+    applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
+    applicantInfo: toRecord(source.applicant_info ?? source.applicantInfo) ?? {},
+    applicationData: toRecord(source.application_data ?? source.applicationData) ?? {},
+    submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
+    receivedAt: toString(source.received_at ?? source.receivedAt),
+    status: toString(source.status) as AdminSubmittedApplication["status"],
+    reviewedBy: toNullableString(source.reviewed_by ?? source.reviewedBy),
+    reviewedAt: toNullableString(source.reviewed_at ?? source.reviewedAt),
+    notes: toNullableString(source.notes),
+  };
+}
+
+function toString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function toNullableString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toNullableNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function toNullableBool(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}

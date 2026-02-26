@@ -31,3 +31,22 @@ type AdminSignUpRequest struct {
 	Role             string  `json:"role"`
 	UniversityLinked *string `json:"university_linked,omitempty"`
 }
+
+// UniversityUserCreateRequest represents creating a partner user for a university.
+type UniversityUserCreateRequest struct {
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+// UniversityUserListItem is a minimal users-and-staff payload for management pages.
+type UniversityUserListItem struct {
+	Id               string    `json:"id" db:"id"`
+	Email            string    `json:"email" db:"email"`
+	FirstName        string    `json:"first_name" db:"first_name"`
+	LastName         string    `json:"last_name" db:"last_name"`
+	Role             string    `json:"role" db:"role"`
+	UniversityLinked *string   `json:"university_linked,omitempty" db:"university_linked"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
+}

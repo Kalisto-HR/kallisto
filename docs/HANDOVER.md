@@ -5,7 +5,7 @@
 - Stack: React SPA (Vite) + Go (Gorilla Mux) services + PostgreSQL.
 - Services:
   - Client API for applicants: http://localhost:8080/v1.0
-  - Admin API for staff/partners: http://localhost:8081/v1.0
+  - Admin API for staff/partners: http://localhost:8082/v1.0
 
 ## Repo Layout
 - frontend/ : React SPA (Vite) UI.
@@ -37,8 +37,10 @@
 2) Run migrations:
 - scripts/migrations/client_db.sql
 - scripts/migrations/admin_db.sql
+- scripts/migrations/client_db_v2_university_compare.sql
+- scripts/migrations/admin_db_v2_university_fields.sql
 3) Optional seed:
-- scripts/seeds/universities_seed.sql
+- go run scripts/seeds/cmd/import_universities/main.go
 - scripts/seeds/admin_seed.sql
 4) Configure .env (see docs/SETUP.md)
 5) Run:
@@ -57,7 +59,7 @@
 - Rate limiting, caching, monitoring.
 
 ## Handover Checklist (for the meeting)
-- Verify APIs respond on :8080 and :8081.
+- Verify APIs respond on :8080 and :8082.
 - Demo signup -> draft -> submit -> admin review.
 - Call out university sync gap.
 - Show env vars in .env and Vite proxy config.

@@ -29,7 +29,13 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 
 	offset := (page - 1) * limit
 	rows, err := conn.Query(ctx,
-		"SELECT id, name, province, ranking, application_fee FROM universities ORDER BY ranking ASC NULLS LAST LIMIT $1 OFFSET $2",
+		`SELECT id, name, province, city, country, ranking, application_fee,
+		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
+		        ielts_min, toefl_min, scholarship_available, competitiveness,
+		        city_type, safety_level, campus_vibe, visa_required
+		 FROM universities
+		 ORDER BY ranking ASC NULLS LAST, name ASC
+		 LIMIT $1 OFFSET $2`,
 		limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to perform database query: %s", err.Error())
@@ -51,7 +57,13 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 	}
 
 	rows, err := conn.Query(ctx,
-		"SELECT id, manager_id, name, logo, description, province, application_schema, ranking, created_at, metadata, application_fee FROM universities WHERE id=$1",
+		`SELECT id, manager_id, name, logo, description, province, city, country,
+		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
+		        ielts_min, toefl_min, scholarship_available, competitiveness, city_type,
+		        safety_level, campus_vibe, visa_required, application_schema, ranking,
+		        created_at, metadata, application_fee
+		 FROM universities
+		 WHERE id=$1`,
 		id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform database query: %s", err.Error())
@@ -90,6 +102,16 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 		args = append(args, *params.Province)
 		argIndex++
 	}
+	if params.City != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("city = $%d", argIndex))
+		args = append(args, *params.City)
+		argIndex++
+	}
+	if params.Country != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("country = $%d", argIndex))
+		args = append(args, *params.Country)
+		argIndex++
+	}
 	if params.MinRanking != nil {
 		whereClauses = append(whereClauses, fmt.Sprintf("ranking >= $%d", argIndex))
 		args = append(args, *params.MinRanking)
@@ -103,6 +125,71 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 	if params.MaxFee != nil {
 		whereClauses = append(whereClauses, fmt.Sprintf("application_fee <= $%d", argIndex))
 		args = append(args, *params.MaxFee)
+		argIndex++
+	}
+	if params.MaxTuition != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("tuition_fee <= $%d", argIndex))
+		args = append(args, *params.MaxTuition)
+		argIndex++
+	}
+	if params.MaxLivingCost != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("living_cost <= $%d", argIndex))
+		args = append(args, *params.MaxLivingCost)
+		argIndex++
+	}
+	if params.MaxTotalCost != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("total_cost <= $%d", argIndex))
+		args = append(args, *params.MaxTotalCost)
+		argIndex++
+	}
+	if params.MinAcceptanceRate != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("acceptance_rate >= $%d", argIndex))
+		args = append(args, *params.MinAcceptanceRate)
+		argIndex++
+	}
+	if params.MaxAcceptanceRate != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("acceptance_rate <= $%d", argIndex))
+		args = append(args, *params.MaxAcceptanceRate)
+		argIndex++
+	}
+	if params.MinIelts != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("ielts_min <= $%d", argIndex))
+		args = append(args, *params.MinIelts)
+		argIndex++
+	}
+	if params.MinToefl != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("toefl_min <= $%d", argIndex))
+		args = append(args, *params.MinToefl)
+		argIndex++
+	}
+	if params.ScholarshipAvailable != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("scholarship_available = $%d", argIndex))
+		args = append(args, *params.ScholarshipAvailable)
+		argIndex++
+	}
+	if params.Competitiveness != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("competitiveness = $%d", argIndex))
+		args = append(args, *params.Competitiveness)
+		argIndex++
+	}
+	if params.CityType != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("city_type = $%d", argIndex))
+		args = append(args, *params.CityType)
+		argIndex++
+	}
+	if params.SafetyLevel != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("safety_level = $%d", argIndex))
+		args = append(args, *params.SafetyLevel)
+		argIndex++
+	}
+	if params.CampusVibe != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("campus_vibe = $%d", argIndex))
+		args = append(args, *params.CampusVibe)
+		argIndex++
+	}
+	if params.VisaRequired != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("visa_required = $%d", argIndex))
+		args = append(args, *params.VisaRequired)
 		argIndex++
 	}
 
@@ -120,7 +207,13 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 
 	offset := (params.Page - 1) * params.Limit
 	selectQuery := fmt.Sprintf(
-		"SELECT id, name, province, ranking, application_fee FROM universities %s ORDER BY ranking ASC NULLS LAST LIMIT $%d OFFSET $%d",
+		`SELECT id, name, province, city, country, ranking, application_fee,
+		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
+		        ielts_min, toefl_min, scholarship_available, competitiveness,
+		        city_type, safety_level, campus_vibe, visa_required
+		 FROM universities
+		 %s
+		 ORDER BY ranking ASC NULLS LAST, name ASC LIMIT $%d OFFSET $%d`,
 		whereClause, argIndex, argIndex+1)
 	args = append(args, params.Limit, offset)
 

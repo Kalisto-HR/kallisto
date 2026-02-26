@@ -81,7 +81,7 @@ export default function SignInPage() {
       // Refresh auth state and redirect to dashboard
       await checkAuth();
       navigate("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login failed:", err);
       setError("Login failed due to network error");
       setEmail("");

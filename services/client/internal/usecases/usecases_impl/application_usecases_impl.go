@@ -225,7 +225,7 @@ func forwardApplicationToAdmin(userId, universityId, cycle string, applicationDa
 	// Get admin service URL from environment or use default
 	adminServiceURL := os.Getenv("ADMIN_SERVICE_URL")
 	if adminServiceURL == "" {
-		adminServiceURL = "http://localhost:8081"
+		adminServiceURL = "http://localhost:8082"
 	}
 
 	// Create HTTP request

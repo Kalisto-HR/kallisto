@@ -42,7 +42,7 @@ Kallisto is a university application management platform built as a microservice
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          ADMIN SERVICE                                   │
 │                         Go (Gorilla Mux)                                │
-│                        http://localhost:8081                            │
+│                        http://localhost:8082                            │
 │                                                                         │
 │  Responsibilities:                                                      │
 │  - Staff/partner authentication                                         │
@@ -71,7 +71,7 @@ Kallisto is a university application management platform built as a microservice
 - Universities: `/v1.0/universities/*`
 - Favorites: `/v1.0/favorites`
 
-### Admin Service (Port 8081)
+### Admin Service (Port 8082)
 
 | Layer | Location | Purpose |
 |-------|----------|---------|
@@ -388,3 +388,4 @@ Response
 5. **Rate Limiting** - Protect auth endpoints
 6. **Caching** - Redis for university listings
 7. **Monitoring** - Prometheus metrics, structured logging
+

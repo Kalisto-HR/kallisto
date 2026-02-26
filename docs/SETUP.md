@@ -26,11 +26,21 @@ psql -U postgres -c "CREATE DATABASE admin_db;"
 # Run migrations
 psql -U postgres -d client_db -f scripts/migrations/client_db.sql
 psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
+psql -U postgres -d client_db -f scripts/migrations/client_db_v2_university_compare.sql
+psql -U postgres -d admin_db -f scripts/migrations/admin_db_v2_university_fields.sql
 
 # Seed data (optional but recommended for development)
-psql -U postgres -d client_db -f scripts/seeds/universities_seed.sql
+go run scripts/seeds/cmd/import_universities/main.go
 psql -U postgres -d admin_db -f scripts/seeds/admin_seed.sql
 ```
+`scripts/seeds/import_universities.ps1` and `scripts/seeds/universities_seed.sql` are kept as legacy alternatives.
+
+If your PostgreSQL user requires a password:
+```bash
+$env:PGPASSWORD="yourpassword"
+go run scripts/seeds/cmd/import_universities/main.go
+```
+
 ### ACCESSING THE DATABASE
 psql -U postgres -d client_db
 type your own password
@@ -49,7 +59,7 @@ ADMIN_DB_CONNECTION_URL=postgres://postgres:yourpassword@localhost:5432/admin_db
 SECRET_KEY=your-secret-key-at-least-32-characters-long
 
 # Admin Service URL (for client service to forward applications)
-ADMIN_SERVICE_URL=http://localhost:8081
+ADMIN_SERVICE_URL=http://localhost:8082
 ```
 
 ### 4. Run Backend Services
@@ -57,7 +67,7 @@ ADMIN_SERVICE_URL=http://localhost:8081
 # Terminal 1: Client Service (port 8080)
 go run services/client/cmd/main.go
 
-# Terminal 2: Admin Service (port 8081)
+# Terminal 2: Admin Service (port 8082)
 go run services/admin/cmd/main/main.go
 ```
 
@@ -108,6 +118,7 @@ npm run dev
 | Run all tests | `go test ./...` |
 | Run frontend tests | `cd frontend && npm test` |
 | Lint frontend | `cd frontend && npm run lint` |
+| Seed universities from JSON | `go run scripts/seeds/cmd/import_universities/main.go` |
 | Reset client DB | `psql -U postgres -d client_db -f scripts/migrations/client_db.sql` |
 | Reset admin DB | `psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql` |
 
@@ -116,7 +127,7 @@ npm run dev
 | Service | Port |
 |---------|------|
 | Client API | 8080 |
-| Admin API | 8081 |
+| Admin API | 8082 |
 | Frontend Dev | 5173 |
 
 ## Test Accounts
@@ -158,7 +169,7 @@ psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
 - Clear browser cookies for localhost
 
 ### Admin service not receiving applications
-- Ensure admin service is running on port 8081
+- Ensure admin service is running on port 8082
 - Check `ADMIN_SERVICE_URL` in `.env`
 - Review client service logs for forwarding errors
 
@@ -201,7 +212,7 @@ npm install
 - `POST /v1.0/universities/{id}/favorite` - Add to favorites
 - `DELETE /v1.0/universities/{id}/favorite` - Remove from favorites
 
-### Admin Service (port 8081)
+### Admin Service (port 8082)
 
 **Public:**
 - `POST /v1.0/signin` - Admin login
@@ -233,7 +244,7 @@ npm install
          ▼                       ▼
 ┌─────────────────┐     ┌─────────────────┐
 │ Client Service  │────▶│  Admin Service  │
-│   Port: 8080    │     │   Port: 8081    │
+│   Port: 8080    │     │   Port: 8082    │
 └────────┬────────┘     └────────┬────────┘
          │                       │
          ▼                       ▼

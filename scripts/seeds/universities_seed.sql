@@ -1,5 +1,6 @@
--- Seed file for universities table
--- Run this after the schema migration to populate sample data
+-- Legacy static seed file for universities table.
+-- Preferred path: scripts/seeds/import_universities.ps1 (JSON-driven idempotent seed).
+-- Keep this file only for backward compatibility.
 
 INSERT INTO universities (id, name, description, province, ranking, application_fee, metadata, application_schema, created_at) VALUES
 (
