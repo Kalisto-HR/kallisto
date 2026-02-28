@@ -48,6 +48,12 @@ export async function getStudentSessionUser(): Promise<SessionUser | null> {
     return null;
   }
 
+  // The client service /me endpoint echoes JWT claims and can return non-student
+  // roles when a management token is present. Treat those as non-student sessions.
+  if (envelope.data.role === "partner" || envelope.data.role === "staff" || envelope.data.role === "superuser-ui") {
+    return null;
+  }
+
   return {
     id: envelope.data.id,
     firstName: envelope.data.first_name,

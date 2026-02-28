@@ -21,6 +21,7 @@ import {
 
 interface ServiceLogsProps {
   onNavigate?: (page: string) => void;
+  logsData?: LogEntry[];
 }
 
 interface LogEntry {
@@ -35,7 +36,7 @@ interface LogEntry {
   metadata?: Record<string, any>;
 }
 
-export function ServiceLogs({ onNavigate }: ServiceLogsProps) {
+export function ServiceLogs({ onNavigate, logsData }: ServiceLogsProps) {
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState('off');
@@ -50,7 +51,7 @@ export function ServiceLogs({ onNavigate }: ServiceLogsProps) {
   const [userIdFilter, setUserIdFilter] = useState('');
 
   // Mock log data
-  const logEntries: LogEntry[] = [
+  const logEntries: LogEntry[] = logsData ?? [
     {
       id: '1',
       timestamp: '2024-01-20 14:32:15.234',

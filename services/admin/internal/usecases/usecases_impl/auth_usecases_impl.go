@@ -15,6 +15,37 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const adminUserSelectWithLinkedFallback = `
+	SELECT
+		u.id,
+		u.email,
+		u.password,
+		u.first_name,
+		u.last_name,
+		u.last_seen,
+		u.role,
+		COALESCE(
+			u.university_linked,
+			(
+				SELECT usp.university_id
+				FROM university_staff_profiles usp
+				WHERE usp.user_id = u.id
+				ORDER BY
+					CASE
+						WHEN usp.status = 'active' THEN 0
+						WHEN usp.status = 'pending' THEN 1
+						WHEN usp.status = 'suspended' THEN 2
+						ELSE 3
+					END,
+					usp.updated_at DESC
+				LIMIT 1
+			)
+		) AS university_linked,
+		u.created_at
+	FROM users u
+	WHERE u.%s = $1
+`
+
 // AdminSignIn authenticates an admin user and returns the user if successful
 func AdminSignIn(ctx context.Context, req *models.AdminSignInRequest) (*models.AdminUser, error) {
 	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
@@ -22,11 +53,8 @@ func AdminSignIn(ctx context.Context, req *models.AdminSignInRequest) (*models.A
 		return nil, errors.New("could not establish connection with the database")
 	}
 
-	rows, err := conn.Query(ctx,
-		`SELECT id, email, password, first_name, last_name, last_seen, role, university_linked, created_at
-		 FROM users WHERE email=$1`,
-		req.Email,
-	)
+	signInQuery := fmt.Sprintf(adminUserSelectWithLinkedFallback, "email")
+	rows, err := conn.Query(ctx, signInQuery, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform database query: %s", err.Error())
 	}
@@ -99,11 +127,8 @@ func GetAdminUserById(ctx context.Context, id string) (*models.AdminUser, error)
 		return nil, errors.New("could not establish connection with the database")
 	}
 
-	rows, err := conn.Query(ctx,
-		`SELECT id, email, password, first_name, last_name, last_seen, role, university_linked, created_at
-		 FROM users WHERE id=$1`,
-		id,
-	)
+	byIDQuery := fmt.Sprintf(adminUserSelectWithLinkedFallback, "id")
+	rows, err := conn.Query(ctx, byIDQuery, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform database query: %s", err.Error())
 	}

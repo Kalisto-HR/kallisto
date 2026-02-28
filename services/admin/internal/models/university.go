@@ -30,6 +30,7 @@ type University struct {
 	CampusVibe           *string         `json:"campus_vibe,omitempty" db:"campus_vibe"`
 	VisaRequired         *bool           `json:"visa_required,omitempty" db:"visa_required"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty" db:"application_schema"`
+	ManagementProfile    json.RawMessage `json:"management_profile,omitempty" db:"management_profile"`
 	Ranking              *int            `json:"ranking,omitempty" db:"ranking"`
 	CreatedAt            time.Time       `json:"created_at" db:"created_at"`
 	Metadata             json.RawMessage `json:"metadata,omitempty" db:"metadata"`
@@ -57,6 +58,7 @@ type CreateUniversityRequest struct {
 	CampusVibe           *string         `json:"campus_vibe,omitempty"`
 	VisaRequired         *bool           `json:"visa_required,omitempty"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty"`
+	ManagementProfile    json.RawMessage `json:"management_profile,omitempty"`
 	Ranking              *int            `json:"ranking,omitempty"`
 	Metadata             json.RawMessage `json:"metadata,omitempty"`
 	ApplicationFee       *float64        `json:"application_fee,omitempty"`
@@ -83,6 +85,7 @@ type UpdateUniversityRequest struct {
 	CampusVibe           *string         `json:"campus_vibe,omitempty"`
 	VisaRequired         *bool           `json:"visa_required,omitempty"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty"`
+	ManagementProfile    json.RawMessage `json:"management_profile,omitempty"`
 	Ranking              *int            `json:"ranking,omitempty"`
 	Metadata             json.RawMessage `json:"metadata,omitempty"`
 	ApplicationFee       *float64        `json:"application_fee,omitempty"`
@@ -109,6 +112,7 @@ type ImportUniversityRequest struct {
 	CampusVibe           *string         `json:"campus_vibe,omitempty"`
 	VisaRequired         *bool           `json:"visa_required,omitempty"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty"`
+	ManagementProfile    json.RawMessage `json:"management_profile,omitempty"`
 	Ranking              *int            `json:"ranking,omitempty"`
 	Metadata             json.RawMessage `json:"metadata,omitempty"`
 	ApplicationFee       *float64        `json:"application_fee,omitempty"`

@@ -35,26 +35,28 @@
 1) Create databases:
 - client_db, admin_db
 2) Run migrations:
-- scripts/migrations/client_db.sql
-- scripts/migrations/admin_db.sql
-- scripts/migrations/client_db_v2_university_compare.sql
-- scripts/migrations/admin_db_v2_university_fields.sql
+- powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 3) Optional seed:
-- go run scripts/seeds/cmd/import_universities/main.go
-- scripts/seeds/admin_seed.sql
-4) Configure .env (see docs/SETUP.md)
-5) Run:
+- powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+4) Optional one-command bootstrap:
+- powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -DbUser postgres -DbHost localhost -DbPort 5432
+5) Optional session vars (avoid repeated prompts/path issues):
+- $env:PGPASSWORD="your_postgres_password"
+- $env:PSQL_PATH="C:\Program Files\PostgreSQL\17\bin\psql.exe"
+6) Configure .env (see docs/SETUP.md)
+7) Run:
 - go run services/client/cmd/main.go
 - go run services/admin/cmd/main/main.go
 - cd frontend && npm install && npm run dev
 
 ## Test Accounts
 - Admin: admin@kallisto.uz / admin123 (from seed)
+- Manager: manager@kallisto.uz / admin123
+- KBTU Manager: kbtu.manager@kallisto.uz / admin123
 
 ## Known Gaps / Future Work
 - University sync from admin_db to client_db (event-driven or cron).
 - Admin frontend UI.
-- File uploads (logos, documents).
 - Email notifications.
 - Rate limiting, caching, monitoring.
 

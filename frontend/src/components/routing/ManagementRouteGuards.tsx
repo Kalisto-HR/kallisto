@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation, useParams } from "react-router-dom";
 import { useSession } from "../../hooks/useSession";
 import { routes } from "../../routes/routeConfig";
 import { ManagementAccessDeniedPage } from "../../pages/management/ManagementAccessDeniedPage";
+import { isValidUUID } from "../../utils/validation";
 
 function loadingGate(loading: boolean, initialized: boolean) {
   if (loading || !initialized) {
@@ -26,12 +27,22 @@ export function UniversityManagementRouteGuard() {
     return <Navigate to={routes.student.dashboard} replace />;
   }
 
+  if (!isValidUUID(universityId)) {
+    if (user.role === "partner" && user.universityLinked && isValidUUID(user.universityLinked)) {
+      return <Navigate to={routes.management.university.dashboard(user.universityLinked)} replace />;
+    }
+    if (user.role === "staff" || user.role === "superuser-ui") {
+      return <Navigate to={routes.management.global.overview} replace />;
+    }
+    return <Navigate to={routes.auth.signIn} replace />;
+  }
+
   if (user.role === "partner") {
-    if (!user.universityLinked) {
+    if (!user.universityLinked || !isValidUUID(user.universityLinked)) {
       return <Navigate to={routes.auth.signIn} replace />;
     }
     if (user.universityLinked !== universityId) {
-      return <ManagementAccessDeniedPage />;
+      return <Navigate to={routes.management.university.dashboard(user.universityLinked)} replace />;
     }
   }
 

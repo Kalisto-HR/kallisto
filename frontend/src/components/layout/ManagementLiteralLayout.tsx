@@ -1,11 +1,16 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../ui/sheet";
 import { ManagementHeader } from "../management/ManagementHeader";
 import { ManagementSidebar } from "../management/ManagementSidebar";
 import { useSession } from "../../hooks/useSession";
 import type { ManagementContext, ManagementPageView, ManagementUserRole } from "../../types/managementLiteral";
-import { getUniversityName, routePathToManagementPage, sourcePageToRoutePath } from "../management/literalRouting";
+import {
+  getUniversityName,
+  resolveUniversityId,
+  routePathToManagementPage,
+  sourcePageToRoutePath,
+} from "../management/literalRouting";
 import { routes } from "../../routes/routeConfig";
 
 export function ManagementLiteralLayout({ children }: { children: ReactNode }) {
@@ -16,19 +21,36 @@ export function ManagementLiteralLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userRole: ManagementUserRole = user?.role === "partner" ? "university-manager" : "superuser";
+  const isGlobalPath = location.pathname.startsWith("/management/global");
+  const linkedUniversityId = resolveUniversityId(user?.universityLinked ?? null);
+  const routeUniversityId = resolveUniversityId(universityId ?? null);
+  const effectiveUniversityId = routeUniversityId ?? linkedUniversityId;
 
-  const context: ManagementContext = location.pathname.startsWith("/management/global")
+  const context: ManagementContext = isGlobalPath || !effectiveUniversityId
     ? { type: "global" }
     : {
       type: "university",
-      universityId: universityId ?? user?.universityLinked ?? "stanford",
-      universityName: getUniversityName(universityId ?? user?.universityLinked ?? undefined),
+      universityId: effectiveUniversityId,
+      universityName: getUniversityName(effectiveUniversityId),
     };
 
   const currentPage: ManagementPageView = routePathToManagementPage(location.pathname);
+  const fallbackUniversityId = effectiveUniversityId;
 
-  const fallbackUniversityId =
-    universityId ?? user?.universityLinked ?? (context.type === "university" ? context.universityId : "stanford");
+  useEffect(() => {
+    if (isGlobalPath || routeUniversityId) {
+      return;
+    }
+
+    if (linkedUniversityId) {
+      void navigate(routes.management.university.dashboard(linkedUniversityId), { replace: true });
+      return;
+    }
+
+    if (userRole === "superuser") {
+      void navigate(routes.management.global.overview, { replace: true });
+    }
+  }, [isGlobalPath, linkedUniversityId, navigate, routeUniversityId, userRole]);
 
   const handleNavigate = (page: ManagementPageView) => {
     const target = sourcePageToRoutePath(page, context, fallbackUniversityId);
@@ -44,7 +66,11 @@ export function ManagementLiteralLayout({ children }: { children: ReactNode }) {
       void navigate(routes.management.global.overview);
       return;
     }
-    void navigate(routes.management.university.dashboard(nextContext.universityId));
+    const nextUniversityId = resolveUniversityId(nextContext.universityId, linkedUniversityId);
+    if (!nextUniversityId) {
+      return;
+    }
+    void navigate(routes.management.university.dashboard(nextUniversityId));
   };
 
   const handleLogout = async () => {

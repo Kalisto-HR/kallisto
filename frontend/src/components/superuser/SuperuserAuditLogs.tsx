@@ -49,13 +49,17 @@ interface AuditLog {
   metadata?: Record<string, any>;
 }
 
-export default function SuperuserAuditLogs() {
+interface SuperuserAuditLogsProps {
+  logsData?: AuditLog[];
+}
+
+export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAction, setSelectedAction] = useState<ActionType | 'all'>('all');
   const [selectedOutcome, setSelectedOutcome] = useState<'success' | 'failed' | 'pending' | 'all'>('all');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
 
-  const auditLogs: AuditLog[] = [
+  const auditLogs: AuditLog[] = logsData ?? [
     {
       id: 'LOG-2024-001234',
       timestamp: '2024-01-20 14:30:45',
@@ -216,7 +220,8 @@ export default function SuperuserAuditLogs() {
       'credit-refunded': { label: 'Credit Refund', color: 'bg-orange-50 text-orange-700', icon: XCircle },
     };
 
-    const { label, color, icon: Icon } = config[action];
+    const fallback = { label: action, color: 'bg-gray-50 text-gray-700', icon: Shield };
+    const { label, color, icon: Icon } = config[action] || fallback;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>

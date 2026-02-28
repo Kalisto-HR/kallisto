@@ -79,7 +79,14 @@ export function StudentApplicationsPage() {
       </section>
 
       <section className="space-y-3">
-        {items.map((item) => (
+        {items.map((item) => {
+          const draftHref =
+            `${routes.student.applicationCreate(item.universityId)}?mode=draft&cycle=${encodeURIComponent(item.applicationCycle)}`;
+          const openHref =
+            item.status === "draft"
+              ? draftHref
+              : routes.student.applicationDetail(item.universityId, item.applicationCycle);
+          return (
           <Card key={`${item.universityId}-${item.applicationCycle}`}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between gap-3">
@@ -100,14 +107,15 @@ export function StudentApplicationsPage() {
                   Created {item.createdAt || "N/A"}
                 </span>
               </div>
-              <Link to={routes.student.applicationDetail(item.universityId, item.applicationCycle)}>
+              <Link to={openHref}>
                 <Button size="sm" variant="outline">
-                  Open
+                  {item.status === "draft" ? "Open draft" : "Open"}
                 </Button>
               </Link>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </section>
     </div>
   );

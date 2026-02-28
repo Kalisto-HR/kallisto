@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -69,6 +69,11 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '../ui/utils';
+import { useParams } from 'react-router-dom';
+import { useSession } from '../../hooks/useSession';
+import { fetchAdminApplicationStructure, updateAdminApplicationStructure } from '../../services/admin/universitiesService';
+import { fetchApplicationStructureHistory, publishApplicationStructure } from '../../services/admin/managerService';
+import { isValidUUID } from '../../utils/validation';
 
 interface ApplicationStructureProps {
   onNavigate?: (page: string) => void;
@@ -176,7 +181,7 @@ const fieldTypeInfo: Record<FieldType, { icon: any; label: string; description: 
   'dropdown': { icon: ChevronDown, label: 'Dropdown', description: 'Select from dropdown list' },
   'country': { icon: Globe2, label: 'Country Selector', description: 'Country dropdown with flags' },
   'file-upload': { icon: FileUp, label: 'File Upload', description: 'General file upload' },
-  'document': { icon: FileImage, label: 'Document Request', description: 'Specific document (Passport, Transcript, etc.)' },
+  'document': { icon: FileImage, label: 'Document Request', description: 'Specific document request' },
   'essay': { icon: MessageSquare, label: 'Essay Prompt', description: 'Long text with word limit and guidance' },
   'recommender': { icon: Users, label: 'Recommender Entry', description: 'Recommender contact information' },
   'agreement': { icon: CheckSquare, label: 'Agreement Checkbox', description: 'Terms and conditions checkbox' },
@@ -186,6 +191,11 @@ const fieldTypeInfo: Record<FieldType, { icon: any; label: string; description: 
 };
 
 export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) {
+  const { universityId } = useParams();
+  const { user } = useSession();
+  const routeUniversityId = universityId && isValidUUID(universityId) ? universityId : null;
+  const linkedUniversityId = user?.universityLinked && isValidUUID(user.universityLinked) ? user.universityLinked : null;
+  const resolvedUniversityId = routeUniversityId ?? linkedUniversityId;
   // State management
   const [publishStatus, setPublishStatus] = useState<PublishStatus>('draft');
   const [previewMode, setPreviewMode] = useState(false);
@@ -197,6 +207,9 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [showFieldSettingsDrawer, setShowFieldSettingsDrawer] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Sample data
   const [sections, setSections] = useState<Section[]>([
@@ -287,48 +300,14 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     },
     {
       id: '3',
-      name: 'Documents',
-      title: 'Required Documents',
-      description: 'Upload all required supporting documents',
+      name: 'Essays',
+      title: 'Essay Responses',
+      description: 'Please respond to the following prompts',
       order: 3,
       visible: true,
       fields: [
         {
           id: 'f7',
-          type: 'document',
-          label: 'Passport',
-          helperText: 'Upload a clear copy of your passport identification page',
-          required: true,
-          order: 1,
-          validation: { fileTypes: ['PDF', 'JPG', 'PNG'], maxFileSize: 5, maxFiles: 1 },
-          dataKey: 'passport',
-          exportLabel: 'Passport Document',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-        {
-          id: 'f8',
-          type: 'document',
-          label: 'Academic Transcripts',
-          helperText: 'Official transcripts from all institutions attended',
-          required: true,
-          order: 2,
-          validation: { fileTypes: ['PDF'], maxFileSize: 10, maxFiles: 5 },
-          dataKey: 'transcripts',
-          exportLabel: 'Transcripts',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-      ],
-    },
-    {
-      id: '4',
-      name: 'Essays',
-      title: 'Essay Responses',
-      description: 'Please respond to the following prompts',
-      order: 4,
-      visible: true,
-      fields: [
-        {
-          id: 'f9',
           type: 'essay',
           label: 'Statement of Purpose',
           helperText: 'Describe your academic interests, career goals, and reasons for applying to this program',
@@ -343,7 +322,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     },
   ]);
 
-  const [auditTrail] = useState<AuditEntry[]>([
+  const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([
     {
       timestamp: '2025-01-20 14:32',
       user: 'Sarah Chen',
@@ -363,6 +342,50 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
       details: 'Published version 1.2 of application structure',
     },
   ]);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!resolvedUniversityId) {
+        setSaveError('Missing valid university context. Please re-open from the management dashboard.');
+        setLoading(false);
+        return;
+      }
+      try {
+        const [schema, history] = await Promise.all([
+          fetchAdminApplicationStructure(resolvedUniversityId),
+          fetchApplicationStructureHistory(resolvedUniversityId, 20),
+        ]);
+        if (!mounted) return;
+
+        const schemaSections = Array.isArray((schema as any)?.sections)
+          ? ((schema as any).sections as Section[])
+          : null;
+        if (schemaSections && schemaSections.length > 0) {
+          setSections(schemaSections);
+        }
+
+        setAuditTrail(history.map((item) => ({
+          timestamp: new Date(item.createdAt).toLocaleString('en-US'),
+          user: item.changedBy ?? 'System',
+          action: item.published ? 'Published' : 'Saved',
+          details: item.changeNote ?? `Version ${item.versionNo}`,
+        })));
+
+        const hasPublished = history.some((item) => item.published);
+        setPublishStatus(hasPublished ? 'published' : 'draft');
+      } catch (err) {
+        if (!mounted) return;
+        setSaveError(err instanceof Error ? err.message : 'Failed to load application structure');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [resolvedUniversityId]);
 
   // Helper functions
   const selectedSection = sections.find(s => s.id === selectedSectionId);
@@ -497,16 +520,49 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     setUnsavedChanges(true);
   };
 
-  const handleSaveDraft = () => {
-    setUnsavedChanges(false);
-    // Save logic here
+  const handleSaveDraft = async () => {
+    if (!resolvedUniversityId) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateAdminApplicationStructure(resolvedUniversityId, { sections });
+      const history = await fetchApplicationStructureHistory(resolvedUniversityId, 20);
+      setAuditTrail(history.map((item) => ({
+        timestamp: new Date(item.createdAt).toLocaleString('en-US'),
+        user: item.changedBy ?? 'System',
+        action: item.published ? 'Published' : 'Saved',
+        details: item.changeNote ?? `Version ${item.versionNo}`,
+      })));
+      setUnsavedChanges(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save draft');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handlePublish = () => {
-    setPublishStatus('published');
-    setUnsavedChanges(false);
-    setShowPublishWarning(false);
-    // Publish logic here
+  const handlePublish = async () => {
+    if (!resolvedUniversityId) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateAdminApplicationStructure(resolvedUniversityId, { sections });
+      await publishApplicationStructure(resolvedUniversityId, 'Published from manager application structure page');
+      const history = await fetchApplicationStructureHistory(resolvedUniversityId, 20);
+      setAuditTrail(history.map((item) => ({
+        timestamp: new Date(item.createdAt).toLocaleString('en-US'),
+        user: item.changedBy ?? 'System',
+        action: item.published ? 'Published' : 'Saved',
+        details: item.changeNote ?? `Version ${item.versionNo}`,
+      })));
+      setPublishStatus('published');
+      setUnsavedChanges(false);
+      setShowPublishWarning(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to publish application structure');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLoadTemplate = (templateId: string) => {
@@ -1474,16 +1530,17 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
               variant="outline"
               size="sm"
               onClick={handleSaveDraft}
-              disabled={!unsavedChanges}
+              disabled={!unsavedChanges || saving || loading}
               className="gap-2"
             >
               <Save className="h-4 w-4" />
-              Save Draft
+              {saving ? 'Saving...' : 'Save Draft'}
             </Button>
 
             <Button
               size="sm"
               onClick={() => setShowPublishWarning(true)}
+              disabled={saving || loading}
               className="gap-2"
             >
               <Sparkles className="h-4 w-4" />
@@ -1491,6 +1548,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             </Button>
           </div>
         </div>
+        {saveError && <div className="px-6 pb-3 text-sm text-red-600">{saveError}</div>}
+        {loading && <div className="px-6 pb-3 text-sm text-muted-foreground">Loading application structure...</div>}
       </div>
 
       {/* Main Content Area - Responsive 3-Column Grid */}

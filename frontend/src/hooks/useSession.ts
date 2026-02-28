@@ -8,7 +8,7 @@ export function useSession() {
     if (!ctx.initialized && !ctx.loading) {
       void ctx.refreshSession();
     }
-  }, [ctx]);
+  }, [ctx.initialized, ctx.loading, ctx.refreshSession]);
 
   return {
     ...ctx,

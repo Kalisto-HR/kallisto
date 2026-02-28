@@ -35,7 +35,7 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 		`SELECT id, manager_id, name, logo, description, province, city, country,
 		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, competitiveness, city_type,
-		        safety_level, campus_vibe, visa_required, application_schema,
+		        safety_level, campus_vibe, visa_required, application_schema, management_profile,
 		        ranking, created_at, metadata, application_fee
 		 FROM universities
 		 ORDER BY ranking ASC NULLS LAST, name ASC
@@ -66,7 +66,7 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		`SELECT id, manager_id, name, logo, description, province, city, country,
 		        acceptance_rate, tuition_fee, living_cost, total_cost, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, competitiveness, city_type,
-		        safety_level, campus_vibe, visa_required, application_schema,
+		        safety_level, campus_vibe, visa_required, application_schema, management_profile,
 		        ranking, created_at, metadata, application_fee
 		 FROM universities WHERE id = $1`,
 		id,
@@ -105,10 +105,10 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 			name, description, province, city, country, acceptance_rate, tuition_fee, living_cost,
 			total_cost, application_deadline, ielts_min, toefl_min, scholarship_available,
 			competitiveness, city_type, safety_level, campus_vibe, visa_required,
-			application_schema, ranking, metadata, application_fee
+			application_schema, management_profile, ranking, metadata, application_fee
 		)
 		VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
 		)
 		 RETURNING id`,
 		req.Name,
@@ -130,6 +130,7 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 		req.CampusVibe,
 		req.VisaRequired,
 		req.ApplicationSchema,
+		req.ManagementProfile,
 		req.Ranking,
 		req.Metadata,
 		req.ApplicationFee,
@@ -250,6 +251,11 @@ func UpdateUniversity(ctx context.Context, id string, req *models.UpdateUniversi
 		updates = append(updates, fmt.Sprintf("application_schema = $%d", argCount))
 		args = append(args, req.ApplicationSchema)
 	}
+	if req.ManagementProfile != nil {
+		argCount++
+		updates = append(updates, fmt.Sprintf("management_profile = $%d", argCount))
+		args = append(args, req.ManagementProfile)
+	}
 	if req.Ranking != nil {
 		argCount++
 		updates = append(updates, fmt.Sprintf("ranking = $%d", argCount))
@@ -351,10 +357,10 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 						id, name, description, province, city, country, acceptance_rate, tuition_fee, living_cost,
 						total_cost, application_deadline, ielts_min, toefl_min, scholarship_available,
 						competitiveness, city_type, safety_level, campus_vibe, visa_required,
-						application_schema, ranking, metadata, application_fee
+						application_schema, management_profile, ranking, metadata, application_fee
 					)
 					VALUES (
-						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
+						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
 					)
 					ON CONFLICT (id) DO UPDATE SET
 						name = EXCLUDED.name,
@@ -376,6 +382,7 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 						campus_vibe = EXCLUDED.campus_vibe,
 						visa_required = EXCLUDED.visa_required,
 						application_schema = EXCLUDED.application_schema,
+						management_profile = EXCLUDED.management_profile,
 						ranking = EXCLUDED.ranking,
 						metadata = EXCLUDED.metadata,
 						application_fee = EXCLUDED.application_fee
@@ -400,6 +407,7 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 					req.CampusVibe,
 					req.VisaRequired,
 					req.ApplicationSchema,
+					req.ManagementProfile,
 					req.Ranking,
 					req.Metadata,
 					req.ApplicationFee,
@@ -413,10 +421,10 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 						name, description, province, city, country, acceptance_rate, tuition_fee, living_cost,
 						total_cost, application_deadline, ielts_min, toefl_min, scholarship_available,
 						competitiveness, city_type, safety_level, campus_vibe, visa_required,
-						application_schema, ranking, metadata, application_fee
+						application_schema, management_profile, ranking, metadata, application_fee
 					)
 					VALUES (
-						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
+						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
 					)
 				`,
 					req.Name,
@@ -438,6 +446,7 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 					req.CampusVibe,
 					req.VisaRequired,
 					req.ApplicationSchema,
+					req.ManagementProfile,
 					req.Ranking,
 					req.Metadata,
 					req.ApplicationFee,

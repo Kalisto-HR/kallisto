@@ -131,6 +131,65 @@ All fields optional (partial update).
 
 ---
 
+#### GET /v1.0/profile/test-scores 🔒
+List saved standardized test scores for the signed-in student.
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "uuid",
+    "user_id": "uuid",
+    "test_type": "IELTS",
+    "other_test_name": null,
+    "score": 7.5,
+    "out_of": 9,
+    "taken_on": "2026-02-12",
+    "created_at": "2026-02-27T10:00:00Z",
+    "updated_at": "2026-02-27T10:00:00Z"
+  }
+]
+```
+
+---
+
+#### POST /v1.0/profile/test-scores 🔒
+Create a profile test score.
+
+**Request:**
+```json
+{
+  "test_type": "OTHER",
+  "other_test_name": "Duolingo English Test",
+  "score": 125,
+  "out_of": 160,
+  "taken_on": "2026-01-10"
+}
+```
+
+Notes:
+- `test_type`: `IELTS | SAT | TOEFL | ACT | OTHER`
+- `OTHER` requires `other_test_name`
+- `score <= out_of`
+
+**Response:** `201 Created`
+
+---
+
+#### PUT /v1.0/profile/test-scores/{id} 🔒
+Update an existing profile test score.
+
+**Response:** `200 OK`
+
+---
+
+#### DELETE /v1.0/profile/test-scores/{id} 🔒
+Delete an existing profile test score.
+
+**Response:** `200 OK`
+
+---
+
 #### DELETE /v1.0/profile 🔒
 Delete account.
 
@@ -350,12 +409,88 @@ Only works for draft status.
 
 ---
 
+#### POST /v1.0/applications/{universityId}/{cycle}/import-test-scores 🔒
+Import saved profile test scores into a draft application.
+
+**Request:**
+```json
+{
+  "test_score_ids": ["uuid-1", "uuid-2"]
+}
+```
+
+If `test_score_ids` is omitted, all saved profile test scores are imported.
+
+**Response:** `200 OK`
+```json
+{
+  "imported_count": 2,
+  "test_scores": [
+    {
+      "id": "uuid-1",
+      "test_type": "IELTS",
+      "score": 7.5,
+      "out_of": 9,
+      "normalized": 0.8333
+    }
+  ]
+}
+```
+
+Behavior:
+- Draft-only operation (submitted applications are rejected).
+- Writes `data.test_scores` in application payload.
+- Also maps canonical top-level numeric keys: `ielts`, `sat`, `toefl`, `act` (best normalized score per test type).
+- Stores a DB snapshot in `application_test_scores` for traceability.
+
+---
+
 #### DELETE /v1.0/applications/{universityId}/{cycle} 🔒
 Delete application.
 
 **Response:** `200 OK`
 
 Only works for draft status.
+
+---
+
+#### POST /v1.0/application-files/upload 🔒
+Upload one or more files for an application draft.
+
+**Query Parameters:**
+- `university_id` (UUID, required)
+- `cycle` (required)
+- `field_key` (optional)
+
+**Content-Type:** `multipart/form-data`
+
+**Form fields:**
+- `files` (repeatable)
+
+**Response:** `201 Created`
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "name": "passport.png",
+      "type": "image/png",
+      "size": 128934,
+      "storage": "application_file",
+      "download_url": "/api/v1.0/application-files/{fileId}/download"
+    }
+  ],
+  "message": "files uploaded"
+}
+```
+
+---
+
+#### GET /v1.0/application-files/{fileId}/download 🔒
+Download a previously uploaded file for the authenticated student.
+
+**Response:** binary file stream.
 
 ---
 
@@ -497,6 +632,16 @@ Get application details.
 
 ---
 
+#### GET /v1.0/applications/{id}/files/{fileId}/download 🔒
+Download a submitted file asset.
+
+- Staff can access any submitted application file.
+- Partner accounts are restricted to files from their linked university applications.
+
+**Response:** binary file stream.
+
+---
+
 #### POST /v1.0/applications/receive
 Receive application from client service (service-to-service).
 
@@ -513,6 +658,22 @@ Receive application from client service (service-to-service).
   },
   "application_data": { ... },
   "submitted_at": "2026-01-15T10:00:00Z"
+}
+```
+
+`file_assets` may also be included when uploaded application files are present:
+```json
+{
+  "file_assets": [
+    {
+      "id": "uuid",
+      "field_key": "passport",
+      "file_name": "passport.png",
+      "content_type": "image/png",
+      "file_size": 128934,
+      "content_b64": "base64-bytes"
+    }
+  ]
 }
 ```
 
@@ -669,6 +830,65 @@ Assign partner as manager.
 
 ---
 
+### Superuser Global API (staff-only)
+
+#### GET /v1.0/global/overview (auth required)
+Returns global dashboard stats, recent activity, pending drafts, and system health metrics.
+
+#### GET /v1.0/global/universities (auth required)
+List global university rows for superuser management.
+
+**Query Parameters:**
+- `q` - search by name/location
+- `status` - active/inactive/pending/suspended
+- `type` - public/private/international
+- `page`, `limit`
+
+#### GET /v1.0/global/drafts (auth required)
+List global drafts for approval.
+
+**Query Parameters:**
+- `q` - search by id/title/target
+- `type` - draft type
+- `status` - pending/approved/rejected/executed
+- `page`, `limit`
+
+#### POST /v1.0/global/drafts/{id}/approve (auth required)
+Approve and execute a draft.
+
+#### POST /v1.0/global/drafts/{id}/reject (auth required)
+Reject a draft.
+
+#### GET /v1.0/global/applications (auth required)
+Global applications feed (staff scope).
+
+#### GET /v1.0/global/users (auth required)
+Global user moderation list.
+
+#### POST /v1.0/global/users/{id}/ban-draft (auth required)
+Create a ban-user draft for superuser workflow.
+
+#### GET /v1.0/global/service-logs (auth required)
+List service logs.
+
+**Query Parameters:**
+- `level`, `microservice`, `handler`, `user_id`, `time_range`
+- `page`, `limit`
+
+#### GET /v1.0/global/audit-logs (auth required)
+List immutable audit logs.
+
+**Query Parameters:**
+- `q`, `action`, `outcome`, `page`, `limit`
+
+#### GET /v1.0/global/settings (auth required)
+Read global platform settings.
+
+#### PUT /v1.0/global/settings (auth required)
+Upsert global platform settings.
+
+---
+
 ## Error Responses
 
 ### 400 Bad Request - Validation Error
@@ -737,7 +957,7 @@ Assign partner as manager.
 
 ## Legend
 
-🔒 = Requires authentication (access_token cookie)
+`(auth required)` = Requires authentication (`access_token` cookie)
 
 ---
 
@@ -793,4 +1013,37 @@ curl -X PUT http://localhost:8082/v1.0/applications/uuid-here/review \
   -b admin-cookies.txt \
   -d '{"status":"accepted","notes":"Great candidate"}'
 ```
+
+
+## University Manager API Extensions (v4)
+
+These endpoints are university-scoped and enforce partner/superuser university access.
+
+### GET /v1.0/universities/{id}/dashboard (auth required)
+Returns manager dashboard metrics including:
+- `new_applications`, `total_applicants`, `avg_sat`, `avg_ielts`
+- `male_count`, `female_count`
+- `recent_applications[]`, `notifications[]`
+
+### GET /v1.0/universities/{id}/staff (auth required)
+List staff with pagination + filters: `search`, `role`, `status`, `page`, `limit`.
+Response includes `items[]`, `invitations[]`, and `roles[]`.
+
+### POST /v1.0/universities/{id}/staff (auth required)
+Create a staff account linked to the university.
+
+### PUT /v1.0/universities/{id}/staff/{staffId} (auth required)
+Update staff profile and role.
+
+### PUT /v1.0/universities/{id}/staff/{staffId}/status (auth required)
+Update staff status (`active`, `suspended`, `pending`, `deactivated`).
+
+### POST /v1.0/universities/{id}/staff/{staffId}/resend-invite (auth required)
+Create a new invitation for that staff account.
+
+### GET /v1.0/universities/{id}/application-structure/history (auth required)
+List application structure version history.
+
+### POST /v1.0/universities/{id}/application-structure/publish (auth required)
+Publish current structure and create a version entry.
 

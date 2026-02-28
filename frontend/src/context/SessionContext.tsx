@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { getStudentSessionUser, signOutStudent } from "../services/client/authService";
 import { getManagementSessionUser, signOutManagement } from "../services/admin/authService";
@@ -18,27 +18,38 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
 
   const refreshSession = useCallback(async () => {
-    setLoading(true);
-    try {
-      const student = await getStudentSessionUser();
-      if (student) {
-        setUser(toArea(student));
-        return;
-      }
-
-      const management = await getManagementSessionUser();
-      if (management) {
-        setUser(toArea(management));
-        return;
-      }
-
-      setUser(null);
-    } finally {
-      setLoading(false);
-      setInitialized(true);
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
     }
+
+    const refreshPromise = (async () => {
+      setLoading(true);
+      try {
+        const management = await getManagementSessionUser();
+        if (management) {
+          setUser(toArea(management));
+          return;
+        }
+
+        const student = await getStudentSessionUser();
+        if (student) {
+          setUser(toArea(student));
+          return;
+        }
+
+        setUser(null);
+      } finally {
+        setLoading(false);
+        setInitialized(true);
+        refreshInFlightRef.current = null;
+      }
+    })();
+
+    refreshInFlightRef.current = refreshPromise;
+    return refreshPromise;
   }, []);
 
   const signOut = useCallback(async () => {

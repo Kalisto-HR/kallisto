@@ -24,21 +24,18 @@ psql -U postgres -c "CREATE DATABASE client_db;"
 psql -U postgres -c "CREATE DATABASE admin_db;"
 
 # Run migrations
-psql -U postgres -d client_db -f scripts/migrations/client_db.sql
-psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
-psql -U postgres -d client_db -f scripts/migrations/client_db_v2_university_compare.sql
-psql -U postgres -d admin_db -f scripts/migrations/admin_db_v2_university_fields.sql
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 
 # Seed data (optional but recommended for development)
-go run scripts/seeds/cmd/import_universities/main.go
-psql -U postgres -d admin_db -f scripts/seeds/admin_seed.sql
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 `scripts/seeds/import_universities.ps1` and `scripts/seeds/universities_seed.sql` are kept as legacy alternatives.
 
 If your PostgreSQL user requires a password:
 ```bash
 $env:PGPASSWORD="yourpassword"
-go run scripts/seeds/cmd/import_universities/main.go
+$env:PSQL_PATH="C:\Program Files\PostgreSQL\17\bin\psql.exe" # optional, if psql is not in PATH
+powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 
 ### ACCESSING THE DATABASE
@@ -97,6 +94,10 @@ npm run dev
 | users | Applicants/students |
 | universities | University listings (read replica) |
 | applications | Application drafts and submissions |
+| application_transcripts | Normalized transcript rows from application payload |
+| application_files | Binary attachments uploaded by student for applications |
+| profile_test_scores | Student-owned reusable standardized test score records |
+| application_test_scores | Imported test score snapshots per application draft |
 
 ### Admin Database (admin_db)
 
@@ -105,6 +106,7 @@ npm run dev
 | users | Staff and partner accounts |
 | universities | University data (source of truth) |
 | submitted_applications | Applications received from client |
+| submitted_application_files | Binary file assets forwarded with submitted applications |
 | blacklist | Blocked applicants |
 | drafts | Admin action drafts |
 
@@ -118,9 +120,10 @@ npm run dev
 | Run all tests | `go test ./...` |
 | Run frontend tests | `cd frontend && npm test` |
 | Lint frontend | `cd frontend && npm run lint` |
-| Seed universities from JSON | `go run scripts/seeds/cmd/import_universities/main.go` |
-| Reset client DB | `psql -U postgres -d client_db -f scripts/migrations/client_db.sql` |
-| Reset admin DB | `psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql` |
+| Apply all migrations | `powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432` |
+| Apply dev seeds | `powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432` |
+| Full bootstrap | `powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -DbUser postgres -DbHost localhost -DbPort 5432` |
+| Migration smoke test | `powershell -ExecutionPolicy Bypass -File scripts/db/smoke_test_migrations.ps1 -DbUser postgres -DbHost localhost -DbPort 5432` |
 
 ## Ports
 
@@ -137,6 +140,10 @@ After seeding:
 **Admin Service:**
 - Email: admin@kallisto.uz
 - Password: admin123
+- Email: manager@kallisto.uz
+- Password: admin123
+- Email: kbtu.manager@kallisto.uz
+- Password: admin123
 
 ## Troubleshooting
 
@@ -144,6 +151,17 @@ After seeding:
 - Ensure PostgreSQL service is running
 - Check connection URL in `.env` matches your PostgreSQL setup
 - Verify database exists: `psql -U postgres -c "\l"`
+
+### "psql is not available in PATH"
+- Option 1: add PostgreSQL `bin` directory to Windows PATH.
+- Option 2: pass explicit path in scripts:
+```bash
+powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -DbUser postgres -DbHost localhost -DbPort 5432 -PsqlPath "C:\Program Files\PostgreSQL\17\bin\psql.exe"
+```
+- Option 3: set once per session:
+```bash
+$env:PSQL_PATH="C:\Program Files\PostgreSQL\17\bin\psql.exe"
+```
 
 ### "database does not exist"
 ```bash
@@ -154,8 +172,7 @@ psql -U postgres -c "CREATE DATABASE admin_db;"
 ### "relation does not exist"
 Run migrations:
 ```bash
-psql -U postgres -d client_db -f scripts/migrations/client_db.sql
-psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 
 ### Frontend can't connect to API
@@ -202,15 +219,22 @@ npm install
 - `GET /v1.0/me` - Get current user
 - `GET /v1.0/profile` - Get profile
 - `PUT /v1.0/profile` - Update profile
+- `GET /v1.0/profile/test-scores` - List saved test scores
+- `POST /v1.0/profile/test-scores` - Create saved test score
+- `PUT /v1.0/profile/test-scores/{id}` - Update saved test score
+- `DELETE /v1.0/profile/test-scores/{id}` - Delete saved test score
 - `GET /v1.0/applications` - List user's applications
 - `POST /v1.0/applications` - Create application
 - `GET /v1.0/applications/{universityId}/{cycle}` - Get application
 - `PUT /v1.0/applications/{universityId}/{cycle}` - Update application
+- `POST /v1.0/applications/{universityId}/{cycle}/import-test-scores` - Import selected profile test scores into draft
 - `POST /v1.0/applications/{universityId}/{cycle}/submit` - Submit application
 - `DELETE /v1.0/applications/{universityId}/{cycle}` - Delete application
 - `GET /v1.0/favorites` - Get favorite universities
 - `POST /v1.0/universities/{id}/favorite` - Add to favorites
 - `DELETE /v1.0/universities/{id}/favorite` - Remove from favorites
+- `POST /v1.0/application-files/upload?university_id={id}&cycle={cycle}&field_key={optional}` - Upload application files
+- `GET /v1.0/application-files/{fileId}/download` - Download own uploaded file
 
 ### Admin Service (port 8082)
 
@@ -224,6 +248,7 @@ npm install
 - `GET /v1.0/me` - Get current admin
 - `GET /v1.0/applications` - List submitted applications
 - `GET /v1.0/applications/{id}` - Get application details
+- `GET /v1.0/applications/{id}/files/{fileId}/download` - Download submitted file asset (manager/staff access checked)
 - `PUT /v1.0/applications/{id}/review` - Review application
 - `GET /v1.0/universities` - List universities
 - `POST /v1.0/universities` - Create university
@@ -267,3 +292,4 @@ npm install
 - Go: `camelCase`, `PascalCase` for exported
 - TypeScript: `camelCase`, `PascalCase` for components
 - Commits: `feat|fix|refactor/domain: description`
+

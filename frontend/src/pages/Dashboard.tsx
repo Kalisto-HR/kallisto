@@ -36,7 +36,7 @@ const sidebarItems: Record<TopTab, { label: string; enabled: boolean }[]> = {
     { label: "Name", enabled: true },
     { label: "Email", enabled: true },
     { label: "Siblings", enabled: false },
-    { label: "Passport", enabled: false },
+    { label: "Identity Document", enabled: false },
   ],
 };
 

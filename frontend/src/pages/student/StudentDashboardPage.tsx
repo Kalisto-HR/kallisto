@@ -187,7 +187,14 @@ export function StudentDashboardPage() {
               description="Start by choosing a university and creating your first draft."
             />
           ) : (
-            applications.slice(0, 6).map((item) => (
+            applications.slice(0, 6).map((item) => {
+              const draftHref =
+                `${routes.student.applicationCreate(item.universityId)}?mode=draft&cycle=${encodeURIComponent(item.applicationCycle)}`;
+              const openHref =
+                item.status === "draft"
+                  ? draftHref
+                  : routes.student.applicationDetail(item.universityId, item.applicationCycle);
+              return (
               <div
                 key={`${item.universityId}-${item.applicationCycle}`}
                 className="flex items-center justify-between gap-3 rounded-lg border p-3"
@@ -202,14 +209,15 @@ export function StudentDashboardPage() {
                   <Badge variant="secondary" className="capitalize">
                     {item.status}
                   </Badge>
-                  <Link to={routes.student.applicationDetail(item.universityId, item.applicationCycle)}>
+                  <Link to={openHref}>
                     <Button size="sm" variant="outline">
-                      Open
+                      {item.status === "draft" ? "Open draft" : "Open"}
                     </Button>
                   </Link>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </CardContent>
       </Card>

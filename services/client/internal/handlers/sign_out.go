@@ -10,12 +10,12 @@ func SignOutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "auth_token",
+		Name:     "access_token",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Unix(0, 0),
 		MaxAge:   -1,
 	})

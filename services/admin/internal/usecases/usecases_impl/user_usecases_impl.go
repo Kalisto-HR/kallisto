@@ -62,20 +62,33 @@ func CreateUniversityPartnerUser(ctx context.Context, universityId string, req *
 	}
 
 	var userId string
-	err = conn.QueryRow(ctx,
-		`INSERT INTO users (email, password, first_name, last_name, role, university_linked)
-		 VALUES ($1, $2, $3, $4, 'partner', $5)
-		 RETURNING id`,
-		req.Email,
-		string(hashedPassword),
-		req.FirstName,
-		req.LastName,
-		universityId,
-	).Scan(&userId)
+	err = pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO users (email, password, first_name, last_name, role, university_linked)
+			 VALUES ($1, $2, $3, $4, 'partner', $5)
+			 RETURNING id`,
+			req.Email,
+			string(hashedPassword),
+			req.FirstName,
+			req.LastName,
+			universityId,
+		).Scan(&userId); err != nil {
+			return fmt.Errorf("failed to create university user: %s", err.Error())
+		}
 
+		_, err := tx.Exec(ctx, `
+			INSERT INTO university_staff_profiles (
+				user_id, university_id, staff_role, status, invited_at, created_at, updated_at
+			) VALUES ($1, $2, 'Admissions Officer', 'active', NOW(), NOW(), NOW())
+			ON CONFLICT (user_id) DO NOTHING
+		`, userId, universityId)
+		if err != nil {
+			return fmt.Errorf("failed to create staff profile: %s", err.Error())
+		}
+		return nil
+	})
 	if err != nil {
-		return "", fmt.Errorf("failed to create university user: %s", err.Error())
+		return "", err
 	}
-
 	return userId, nil
 }

@@ -82,6 +82,40 @@ CREATE TABLE IF NOT EXISTS applications (
         REFERENCES universities (id) ON DELETE CASCADE 
 );
 
+CREATE TABLE IF NOT EXISTS application_transcripts (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    university_id UUID NOT NULL,
+    application_cycle TEXT NOT NULL,
+    sequence_no INT NOT NULL,
+    institution_name TEXT NOT NULL,
+    country TEXT,
+    degree_awarded TEXT,
+    gpa TEXT,
+    graduation_year INT,
+    transcript_files JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_application_transcripts_application FOREIGN KEY (user_id, university_id, application_cycle)
+        REFERENCES applications (user_id, university_id, application_cycle) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS application_files (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    application_cycle TEXT NOT NULL,
+    field_key TEXT,
+    file_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    file_size BIGINT NOT NULL,
+    file_data BYTEA NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_application_files_application FOREIGN KEY (user_id, university_id, application_cycle)
+        REFERENCES applications (user_id, university_id, application_cycle) ON DELETE CASCADE
+);
+
 -- =============================
 -- INDEXES
 -- =============================
@@ -100,6 +134,10 @@ CREATE INDEX IF NOT EXISTS idx_universities_scholarship_available ON universitie
 CREATE INDEX IF NOT EXISTS idx_universities_competitiveness ON universities(competitiveness);
 CREATE INDEX IF NOT EXISTS idx_universities_safety_level ON universities(safety_level);
 CREATE INDEX IF NOT EXISTS idx_user_compare_user_id ON user_compare(user_id);
+CREATE INDEX IF NOT EXISTS idx_application_transcripts_application ON application_transcripts(user_id, university_id, application_cycle);
+CREATE INDEX IF NOT EXISTS idx_application_transcripts_institution_name ON application_transcripts(institution_name);
+CREATE INDEX IF NOT EXISTS idx_application_files_application ON application_files(user_id, university_id, application_cycle);
+CREATE INDEX IF NOT EXISTS idx_application_files_created_at ON application_files(created_at DESC);
 
 -- =============================
 -- UUID Autogeneration
@@ -110,6 +148,12 @@ ALTER TABLE users
     ALTER COLUMN id SET DEFAULT  uuid_generate_v4();
 
 ALTER TABLE universities
+    ALTER COLUMN id SET DEFAULT uuid_generate_v4();
+
+ALTER TABLE application_transcripts
+    ALTER COLUMN id SET DEFAULT uuid_generate_v4();
+
+ALTER TABLE application_files
     ALTER COLUMN id SET DEFAULT uuid_generate_v4();
 
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS city TEXT;

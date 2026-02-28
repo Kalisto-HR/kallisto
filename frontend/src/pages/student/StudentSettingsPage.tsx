@@ -4,8 +4,10 @@ import {
   Camera,
   Lock,
   Mail,
+  Plus,
   Save,
   Shield,
+  Trash2,
   User,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -24,18 +26,70 @@ import {
   SuccessState,
 } from "../../components/common/PageState";
 import {
+  createStudentTestScore,
+  deleteStudentTestScore,
+  fetchStudentTestScores,
   fetchStudentPhotoUrl,
   fetchStudentProfile,
+  updateStudentTestScore,
   updateStudentPassword,
   updateStudentProfile,
   uploadStudentPhoto,
 } from "../../services/client/profileService";
-import type { Profile } from "../../types/domain";
+import type { Profile, StudentTestScore, StudentTestScoreType } from "../../types/domain";
 
 function getInitials(firstName: string, lastName: string): string {
   const first = firstName[0] ?? "";
   const last = lastName[0] ?? "";
   return `${first}${last}`.toUpperCase() || "ST";
+}
+
+interface EditableTestScore {
+  id: string | null;
+  clientId: string;
+  testType: StudentTestScoreType;
+  otherTestName: string;
+  score: string;
+  outOf: string;
+  takenOn: string;
+  saving: boolean;
+  deleting: boolean;
+}
+
+const TEST_SCORE_TYPES: Array<{ value: StudentTestScoreType; label: string }> = [
+  { value: "IELTS", label: "IELTS" },
+  { value: "SAT", label: "SAT" },
+  { value: "TOEFL", label: "TOEFL" },
+  { value: "ACT", label: "ACT" },
+  { value: "OTHER", label: "Other" },
+];
+
+function toEditableTestScore(item: StudentTestScore): EditableTestScore {
+  return {
+    id: item.id,
+    clientId: item.id,
+    testType: item.testType,
+    otherTestName: item.otherTestName ?? "",
+    score: Number.isFinite(item.score) ? String(item.score) : "",
+    outOf: Number.isFinite(item.outOf) ? String(item.outOf) : "",
+    takenOn: item.takenOn ?? "",
+    saving: false,
+    deleting: false,
+  };
+}
+
+function createBlankTestScoreRow(): EditableTestScore {
+  return {
+    id: null,
+    clientId: `tmp-${crypto.randomUUID()}`,
+    testType: "IELTS",
+    otherTestName: "",
+    score: "",
+    outOf: "",
+    takenOn: "",
+    saving: false,
+    deleting: false,
+  };
 }
 
 export function StudentSettingsPage() {
@@ -58,6 +112,8 @@ export function StudentSettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [testScores, setTestScores] = useState<EditableTestScore[]>([]);
+  const [testScoresLoading, setTestScoresLoading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -89,6 +145,11 @@ export function StudentSettingsPage() {
             : "partners";
         setProfileVisibility(visibility);
 
+        setTestScoresLoading(true);
+        const scores = await fetchStudentTestScores();
+        setTestScores(scores.map(toEditableTestScore));
+        setTestScoresLoading(false);
+
         const fetchedPhotoUrl = await fetchStudentPhotoUrl();
         setPhotoUrl((current) => {
           if (current) {
@@ -97,8 +158,10 @@ export function StudentSettingsPage() {
           return fetchedPhotoUrl;
         });
       } catch (err) {
+        setTestScoresLoading(false);
         setError(err instanceof Error ? err.message : "Failed to load settings");
       } finally {
+        setTestScoresLoading(false);
         setLoading(false);
       }
     };
@@ -299,6 +362,115 @@ export function StudentSettingsPage() {
     }
   };
 
+  const updateTestScoreField = (
+    clientId: string,
+    key: keyof Pick<EditableTestScore, "testType" | "otherTestName" | "score" | "outOf" | "takenOn">,
+    value: string,
+  ) => {
+    setTestScores((current) =>
+      current.map((item) => {
+        if (item.clientId !== clientId) {
+          return item;
+        }
+        if (key === "testType") {
+          const nextType = value as StudentTestScoreType;
+          return {
+            ...item,
+            testType: nextType,
+            otherTestName: nextType === "OTHER" ? item.otherTestName : "",
+          };
+        }
+        return { ...item, [key]: value };
+      }),
+    );
+  };
+
+  const addNewTestScoreRow = () => {
+    setSuccess(null);
+    setError(null);
+    setTestScores((current) => [...current, createBlankTestScoreRow()]);
+  };
+
+  const removeUnsavedTestScoreRow = (clientId: string) => {
+    setTestScores((current) => current.filter((item) => item.clientId !== clientId));
+  };
+
+  const saveTestScore = async (item: EditableTestScore) => {
+    const score = Number(item.score);
+    const outOf = Number(item.outOf);
+    if (!Number.isFinite(score) || score < 0) {
+      setError("Score must be a valid number greater than or equal to 0.");
+      setSuccess(null);
+      return;
+    }
+    if (!Number.isFinite(outOf) || outOf <= 0) {
+      setError("Out of must be a valid number greater than 0.");
+      setSuccess(null);
+      return;
+    }
+    if (score > outOf) {
+      setError("Score must be less than or equal to out of.");
+      setSuccess(null);
+      return;
+    }
+    if (item.testType === "OTHER" && item.otherTestName.trim().length === 0) {
+      setError("Specify the test name when type is Other.");
+      setSuccess(null);
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setTestScores((current) =>
+      current.map((row) => (row.clientId === item.clientId ? { ...row, saving: true } : row)),
+    );
+
+    try {
+      const payload = {
+        testType: item.testType,
+        otherTestName: item.testType === "OTHER" ? item.otherTestName.trim() : null,
+        score,
+        outOf,
+        takenOn: item.takenOn.trim() ? item.takenOn.trim() : null,
+      };
+      const saved = item.id
+        ? await updateStudentTestScore(item.id, payload)
+        : await createStudentTestScore(payload);
+
+      setTestScores((current) =>
+        current.map((row) => (row.clientId === item.clientId ? { ...toEditableTestScore(saved), saving: false } : row)),
+      );
+      setSuccess(item.id ? "Test score updated." : "Test score added.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save test score");
+      setTestScores((current) =>
+        current.map((row) => (row.clientId === item.clientId ? { ...row, saving: false } : row)),
+      );
+    }
+  };
+
+  const removeTestScore = async (item: EditableTestScore) => {
+    if (!item.id) {
+      removeUnsavedTestScoreRow(item.clientId);
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    setTestScores((current) =>
+      current.map((row) => (row.clientId === item.clientId ? { ...row, deleting: true } : row)),
+    );
+    try {
+      await deleteStudentTestScore(item.id);
+      setTestScores((current) => current.filter((row) => row.clientId !== item.clientId));
+      setSuccess("Test score removed.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete test score");
+      setTestScores((current) =>
+        current.map((row) => (row.clientId === item.clientId ? { ...row, deleting: false } : row)),
+      );
+    }
+  };
+
   if (loading) return <LoadingState label="Loading settings..." />;
   if (error && !profile) return <ErrorState message={error} />;
   if (!profile) {
@@ -409,6 +581,118 @@ export function StudentSettingsPage() {
                     onChange={(event) => setBio(event.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium">Test Scores</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Add standardized tests here. You can import these into applications.
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={addNewTestScoreRow}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add new
+                  </Button>
+                </div>
+
+                {testScoresLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading test scores...</p>
+                ) : null}
+
+                {!testScoresLoading && testScores.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No test scores yet. Click Add new to add your first score.
+                  </p>
+                ) : null}
+
+                {testScores.map((item) => (
+                  <div key={item.clientId} className="space-y-3 rounded-lg border p-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Test type</Label>
+                        <Select
+                          value={item.testType}
+                          onValueChange={(value) => updateTestScoreField(item.clientId, "testType", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select test type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TEST_SCORE_TYPES.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {item.testType === "OTHER" ? (
+                        <div className="space-y-2">
+                          <Label>Other test name</Label>
+                          <Input
+                            value={item.otherTestName}
+                            onChange={(event) => updateTestScoreField(item.clientId, "otherTestName", event.target.value)}
+                            placeholder="e.g. Duolingo English Test"
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-2">
+                        <Label>Score</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.score}
+                          onChange={(event) => updateTestScoreField(item.clientId, "score", event.target.value)}
+                          placeholder="Enter score"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Out of</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.outOf}
+                          onChange={(event) => updateTestScoreField(item.clientId, "outOf", event.target.value)}
+                          placeholder="Max score"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label>Taken on (optional)</Label>
+                        <Input
+                          type="date"
+                          value={item.takenOn}
+                          onChange={(event) => updateTestScoreField(item.clientId, "takenOn", event.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={item.saving || item.deleting}
+                        onClick={() => void removeTestScore(item)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        {item.deleting ? "Removing..." : "Remove"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={item.saving || item.deleting}
+                        onClick={() => void saveTestScore(item)}
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        {item.saving ? "Saving..." : item.id ? "Save score" : "Add score"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="flex justify-end gap-3">

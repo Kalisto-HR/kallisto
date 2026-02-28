@@ -33,9 +33,24 @@ func main() {
 	}
 	defer pool.Close()
 
+	clientDbURL := os.Getenv("CLIENT_DB_CONNECTION_URL")
+	if clientDbURL == "" {
+		clientDbURL = os.Getenv("DB_CONNECTION_URL")
+	}
+	if clientDbURL == "" {
+		zap.L().Fatal("failed to resolve client database connection URL")
+	}
+
+	clientPool, err := pgxpool.New(ctx, clientDbURL)
+	if err != nil {
+		zap.L().Fatal("failed to connect to client database", zap.Error(err))
+	}
+	defer clientPool.Close()
+
 	// Apply global middlewares
 	router.Use(middlewares.LogRequestEvent(zap.L()))
 	router.Use(middlewares.PassPgPoolConn(pool))
+	router.Use(middlewares.PassClientPgPoolConn(clientPool))
 
 	// Auth routes (public)
 	router.HandleFunc("/v1.0/signin", handlers.AdminSignInHandler).Methods("POST")
@@ -55,6 +70,8 @@ func main() {
 	// Applications
 	protected.HandleFunc("/applications", handlers.GetApplicationsHandler).Methods("GET")
 	protected.HandleFunc("/applications/{id}", handlers.GetApplicationHandler).Methods("GET")
+	protected.HandleFunc("/applications/{id}/files", handlers.ListSubmittedApplicationFilesHandler).Methods("GET")
+	protected.HandleFunc("/applications/{id}/files/{fileId}/download", handlers.DownloadSubmittedApplicationFileHandler).Methods("GET")
 	protected.HandleFunc("/applications/{id}/review", handlers.ReviewApplicationHandler).Methods("PUT")
 
 	// Universities
@@ -66,9 +83,31 @@ func main() {
 	protected.HandleFunc("/universities/{id}", handlers.DeleteUniversityHandler).Methods("DELETE")
 	protected.HandleFunc("/universities/{id}/application-structure", handlers.GetUniversityApplicationStructureHandler).Methods("GET")
 	protected.HandleFunc("/universities/{id}/application-structure", handlers.UpdateUniversityApplicationStructureHandler).Methods("PUT")
+	protected.HandleFunc("/universities/{id}/application-structure/history", handlers.GetApplicationStructureHistoryHandler).Methods("GET")
+	protected.HandleFunc("/universities/{id}/application-structure/publish", handlers.PublishApplicationStructureHandler).Methods("POST")
 	protected.HandleFunc("/universities/{id}/users", handlers.GetUniversityUsersHandler).Methods("GET")
 	protected.HandleFunc("/universities/{id}/users", handlers.CreateUniversityUserHandler).Methods("POST")
+	protected.HandleFunc("/universities/{id}/dashboard", handlers.GetUniversityDashboardHandler).Methods("GET")
+	protected.HandleFunc("/universities/{id}/staff", handlers.GetUniversityStaffHandler).Methods("GET")
+	protected.HandleFunc("/universities/{id}/staff", handlers.CreateUniversityStaffHandler).Methods("POST")
+	protected.HandleFunc("/universities/{id}/staff/{staffId}", handlers.UpdateUniversityStaffHandler).Methods("PUT")
+	protected.HandleFunc("/universities/{id}/staff/{staffId}/status", handlers.UpdateUniversityStaffStatusHandler).Methods("PUT")
+	protected.HandleFunc("/universities/{id}/staff/{staffId}/resend-invite", handlers.ResendUniversityStaffInviteHandler).Methods("POST")
 	protected.HandleFunc("/universities/{id}/manager", handlers.AssignManagerHandler).Methods("PUT")
+
+	// Superuser global
+	protected.HandleFunc("/global/overview", handlers.GetGlobalOverviewHandler).Methods("GET")
+	protected.HandleFunc("/global/universities", handlers.GetGlobalUniversitiesHandler).Methods("GET")
+	protected.HandleFunc("/global/drafts", handlers.GetGlobalDraftsHandler).Methods("GET")
+	protected.HandleFunc("/global/drafts/{id}/approve", handlers.ApproveGlobalDraftHandler).Methods("POST")
+	protected.HandleFunc("/global/drafts/{id}/reject", handlers.RejectGlobalDraftHandler).Methods("POST")
+	protected.HandleFunc("/global/applications", handlers.GetGlobalApplicationsHandler).Methods("GET")
+	protected.HandleFunc("/global/users", handlers.GetGlobalUsersHandler).Methods("GET")
+	protected.HandleFunc("/global/users/{id}/ban-draft", handlers.CreateBanUserDraftHandler).Methods("POST")
+	protected.HandleFunc("/global/service-logs", handlers.GetGlobalServiceLogsHandler).Methods("GET")
+	protected.HandleFunc("/global/audit-logs", handlers.GetGlobalAuditLogsHandler).Methods("GET")
+	protected.HandleFunc("/global/settings", handlers.GetGlobalSettingsHandler).Methods("GET")
+	protected.HandleFunc("/global/settings", handlers.UpdateGlobalSettingsHandler).Methods("PUT")
 
 	srv := &http.Server{
 		Handler:      router,

@@ -10,9 +10,9 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * UUID v4 regex pattern for validation.
+ * UUID regex pattern for validation (accepts standard UUID versions).
  */
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Validates an email address.
@@ -58,7 +58,7 @@ export function validateMinLength(value: string, fieldName: string, min: number)
 }
 
 /**
- * Checks if a string is a valid UUID v4 format.
+ * Checks if a string is a valid UUID format.
  * @param value - The string to check
  * @returns true if valid UUID, false otherwise
  */

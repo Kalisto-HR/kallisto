@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Building2, ChevronDown, Globe, Check, Search } from 'lucide-react';
 import type { ManagementContext } from '../../types/managementLiteral';
 import { Button } from '../ui/button';
@@ -8,24 +8,14 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { fetchAdminUniversities } from '../../services/admin/universitiesService';
+import { isValidUUID } from '../../utils/validation';
 
 interface UniversityContextSwitcherProps {
   currentContext: ManagementContext;
   userRole: 'university-manager' | 'superuser';
   onContextChange: (context: ManagementContext) => void;
 }
-
-// Mock university data
-const MOCK_UNIVERSITIES = [
-  { id: 'stanford', name: 'Stanford University' },
-  { id: 'mit', name: 'Massachusetts Institute of Technology' },
-  { id: 'harvard', name: 'Harvard University' },
-  { id: 'oxford', name: 'University of Oxford' },
-  { id: 'cambridge', name: 'University of Cambridge' },
-  { id: 'yale', name: 'Yale University' },
-  { id: 'princeton', name: 'Princeton University' },
-  { id: 'columbia', name: 'Columbia University' },
-];
 
 export function UniversityContextSwitcher({
   currentContext,
@@ -34,12 +24,43 @@ export function UniversityContextSwitcher({
 }: UniversityContextSwitcherProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [universities, setUniversities] = useState<Array<{ id: string; name: string }>>([]);
 
   const isLocked = userRole === 'university-manager';
   const isGlobalMode = currentContext.type === 'global';
 
-  const filteredUniversities = MOCK_UNIVERSITIES.filter(uni =>
-    uni.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    if (isLocked) {
+      return;
+    }
+
+    let mounted = true;
+    const load = async () => {
+      try {
+        const page = await fetchAdminUniversities(1, 100);
+        if (!mounted) return;
+        setUniversities(
+          page.items
+            .filter((item) => isValidUUID(item.id))
+            .map((item) => ({ id: item.id, name: item.name })),
+        );
+      } catch {
+        if (mounted) {
+          setUniversities([]);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isLocked]);
+
+  const filteredUniversities = useMemo(
+    () => universities.filter((uni) => uni.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [searchQuery, universities],
   );
 
   const handleSelectGlobal = () => {

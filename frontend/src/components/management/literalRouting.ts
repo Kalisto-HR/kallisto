@@ -1,5 +1,20 @@
 import { routes } from "../../routes/routeConfig";
 import type { ManagementContext, ManagementPageView } from "../../types/managementLiteral";
+import { isValidUUID } from "../../utils/validation";
+
+export function resolveUniversityId(primaryId?: string | null, fallbackId?: string | null): string | null {
+  const primary = primaryId?.trim() ?? "";
+  if (primary && isValidUUID(primary)) {
+    return primary;
+  }
+
+  const fallback = fallbackId?.trim() ?? "";
+  if (fallback && isValidUUID(fallback)) {
+    return fallback;
+  }
+
+  return null;
+}
 
 export function routePathToManagementPage(pathname: string): ManagementPageView {
   if (pathname.startsWith("/management/global/overview")) return "management-global-overview";
@@ -24,22 +39,29 @@ export function routePathToManagementPage(pathname: string): ManagementPageView 
 export function sourcePageToRoutePath(
   page: string,
   context: ManagementContext,
-  fallbackUniversityId: string,
+  fallbackUniversityId?: string | null,
 ): string | null {
-  const universityId =
-    context.type === "university" ? context.universityId : fallbackUniversityId;
+  const universityId = resolveUniversityId(
+    context.type === "university" ? context.universityId : null,
+    fallbackUniversityId,
+  );
 
-  const universityPageMap: Record<string, string> = {
-    "management-dashboard": routes.management.university.dashboard(universityId),
-    "university-dashboard": routes.management.university.dashboard(universityId),
-    "management-university-profile": routes.management.university.profile(universityId),
-    "university-profile": routes.management.university.profile(universityId),
-    "management-application-structure": routes.management.university.applicationStructure(universityId),
-    "management-applications": routes.management.university.applications(universityId),
-    "university-applicants": routes.management.university.applications(universityId),
-    "management-users": routes.management.university.users(universityId),
-    "management-billing": routes.management.university.billing(universityId),
-  };
+  if (universityId) {
+    const universityPageMap: Record<string, string> = {
+      "management-dashboard": routes.management.university.dashboard(universityId),
+      "university-dashboard": routes.management.university.dashboard(universityId),
+      "management-university-profile": routes.management.university.profile(universityId),
+      "university-profile": routes.management.university.profile(universityId),
+      "management-application-structure": routes.management.university.applicationStructure(universityId),
+      "management-applications": routes.management.university.applications(universityId),
+      "university-applicants": routes.management.university.applications(universityId),
+      "management-users": routes.management.university.users(universityId),
+      "management-billing": routes.management.university.billing(universityId),
+    };
+    if (universityPageMap[page]) {
+      return universityPageMap[page];
+    }
+  }
 
   const globalPageMap: Record<string, string> = {
     "management-global-overview": routes.management.global.overview,
@@ -52,12 +74,12 @@ export function sourcePageToRoutePath(
     "management-global-settings": routes.management.global.settings,
   };
 
-  return universityPageMap[page] ?? globalPageMap[page] ?? null;
+  return globalPageMap[page] ?? null;
 }
 
 export function getUniversityName(universityId?: string, fallback = "University Context"): string {
   if (!universityId) return fallback;
-  if (universityId.length > 18) return fallback;
+  if (isValidUUID(universityId)) return fallback;
   return universityId
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (m) => m.toUpperCase());

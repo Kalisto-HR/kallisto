@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { ErrorState } from "../../components/common/PageState";
 import { Button } from "../../components/ui/button";
@@ -14,8 +14,27 @@ export function SignInStudentPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const { refreshSession } = useSession();
+  const { user, initialized, isAuthenticated } = useSession();
+
+  useEffect(() => {
+    if (!initialized || !isAuthenticated || !user) {
+      return;
+    }
+
+    if (user.role === "student") {
+      window.location.replace(routes.student.dashboard);
+      return;
+    }
+
+    if (user.role === "partner" && user.universityLinked) {
+      window.location.replace(routes.management.university.dashboard(user.universityLinked));
+      return;
+    }
+
+    if (user.role === "staff" || user.role === "superuser-ui") {
+      window.location.replace(routes.management.global.overview);
+    }
+  }, [initialized, isAuthenticated, user]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -28,8 +47,7 @@ export function SignInStudentPage() {
         return;
       }
 
-      await refreshSession();
-      navigate(routes.student.dashboard, { replace: true });
+      window.location.replace(routes.student.dashboard);
     } finally {
       setLoading(false);
     }

@@ -1,24 +1,27 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useSession } from "./useSession";
 import type { ManagementContext, ManagementUserRole } from "../types/managementLiteral";
-import { getUniversityName, sourcePageToRoutePath } from "../components/management/literalRouting";
+import { getUniversityName, resolveUniversityId, sourcePageToRoutePath } from "../components/management/literalRouting";
 
 export function useManagementLiteralBridge() {
   const navigate = useNavigate();
   const { universityId } = useParams();
   const { user } = useSession();
+  const routeUniversityId = resolveUniversityId(universityId ?? null);
+  const linkedUniversityId = resolveUniversityId(user?.universityLinked ?? null);
+  const effectiveUniversityId = routeUniversityId ?? linkedUniversityId;
 
   const context: ManagementContext =
-    universityId
+    effectiveUniversityId
       ? {
         type: "university",
-        universityId,
-        universityName: getUniversityName(universityId),
+        universityId: effectiveUniversityId,
+        universityName: getUniversityName(effectiveUniversityId),
       }
       : { type: "global" };
 
   const userRole: ManagementUserRole = user?.role === "partner" ? "university-manager" : "superuser";
-  const fallbackUniversityId = universityId ?? user?.universityLinked ?? "stanford";
+  const fallbackUniversityId = effectiveUniversityId;
 
   const onNavigate = (page: string) => {
     const target = sourcePageToRoutePath(page, context, fallbackUniversityId);

@@ -34,13 +34,15 @@ cd kallisto
 psql -U postgres -c "CREATE DATABASE client_db;"
 psql -U postgres -c "CREATE DATABASE admin_db;"
 
-# Run migrations
-psql -U postgres -d client_db -f scripts/migrations/client_db.sql
-psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
+# Run migrations (strict ordered apply)
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 
-# Seed data (optional)
-psql -U postgres -d client_db -f scripts/seeds/universities_seed.sql
-psql -U postgres -d admin_db -f scripts/seeds/admin_seed.sql
+# Seed data (optional; dev profile)
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+
+# Optional (avoid repeated password prompts and explicit psql lookup)
+$env:PGPASSWORD="your_postgres_password"
+$env:PSQL_PATH="C:\Program Files\PostgreSQL\17\bin\psql.exe"
 
 # Create .env file
 cat > .env << EOF
@@ -75,6 +77,8 @@ After seeding:
 | Service | Email | Password |
 |---------|-------|----------|
 | Admin | admin@kallisto.uz | admin123 |
+| Manager | manager@kallisto.uz | admin123 |
+| KBTU Manager | kbtu.manager@kallisto.uz | admin123 |
 
 ## Project Structure
 
@@ -118,8 +122,10 @@ kallisto/
 ## Documentation
 
 - [Setup Guide](docs/SETUP.md) - Development environment setup
+- [Migrations](docs/MIGRATIONS.md) - Canonical migration and seed order/scripts
 - [Architecture](docs/ARCHITECTURE.md) - System design and patterns
 - [API Reference](docs/API.md) - Complete API documentation
+- [Project Updates](docs/PROJECT_UPDATES.md) - Latest delivered changes and migration notes
 - [Testing Checklist](docs/TESTING_CHECKLIST.md) - Manual testing guide
 
 ## Architecture
@@ -192,6 +198,11 @@ kallisto/
 | POST | /v1.0/universities | Create university |
 | PUT | /v1.0/universities/{id} | Update university |
 | DELETE | /v1.0/universities/{id} | Delete university |
+| GET | /v1.0/global/overview | Superuser dashboard payload |
+| GET | /v1.0/global/drafts | Superuser drafts queue |
+| POST | /v1.0/global/drafts/{id}/approve | Approve+execute draft |
+| GET | /v1.0/global/audit-logs | Superuser audit log feed |
+| GET/PUT | /v1.0/global/settings | Read/update global settings |
 
 ## Development
 
@@ -208,8 +219,7 @@ go test ./...
 cd frontend && npm run lint
 
 # Database reset
-psql -U postgres -d client_db -f scripts/migrations/client_db.sql
-psql -U postgres -d admin_db -f scripts/migrations/admin_db.sql
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 
 ---

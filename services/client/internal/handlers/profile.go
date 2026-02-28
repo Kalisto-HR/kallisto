@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"kallisto/infra/middlewares"
@@ -13,6 +14,7 @@ import (
 	"kallisto/services/client/internal/models"
 	"kallisto/services/client/internal/usecases/usecases_impl"
 
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -332,4 +334,218 @@ func GetMeHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := utils.NewApiResponse(true, me, "ok")
 	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
+func GetProfileTestScoresHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	claims, err := middlewares.GetClaimsFromContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
+		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
+		return
+	}
+
+	items, err := usecases_impl.GetProfileTestScores(r.Context(), claims.UID)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, err.Error())
+		utils.WriteApiResponse(w, resp, status)
+		return
+	}
+
+	resp := utils.NewApiResponse(true, items, "ok")
+	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
+func CreateProfileTestScoreHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	claims, err := middlewares.GetClaimsFromContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
+		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
+		return
+	}
+
+	req, validationErrors := decodeAndValidateProfileTestScoreRequest(r)
+	if len(validationErrors) > 0 {
+		validation.WriteValidationErrors(w, validationErrors)
+		return
+	}
+
+	item, err := usecases_impl.CreateProfileTestScore(r.Context(), claims.UID, req)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, err.Error())
+		utils.WriteApiResponse(w, resp, status)
+		return
+	}
+
+	resp := utils.NewApiResponse(true, item, "profile test score created")
+	utils.WriteApiResponse(w, resp, http.StatusCreated)
+}
+
+func UpdateProfileTestScoreHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	claims, err := middlewares.GetClaimsFromContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
+		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
+		return
+	}
+
+	scoreId := mux.Vars(r)["id"]
+	if uuidErr := validation.ValidateUUID(scoreId, "id"); uuidErr != nil {
+		validation.WriteValidationErrors(w, []*validation.ValidationError{uuidErr})
+		return
+	}
+
+	req, validationErrors := decodeAndValidateProfileTestScoreRequest(r)
+	if len(validationErrors) > 0 {
+		validation.WriteValidationErrors(w, validationErrors)
+		return
+	}
+
+	item, err := usecases_impl.UpdateProfileTestScore(r.Context(), claims.UID, scoreId, req)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, err.Error())
+		utils.WriteApiResponse(w, resp, status)
+		return
+	}
+
+	resp := utils.NewApiResponse(true, item, "profile test score updated")
+	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
+func DeleteProfileTestScoreHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	claims, err := middlewares.GetClaimsFromContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
+		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
+		return
+	}
+
+	scoreId := mux.Vars(r)["id"]
+	if uuidErr := validation.ValidateUUID(scoreId, "id"); uuidErr != nil {
+		validation.WriteValidationErrors(w, []*validation.ValidationError{uuidErr})
+		return
+	}
+
+	if err := usecases_impl.DeleteProfileTestScore(r.Context(), claims.UID, scoreId); err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, err.Error())
+		utils.WriteApiResponse(w, resp, status)
+		return
+	}
+
+	resp := utils.NewApiResponse[any](true, nil, "profile test score deleted")
+	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
+func decodeAndValidateProfileTestScoreRequest(r *http.Request) (*models.ProfileTestScoreUpsertRequest, []*validation.ValidationError) {
+	var req models.ProfileTestScoreUpsertRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, []*validation.ValidationError{{
+			Field:   "body",
+			Message: "malformed json request body",
+		}}
+	}
+	defer r.Body.Close()
+
+	testType := strings.ToUpper(strings.TrimSpace(string(req.TestType)))
+	req.TestType = models.TestScoreType(testType)
+	req.OtherTestName = trimOptionalString(req.OtherTestName)
+	req.TakenOn = trimOptionalString(req.TakenOn)
+
+	validationErrors := validation.Validate(
+		validation.ValidateRequired(testType, "test_type"),
+		validation.ValidateInList(testType, "test_type", []string{
+			string(models.TestScoreTypeIELTS),
+			string(models.TestScoreTypeSAT),
+			string(models.TestScoreTypeTOEFL),
+			string(models.TestScoreTypeACT),
+			string(models.TestScoreTypeOther),
+		}),
+	)
+
+	if req.Score < 0 {
+		validationErrors = append(validationErrors, &validation.ValidationError{
+			Field:   "score",
+			Message: "must be greater than or equal to 0",
+		})
+	}
+	if req.OutOf <= 0 {
+		validationErrors = append(validationErrors, &validation.ValidationError{
+			Field:   "out_of",
+			Message: "must be greater than 0",
+		})
+	}
+	if req.Score > req.OutOf {
+		validationErrors = append(validationErrors, &validation.ValidationError{
+			Field:   "score",
+			Message: "must be less than or equal to out_of",
+		})
+	}
+	if req.TestType == models.TestScoreTypeOther && req.OtherTestName == nil {
+		validationErrors = append(validationErrors, &validation.ValidationError{
+			Field:   "other_test_name",
+			Message: "is required when test_type is OTHER",
+		})
+	}
+	if req.TestType != models.TestScoreTypeOther && req.OtherTestName != nil {
+		validationErrors = append(validationErrors, &validation.ValidationError{
+			Field:   "other_test_name",
+			Message: "must be empty unless test_type is OTHER",
+		})
+	}
+	if req.TakenOn != nil {
+		if _, err := time.Parse("2006-01-02", *req.TakenOn); err != nil {
+			validationErrors = append(validationErrors, &validation.ValidationError{
+				Field:   "taken_on",
+				Message: "must be in YYYY-MM-DD format",
+			})
+		}
+	}
+
+	return &req, validationErrors
+}
+
+func trimOptionalString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
 }

@@ -5,6 +5,12 @@ import type { AdminSubmittedApplication, Pagination, ReviewStatus } from "../../
 export interface AdminApplicationsQuery {
   universityId?: string;
   status?: ReviewStatus;
+  search?: string;
+  program?: string;
+  citizenship?: string;
+  intake?: string;
+  sortBy?: "received_at" | "submitted_at" | "status" | "gpa";
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
@@ -13,6 +19,12 @@ export async function fetchAdminApplications(query: AdminApplicationsQuery = {})
   const params = new URLSearchParams();
   if (query.universityId) params.set("university_id", query.universityId);
   if (query.status) params.set("status", query.status);
+  if (query.search) params.set("search", query.search);
+  if (query.program) params.set("program", query.program);
+  if (query.citizenship) params.set("citizenship", query.citizenship);
+  if (query.intake) params.set("intake", query.intake);
+  if (query.sortBy) params.set("sort_by", query.sortBy);
+  if (query.sortOrder) params.set("sort_order", query.sortOrder);
   params.set("page", String(query.page ?? 1));
   params.set("limit", String(query.limit ?? 20));
 

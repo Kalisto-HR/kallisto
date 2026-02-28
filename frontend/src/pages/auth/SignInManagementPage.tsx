@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { ErrorState } from "../../components/common/PageState";
 import { Button } from "../../components/ui/button";
@@ -8,6 +8,7 @@ import { Label } from "../../components/ui/label";
 import { useSession } from "../../hooks/useSession";
 import { routes } from "../../routes/routeConfig";
 import { getManagementSessionUser, signInManagement } from "../../services/admin/authService";
+import { isValidUUID } from "../../utils/validation";
 
 export function SignInManagementPage() {
   const [searchParams] = useSearchParams();
@@ -15,10 +16,29 @@ export function SignInManagementPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const { refreshSession } = useSession();
+  const { user, initialized, isAuthenticated } = useSession();
 
   const superuserIntent = useMemo(() => searchParams.get("intent") === "superuser", [searchParams]);
+
+  useEffect(() => {
+    if (!initialized || !isAuthenticated || !user) {
+      return;
+    }
+
+    if (user.role === "partner" && user.universityLinked && isValidUUID(user.universityLinked)) {
+      window.location.replace(routes.management.university.dashboard(user.universityLinked));
+      return;
+    }
+
+    if (user.role === "staff" || user.role === "superuser-ui") {
+      window.location.replace(routes.management.global.overview);
+      return;
+    }
+
+    if (user.role === "student") {
+      window.location.replace(routes.student.dashboard);
+    }
+  }, [initialized, isAuthenticated, user]);
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -37,20 +57,23 @@ export function SignInManagementPage() {
         return;
       }
 
-      await refreshSession();
-
       if (superuserIntent && (managementUser.role === "staff" || managementUser.role === "superuser-ui")) {
-        navigate(routes.management.global.overview, { replace: true });
+        window.location.replace(routes.management.global.overview);
         return;
       }
 
-      if (managementUser.universityLinked) {
-        navigate(routes.management.university.dashboard(managementUser.universityLinked), { replace: true });
+      if (managementUser.universityLinked && isValidUUID(managementUser.universityLinked)) {
+        window.location.replace(routes.management.university.dashboard(managementUser.universityLinked));
+        return;
+      }
+
+      if (managementUser.role === "partner") {
+        setError("This manager account has an invalid linked university id");
         return;
       }
 
       if (managementUser.role === "staff" || managementUser.role === "superuser-ui") {
-        navigate(routes.management.global.overview, { replace: true });
+        window.location.replace(routes.management.global.overview);
         return;
       }
 

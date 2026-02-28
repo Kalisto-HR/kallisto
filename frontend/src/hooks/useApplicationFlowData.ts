@@ -12,15 +12,29 @@ export function useApplicationFlowData(universityId: string) {
 
   const canReview = useMemo(() => Object.keys(formData).length > 0, [formData]);
 
-  const saveDraft = async () => {
+  const saveDraft = async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
-      await createStudentApplication({ universityId, cycle, data: formData });
+      try {
+        await createStudentApplication({ universityId, cycle, data: formData });
+      } catch (err) {
+        const message = err instanceof Error ? err.message.toLowerCase() : "";
+        const isExistingDraft =
+          message.includes("already exists") ||
+          message.includes("409") ||
+          message.includes("conflict");
+        if (!isExistingDraft) {
+          throw err;
+        }
+      }
+
       await updateStudentApplication(universityId, cycle, formData);
       setStep("review");
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save draft");
+      return false;
     } finally {
       setLoading(false);
     }

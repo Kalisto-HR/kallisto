@@ -18,3 +18,219 @@ SET
     first_name = EXCLUDED.first_name,
     last_name = EXCLUDED.last_name,
     role = EXCLUDED.role;
+
+-- Insert university manager user (partner role) linked to National University of Uzbekistan.
+-- Fallback to first available university only if the expected seed university is missing.
+WITH selected_university AS (
+    SELECT COALESCE(
+        (SELECT id FROM universities WHERE id = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'),
+        (SELECT id FROM universities ORDER BY created_at ASC LIMIT 1)
+    ) AS id
+), upsert_manager AS (
+    INSERT INTO users (email, password, first_name, last_name, role, university_linked, created_at)
+    SELECT
+        'manager@kallisto.uz',
+        '$2a$10$izwy57AAb.X.R4K09No64.QqDJt2LJx6Qe/InDHzriICaDjs8urtq',
+        'University',
+        'Manager',
+        'partner',
+        su.id,
+        NOW()
+    FROM selected_university su
+    WHERE su.id IS NOT NULL
+    ON CONFLICT (email) DO UPDATE
+    SET
+        password = EXCLUDED.password,
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        role = 'partner',
+        university_linked = EXCLUDED.university_linked
+    RETURNING id, university_linked
+)
+INSERT INTO university_staff_profiles (
+    user_id,
+    university_id,
+    staff_role,
+    status,
+    invited_at,
+    created_at,
+    updated_at
+)
+SELECT
+    um.id,
+    um.university_linked,
+    'University Manager',
+    'active',
+    NOW(),
+    NOW(),
+    NOW()
+FROM upsert_manager um
+WHERE um.university_linked IS NOT NULL
+ON CONFLICT (user_id) DO UPDATE
+SET
+    university_id = EXCLUDED.university_id,
+    staff_role = EXCLUDED.staff_role,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- Insert dedicated manager account for Kazakh-British Technical University (KBTU).
+-- Email: kbtu.manager@kallisto.uz
+-- Password: admin123 (bcrypt hashed)
+WITH kbtu_university AS (
+    SELECT COALESCE(
+        (SELECT id FROM universities WHERE id = 'e1f2a3b4-c5d6-7890-4567-901234567890'),
+        (SELECT id FROM universities WHERE name ILIKE 'Kazakh-British Technical University' LIMIT 1)
+    ) AS id
+), upsert_kbtu_manager AS (
+    INSERT INTO users (email, password, first_name, last_name, role, university_linked, created_at)
+    SELECT
+        'kbtu.manager@kallisto.uz',
+        '$2a$10$izwy57AAb.X.R4K09No64.QqDJt2LJx6Qe/InDHzriICaDjs8urtq',
+        'KBTU',
+        'Manager',
+        'partner',
+        ku.id,
+        NOW()
+    FROM kbtu_university ku
+    WHERE ku.id IS NOT NULL
+    ON CONFLICT (email) DO UPDATE
+    SET
+        password = EXCLUDED.password,
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        role = 'partner',
+        university_linked = EXCLUDED.university_linked
+    RETURNING id, university_linked
+)
+INSERT INTO university_staff_profiles (
+    user_id,
+    university_id,
+    staff_role,
+    status,
+    invited_at,
+    created_at,
+    updated_at
+)
+SELECT
+    ukm.id,
+    ukm.university_linked,
+    'University Manager',
+    'active',
+    NOW(),
+    NOW(),
+    NOW()
+FROM upsert_kbtu_manager ukm
+WHERE ukm.university_linked IS NOT NULL
+ON CONFLICT (user_id) DO UPDATE
+SET
+    university_id = EXCLUDED.university_id,
+    staff_role = EXCLUDED.staff_role,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
+-- Global settings seed
+WITH staff_user AS (
+    SELECT id
+    FROM users
+    WHERE email = 'admin@kallisto.uz'
+    LIMIT 1
+)
+INSERT INTO global_settings (setting_key, setting_value, updated_by)
+SELECT
+    k.setting_key,
+    k.setting_value::jsonb,
+    su.id
+FROM staff_user su
+CROSS JOIN (
+    VALUES
+        ('maintenance_mode', '{"enabled": false}'),
+        ('new_user_registration', '{"enabled": true}'),
+        ('application_submissions', '{"enabled": true}'),
+        ('session_timeout_minutes', '{"value": 60}'),
+        ('require_2fa_superuser', '{"enabled": true}'),
+        ('notification_email', '{"value": "superadmin@damen.com"}')
+) AS k(setting_key, setting_value)
+ON CONFLICT (setting_key) DO UPDATE
+SET
+    setting_value = EXCLUDED.setting_value,
+    updated_by = EXCLUDED.updated_by,
+    updated_at = NOW();
+
+-- Seed moderation user profiles used by superuser search
+INSERT INTO user_moderation_states (user_id, display_name, email, phone, status, ban_reason)
+VALUES
+    ('USER-12345', 'Zhang Wei', 'zhangwei@example.com', '+86 138-0000-1234', 'active', NULL),
+    ('USER-45678', 'Wang Xiaoming', 'wxm@example.com', '+86 139-1111-5678', 'banned', 'Policy violation - fraudulent applications')
+ON CONFLICT (user_id) DO UPDATE
+SET
+    display_name = EXCLUDED.display_name,
+    email = EXCLUDED.email,
+    phone = EXCLUDED.phone,
+    status = EXCLUDED.status,
+    ban_reason = EXCLUDED.ban_reason,
+    updated_at = NOW();
+
+-- Seed global drafts
+WITH staff_user AS (
+    SELECT id, email
+    FROM users
+    WHERE email = 'admin@kallisto.uz'
+    LIMIT 1
+)
+INSERT INTO drafts (
+    author_id,
+    draft_type,
+    title,
+    content,
+    status,
+    scope,
+    requested_by_email,
+    target_entity,
+    priority
+)
+SELECT
+    su.id,
+    x.draft_type,
+    x.title,
+    x.content::jsonb,
+    x.status,
+    'global',
+    su.email,
+    x.target_entity,
+    x.priority
+FROM staff_user su
+CROSS JOIN (
+    VALUES
+        (
+            'ban-user',
+            'Ban User USER-45678',
+            '{"description":"Ban request for policy violation","user_id":"USER-45678","reason":"Policy violation - fraudulent applications","duration":"permanent","changes":[{"field":"Account Status","before":"active","after":"banned"}],"comments":2}',
+            'pending_review',
+            'USER-45678',
+            'high'
+        ),
+        (
+            'university-profile-update',
+            'Update Profile for Zhejiang University',
+            '{"description":"Requested profile updates to acceptance rate and deadlines","target_entity":"Zhejiang University","changes":[{"field":"Acceptance Rate","before":"9.5%","after":"9.3%"}],"comments":4}',
+            'executed',
+            'Zhejiang University',
+            'medium'
+        )
+) AS x(draft_type, title, content, status, target_entity, priority)
+ON CONFLICT DO NOTHING;
+
+-- Seed service logs
+INSERT INTO service_logs (level, microservice, handler, message, user_id, request_id, metadata)
+VALUES
+    ('info', 'admin-service', '/v1.0/global/overview', 'Global overview loaded', 'staff-1', 'seed-req-001', '{"duration_ms": 42}'),
+    ('warn', 'admin-service', '/v1.0/global/drafts', 'Draft query returned stale items', 'staff-1', 'seed-req-002', '{"count": 2}'),
+    ('error', 'notification-service', '/internal/send-email', 'SMTP timeout while sending moderation notice', 'USER-45678', 'seed-req-003', '{"error":"ETIMEDOUT"}')
+ON CONFLICT DO NOTHING;
+
+-- Seed audit logs
+INSERT INTO audit_logs (actor_name, actor_id, actor_type, action_type, action_description, target_entity, target_id, outcome, metadata)
+VALUES
+    ('System Admin', 'staff-1', 'superuser', 'draft-approved', 'Approved and executed draft request', 'Draft DR-2024-0002', NULL, 'success', '{"source":"seed"}'),
+    ('System Admin', 'staff-1', 'superuser', 'user-banned', 'User banned for policy violation', 'USER-45678', 'USER-45678', 'success', '{"reason":"fraudulent applications"}')
+ON CONFLICT DO NOTHING;

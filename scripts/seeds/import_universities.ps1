@@ -4,20 +4,15 @@ param(
     [string]$DbUser = "postgres",
     [string]$DbHost = "localhost",
     [int]$DbPort = 5432,
+    [string]$PsqlPath = "",
     [string]$DataFile = "",
     [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-
-function Get-PsqlCommand {
-    $cmd = Get-Command psql -ErrorAction SilentlyContinue
-    if (-not $cmd) {
-        throw "psql is not available in PATH. Install PostgreSQL client tools or add psql to PATH."
-    }
-    return $cmd.Source
-}
+$sharedDbScriptRoot = Join-Path (Split-Path $PSScriptRoot -Parent) "db"
+. (Join-Path $sharedDbScriptRoot "common.ps1")
 
 function ConvertTo-SqlText {
     param([AllowNull()][object]$Value)
@@ -183,7 +178,9 @@ function Write-SeedSqlFromTemplate {
 
     $template = Get-Content -LiteralPath $TemplateFile -Raw
     $sql = $template.Replace("{{UPSERT_STATEMENTS}}", $UpsertStatements)
-    Set-Content -LiteralPath $OutFile -Value $sql -Encoding UTF8
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($OutFile, $sql, $utf8NoBom)
 }
 
 function Invoke-PsqlFile {
@@ -264,7 +261,7 @@ if ($DryRun) {
     exit 0
 }
 
-$psqlPath = Get-PsqlCommand
+$psqlPath = Resolve-PsqlCommand -PsqlPath $PsqlPath
 
 try {
     Invoke-PsqlFile -PsqlPath $psqlPath -DbName $AdminDb -SqlFile $adminSqlFile

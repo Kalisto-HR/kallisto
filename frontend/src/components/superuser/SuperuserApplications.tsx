@@ -31,12 +31,32 @@ interface Application {
   reviewedBy?: string;
 }
 
-export default function SuperuserApplications() {
+interface SuperuserApplicationsProps {
+  searchApplicationById?: (id: string) => Promise<Application | null>;
+  summary?: {
+    totalApplications?: string;
+    underReview?: string;
+    acceptedToday?: string;
+    avgReviewTime?: string;
+  };
+}
+
+export default function SuperuserApplications({ searchApplicationById, summary }: SuperuserApplicationsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
 
   // Mock application for search demonstration
-  const searchApplication = (id: string) => {
+  const searchApplication = async (id: string) => {
+    if (searchApplicationById) {
+      const found = await searchApplicationById(id);
+      if (found) {
+        setSelectedApplication(found);
+        return;
+      }
+      alert('Application not found.');
+      return;
+    }
+
     // Simulate search
     if (id === 'APP-2024-12345') {
       setSelectedApplication({
@@ -116,7 +136,7 @@ export default function SuperuserApplications() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && searchQuery.trim()) {
-                    searchApplication(searchQuery.trim());
+                    void searchApplication(searchQuery.trim());
                   }
                 }}
                 placeholder="Enter application ID (e.g., APP-2024-12345)"
@@ -124,7 +144,7 @@ export default function SuperuserApplications() {
               />
             </div>
             <button
-              onClick={() => searchQuery.trim() && searchApplication(searchQuery.trim())}
+              onClick={() => searchQuery.trim() && void searchApplication(searchQuery.trim())}
               className="px-6 py-3.5 bg-[#171717] text-white rounded-lg text-sm font-medium hover:bg-[#404040] transition-colors"
             >
               Search
@@ -141,25 +161,25 @@ export default function SuperuserApplications() {
       <div className="grid grid-cols-4 gap-6 mb-6">
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Total Applications</div>
-          <div className="text-2xl font-semibold text-[#171717]">156,892</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.totalApplications ?? '156,892'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Across all universities</div>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Under Review</div>
-          <div className="text-2xl font-semibold text-[#171717]">3,421</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.underReview ?? '3,421'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Pending university review</div>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Accepted Today</div>
-          <div className="text-2xl font-semibold text-[#171717]">89</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.acceptedToday ?? '89'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">In the last 24 hours</div>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Avg. Review Time</div>
-          <div className="text-2xl font-semibold text-[#171717]">5.2 days</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.avgReviewTime ?? '5.2 days'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Platform average</div>
         </div>
       </div>

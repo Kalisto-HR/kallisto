@@ -30,7 +30,18 @@ interface UserProfile {
   totalSpent: number;
 }
 
-export default function SuperuserUsers() {
+interface SuperuserUsersProps {
+  searchUserById?: (id: string) => Promise<UserProfile | null>;
+  onCreateBanDraft?: (userId: string, reason: string, duration: string) => Promise<void> | void;
+  summary?: {
+    totalUsers?: string;
+    activeUsers?: string;
+    bannedUsers?: string;
+    newToday?: string;
+  };
+}
+
+export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summary }: SuperuserUsersProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [showBanModal, setShowBanModal] = useState(false);
@@ -38,7 +49,17 @@ export default function SuperuserUsers() {
   const [banDuration, setBanDuration] = useState('permanent');
 
   // Mock user search
-  const searchUser = (id: string) => {
+  const searchUser = async (id: string) => {
+    if (searchUserById) {
+      const found = await searchUserById(id);
+      if (found) {
+        setSelectedUser(found);
+        return;
+      }
+      alert('User not found.');
+      return;
+    }
+
     if (id === 'USER-12345' || id === '12345') {
       setSelectedUser({
         id: 'USER-12345',
@@ -95,14 +116,19 @@ export default function SuperuserUsers() {
     );
   };
 
-  const handleBanSubmit = () => {
+  const handleBanSubmit = async () => {
     if (!banReason.trim()) {
       alert('Please provide a reason for banning this user.');
       return;
     }
 
-    // In real app, this would create a draft via API
-    alert(`Draft Created!\n\nType: Ban User\nUser: ${selectedUser?.name} (${selectedUser?.id})\nReason: ${banReason}\nDuration: ${banDuration}\n\nThe draft is now pending approval in "Drafts & Approvals" page.`);
+    if (selectedUser && onCreateBanDraft) {
+      await onCreateBanDraft(selectedUser.id, banReason, banDuration);
+      alert(`Draft Created!\n\nType: Ban User\nUser: ${selectedUser.name} (${selectedUser.id})`);
+    } else {
+      // In real app, this would create a draft via API
+      alert(`Draft Created!\n\nType: Ban User\nUser: ${selectedUser?.name} (${selectedUser?.id})\nReason: ${banReason}\nDuration: ${banDuration}\n\nThe draft is now pending approval in "Drafts & Approvals" page.`);
+    }
     setShowBanModal(false);
     setBanReason('');
     setBanDuration('permanent');
@@ -140,7 +166,7 @@ export default function SuperuserUsers() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && searchQuery.trim()) {
-                    searchUser(searchQuery.trim());
+                    void searchUser(searchQuery.trim());
                   }
                 }}
                 placeholder="Enter user ID (e.g., USER-12345 or 12345)"
@@ -148,7 +174,7 @@ export default function SuperuserUsers() {
               />
             </div>
             <button
-              onClick={() => searchQuery.trim() && searchUser(searchQuery.trim())}
+              onClick={() => searchQuery.trim() && void searchUser(searchQuery.trim())}
               className="px-6 py-3.5 bg-[#171717] text-white rounded-lg text-sm font-medium hover:bg-[#404040] transition-colors"
             >
               Search
@@ -165,25 +191,25 @@ export default function SuperuserUsers() {
       <div className="grid grid-cols-4 gap-6 mb-6">
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Total Users</div>
-          <div className="text-2xl font-semibold text-[#171717]">45,892</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.totalUsers ?? '45,892'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Platform-wide</div>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Active Users</div>
-          <div className="text-2xl font-semibold text-[#171717]">43,201</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.activeUsers ?? '43,201'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">94.1% of total</div>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Banned Users</div>
-          <div className="text-2xl font-semibold text-[#171717]">127</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.bannedUsers ?? '127'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Policy violations</div>
         </div>
 
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">New Today</div>
-          <div className="text-2xl font-semibold text-[#171717]">89</div>
+          <div className="text-2xl font-semibold text-[#171717]">{summary?.newToday ?? '89'}</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Last 24 hours</div>
         </div>
       </div>

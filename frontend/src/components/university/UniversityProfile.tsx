@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -9,12 +9,32 @@ import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { Building2, Save, Plus, X, Mail, Globe, MapPin } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useParams } from 'react-router-dom';
+import { fetchAdminUniversity, updateAdminUniversity } from '../../services/admin/universitiesService';
 
 interface UniversityProfileProps {
   onNavigate?: (page: string) => void;
 }
 
 export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
+  const { universityId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [profileDraft, setProfileDraft] = useState({
+    universityName: 'University of Excellence',
+    description: 'A leading institution dedicated to academic excellence and innovation. We offer world-class programs across multiple disciplines with a focus on research and practical learning.',
+    location: 'Boston, MA, USA',
+    website: 'https://www.universityofexcellence.edu',
+    contactEmail: 'admissions@universityofexcellence.edu',
+    foundedYear: '1890',
+    studentCount: '15000',
+    facultyCount: '850',
+    acceptanceRate: '15.5',
+    ranking: '42',
+    accreditations: ['AACSB', 'ABET', 'Regional Accreditation'],
+  });
+
   const [programs, setPrograms] = useState([
     { id: '1', name: 'Computer Science', level: 'Undergraduate', duration: '4 years' },
     { id: '2', name: 'Business Administration', level: 'Undergraduate', duration: '4 years' },
@@ -32,6 +52,94 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
     toeflMin: '80',
     actMin: '24',
   });
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!universityId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const university = await fetchAdminUniversity(universityId);
+        if (!mounted) return;
+        const managementProfile = (university.managementProfile ?? {}) as Record<string, unknown>;
+        const loadedPrograms = Array.isArray(managementProfile.programs) ? managementProfile.programs : null;
+        const loadedIntakeTerms = Array.isArray(managementProfile.intakeTerms) ? managementProfile.intakeTerms : null;
+        const loadedTests = (managementProfile.testRequirements ?? {}) as Record<string, unknown>;
+        setProfileDraft({
+          universityName: university.name || 'University of Excellence',
+          description: university.description ?? profileDraft.description,
+          location: [university.city, university.country].filter(Boolean).join(', ') || profileDraft.location,
+          website: String(managementProfile.website ?? profileDraft.website),
+          contactEmail: String(managementProfile.contactEmail ?? profileDraft.contactEmail),
+          foundedYear: String(managementProfile.foundedYear ?? profileDraft.foundedYear),
+          studentCount: String(managementProfile.studentCount ?? profileDraft.studentCount),
+          facultyCount: String(managementProfile.facultyCount ?? profileDraft.facultyCount),
+          acceptanceRate: String(university.acceptanceRate ?? managementProfile.acceptanceRate ?? profileDraft.acceptanceRate),
+          ranking: String(university.ranking ?? profileDraft.ranking),
+          accreditations: Array.isArray(managementProfile.accreditations)
+            ? managementProfile.accreditations.filter((item): item is string => typeof item === 'string')
+            : profileDraft.accreditations,
+        });
+        if (loadedPrograms) {
+          setPrograms(loadedPrograms as any);
+        }
+        if (loadedIntakeTerms) {
+          setIntakeTerms(loadedIntakeTerms as any);
+        }
+        setTestRequirements({
+          satMin: String(loadedTests.satMin ?? testRequirements.satMin),
+          ieltsMin: String(university.ieltsMin ?? loadedTests.ieltsMin ?? testRequirements.ieltsMin),
+          toeflMin: String(university.toeflMin ?? loadedTests.toeflMin ?? testRequirements.toeflMin),
+          actMin: String(loadedTests.actMin ?? testRequirements.actMin),
+        });
+      } catch (err) {
+        if (!mounted) return;
+        setSaveError(err instanceof Error ? err.message : 'Failed to load profile');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [universityId]);
+
+  const handleSave = async () => {
+    if (!universityId) return;
+    setSaving(true);
+    setSaveError(null);
+    const [cityPart, countryPart] = profileDraft.location.split(',').map((value) => value.trim());
+    try {
+      await updateAdminUniversity(universityId, {
+        name: profileDraft.universityName,
+        description: profileDraft.description,
+        city: cityPart || null,
+        country: countryPart || null,
+        acceptanceRate: Number(profileDraft.acceptanceRate) || null,
+        ranking: Number(profileDraft.ranking) || null,
+        ieltsMin: Number(testRequirements.ieltsMin) || null,
+        toeflMin: Number(testRequirements.toeflMin) || null,
+        managementProfile: {
+          website: profileDraft.website,
+          contactEmail: profileDraft.contactEmail,
+          foundedYear: profileDraft.foundedYear,
+          studentCount: profileDraft.studentCount,
+          facultyCount: profileDraft.facultyCount,
+          programs,
+          intakeTerms,
+          testRequirements,
+          accreditations: profileDraft.accreditations,
+        },
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const addProgram = () => {
     setPrograms([...programs, { id: Date.now().toString(), name: '', level: 'Undergraduate', duration: '4 years' }]);
@@ -58,11 +166,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
             <h1 className="text-3xl font-semibold">University Profile</h1>
             <p className="text-muted-foreground mt-1">Manage your institution's information and programs</p>
           </div>
-          <Button>
+          <Button onClick={() => void handleSave()} disabled={saving || loading}>
             <Save className="mr-2 h-4 w-4" />
-            Save Changes
+            {saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
+        {saveError && <p className="text-sm text-red-600">{saveError}</p>}
 
         {/* Basic Information */}
         <Card>
@@ -81,7 +190,11 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="university-name">University Name</Label>
-                <Input id="university-name" defaultValue="University of Excellence" />
+                <Input
+                  id="university-name"
+                  value={profileDraft.universityName}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, universityName: e.target.value })}
+                />
               </div>
 
               <div className="space-y-2 sm:col-span-2">
@@ -89,7 +202,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Textarea
                   id="description"
                   rows={4}
-                  defaultValue="A leading institution dedicated to academic excellence and innovation. We offer world-class programs across multiple disciplines with a focus on research and practical learning."
+                  value={profileDraft.description}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, description: e.target.value })}
                   placeholder="Describe your university..."
                 />
                 <p className="text-xs text-muted-foreground">
@@ -101,7 +215,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Label htmlFor="location">Location</Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input id="location" defaultValue="Boston, MA, USA" className="pl-9" />
+                  <Input
+                    id="location"
+                    value={profileDraft.location}
+                    onChange={(e) => setProfileDraft({ ...profileDraft, location: e.target.value })}
+                    className="pl-9"
+                  />
                 </div>
               </div>
 
@@ -112,7 +231,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   <Input
                     id="website"
                     type="url"
-                    defaultValue="https://www.universityofexcellence.edu"
+                    value={profileDraft.website}
+                    onChange={(e) => setProfileDraft({ ...profileDraft, website: e.target.value })}
                     className="pl-9"
                   />
                 </div>
@@ -125,7 +245,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   <Input
                     id="contact-email"
                     type="email"
-                    defaultValue="admissions@universityofexcellence.edu"
+                    value={profileDraft.contactEmail}
+                    onChange={(e) => setProfileDraft({ ...profileDraft, contactEmail: e.target.value })}
                     className="pl-9"
                   />
                 </div>
@@ -133,7 +254,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="founded-year">Founded Year</Label>
-                <Input id="founded-year" type="number" defaultValue="1890" />
+                <Input
+                  id="founded-year"
+                  type="number"
+                  value={profileDraft.foundedYear}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, foundedYear: e.target.value })}
+                />
               </div>
             </div>
           </CardContent>
@@ -321,22 +447,43 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="student-count">Total Students</Label>
-                <Input id="student-count" type="number" defaultValue="15000" />
+                <Input
+                  id="student-count"
+                  type="number"
+                  value={profileDraft.studentCount}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, studentCount: e.target.value })}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="faculty-count">Faculty Members</Label>
-                <Input id="faculty-count" type="number" defaultValue="850" />
+                <Input
+                  id="faculty-count"
+                  type="number"
+                  value={profileDraft.facultyCount}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, facultyCount: e.target.value })}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="acceptance-rate">Acceptance Rate (%)</Label>
-                <Input id="acceptance-rate" type="number" step="0.1" defaultValue="15.5" />
+                <Input
+                  id="acceptance-rate"
+                  type="number"
+                  step="0.1"
+                  value={profileDraft.acceptanceRate}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, acceptanceRate: e.target.value })}
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="ranking">QS World Ranking</Label>
-                <Input id="ranking" type="number" defaultValue="42" />
+                <Input
+                  id="ranking"
+                  type="number"
+                  value={profileDraft.ranking}
+                  onChange={(e) => setProfileDraft({ ...profileDraft, ranking: e.target.value })}
+                />
               </div>
             </div>
 
@@ -345,9 +492,9 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
             <div className="space-y-2">
               <Label htmlFor="accreditations">Accreditations</Label>
               <div className="flex flex-wrap gap-2 mb-2">
-                <Badge variant="secondary">AACSB</Badge>
-                <Badge variant="secondary">ABET</Badge>
-                <Badge variant="secondary">Regional Accreditation</Badge>
+                {profileDraft.accreditations.map((item) => (
+                  <Badge key={item} variant="secondary">{item}</Badge>
+                ))}
               </div>
               <Input id="accreditations" placeholder="Add accreditation..." />
             </div>
@@ -359,9 +506,9 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
           <Button variant="outline" onClick={() => onNavigate?.('university-dashboard')}>
             Cancel
           </Button>
-          <Button>
+          <Button onClick={() => void handleSave()} disabled={saving || loading}>
             <Save className="mr-2 h-4 w-4" />
-            Save All Changes
+            {saving ? 'Saving...' : 'Save All Changes'}
           </Button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { clientApi } from "../api/httpClient";
-import { normalizeEnvelope, normalizeProfile } from "../mappers/responseMappers";
-import type { Profile } from "../../types/domain";
+import { normalizeEnvelope, normalizeProfile, normalizeStudentTestScore } from "../mappers/responseMappers";
+import type { Profile, StudentTestScore, StudentTestScoreType } from "../../types/domain";
 
 export async function fetchStudentProfile(): Promise<Profile> {
   const result = await clientApi.get<unknown>("/v1.0/profile");
@@ -74,6 +74,78 @@ export async function fetchStudentPhotoUrl(): Promise<string | null> {
 
   const blob = await response.blob();
   return URL.createObjectURL(blob);
+}
+
+export async function fetchStudentTestScores(): Promise<StudentTestScore[]> {
+  const result = await clientApi.get<unknown>("/v1.0/profile/test-scores");
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to load test scores");
+  }
+
+  const envelope = normalizeEnvelope<unknown>(result.data);
+  if (!envelope.success) {
+    throw new Error(envelope.message || "Failed to load test scores");
+  }
+
+  if (!Array.isArray(envelope.data)) {
+    return [];
+  }
+  return envelope.data.map(normalizeStudentTestScore);
+}
+
+interface UpsertTestScorePayload {
+  testType: StudentTestScoreType;
+  otherTestName?: string | null;
+  score: number;
+  outOf: number;
+  takenOn?: string | null;
+}
+
+export async function createStudentTestScore(payload: UpsertTestScorePayload): Promise<StudentTestScore> {
+  const result = await clientApi.post<unknown>("/v1.0/profile/test-scores", {
+    test_type: payload.testType,
+    other_test_name: payload.otherTestName ?? null,
+    score: payload.score,
+    out_of: payload.outOf,
+    taken_on: payload.takenOn ?? null,
+  });
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to create test score");
+  }
+
+  const envelope = normalizeEnvelope<unknown>(result.data);
+  if (!envelope.success) {
+    throw new Error(envelope.message || "Failed to create test score");
+  }
+
+  return normalizeStudentTestScore(envelope.data);
+}
+
+export async function updateStudentTestScore(id: string, payload: UpsertTestScorePayload): Promise<StudentTestScore> {
+  const result = await clientApi.put<unknown>(`/v1.0/profile/test-scores/${id}`, {
+    test_type: payload.testType,
+    other_test_name: payload.otherTestName ?? null,
+    score: payload.score,
+    out_of: payload.outOf,
+    taken_on: payload.takenOn ?? null,
+  });
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to update test score");
+  }
+
+  const envelope = normalizeEnvelope<unknown>(result.data);
+  if (!envelope.success) {
+    throw new Error(envelope.message || "Failed to update test score");
+  }
+
+  return normalizeStudentTestScore(envelope.data);
+}
+
+export async function deleteStudentTestScore(id: string): Promise<void> {
+  const result = await clientApi.delete<{ msg: string }>(`/v1.0/profile/test-scores/${id}`);
+  if (!result.ok) {
+    throw new Error(result.error ?? "Failed to delete test score");
+  }
 }
 
 async function extractApiError(response: Response): Promise<string | null> {

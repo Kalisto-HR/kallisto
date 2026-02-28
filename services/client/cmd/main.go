@@ -46,8 +46,13 @@ func main() {
 	applicationsRouter.HandleFunc("", handlers.CreateApplicationHandler).Methods("POST")
 	applicationsRouter.HandleFunc("/{universityId}/{cycle}", handlers.GetApplicationHandler).Methods("GET")
 	applicationsRouter.HandleFunc("/{universityId}/{cycle}", handlers.UpdateApplicationHandler).Methods("PUT")
+	applicationsRouter.HandleFunc("/{universityId}/{cycle}/import-test-scores", handlers.ImportApplicationTestScoresHandler).Methods("POST")
 	applicationsRouter.HandleFunc("/{universityId}/{cycle}/submit", handlers.SubmitApplicationHandler).Methods("POST")
 	applicationsRouter.HandleFunc("/{universityId}/{cycle}", handlers.DeleteApplicationHandler).Methods("DELETE")
+
+	applicationFilesRouter := router.PathPrefix("/v1.0/application-files").Subrouter()
+	applicationFilesRouter.HandleFunc("/upload", handlers.UploadApplicationFilesHandler).Methods("POST")
+	applicationFilesRouter.HandleFunc("/{fileId}/download", handlers.DownloadApplicationFileHandler).Methods("GET")
 
 	// me (lightweight auth check)
 	meRouter := router.PathPrefix("/v1.0/me").Subrouter()
@@ -60,6 +65,10 @@ func main() {
 	profileRouter.HandleFunc("/password", handlers.UpdatePasswordHandler).Methods("PUT")
 	profileRouter.HandleFunc("/photo", handlers.UpdateProfilePhotoHandler).Methods("PUT")
 	profileRouter.HandleFunc("/photo", handlers.GetProfilePhotoHandler).Methods("GET")
+	profileRouter.HandleFunc("/test-scores", handlers.GetProfileTestScoresHandler).Methods("GET")
+	profileRouter.HandleFunc("/test-scores", handlers.CreateProfileTestScoreHandler).Methods("POST")
+	profileRouter.HandleFunc("/test-scores/{id}", handlers.UpdateProfileTestScoreHandler).Methods("PUT")
+	profileRouter.HandleFunc("/test-scores/{id}", handlers.DeleteProfileTestScoreHandler).Methods("DELETE")
 	profileRouter.HandleFunc("", handlers.DeleteProfileHandler).Methods("DELETE")
 
 	// universities (public)
@@ -94,6 +103,7 @@ func main() {
 	compareRouter.Use(middlewares.RequireAuth(zap.L()))
 	meRouter.Use(middlewares.RequireAuth(zap.L()))
 	profileRouter.Use(middlewares.RequireAuth(zap.L()))
+	applicationFilesRouter.Use(middlewares.RequireAuth(zap.L()))
 
 	srv := &http.Server{
 		Handler: router,

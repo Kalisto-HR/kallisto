@@ -11,15 +11,54 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-export default function SuperuserOverview() {
-  const stats = [
+interface SuperuserOverviewProps {
+  data?: {
+    stats?: {
+      total_universities?: number;
+      management_accounts?: number;
+      total_applications?: number;
+      pending_drafts?: number;
+    };
+    recent_activity?: Array<{
+      id: string | number;
+      type: string;
+      description: string;
+      user: string;
+      timestamp: string;
+      status?: string;
+    }>;
+    pending_drafts?: Array<{
+      id: string;
+      type: string;
+      target: string;
+      requester: string;
+      created_at: string;
+      priority: string;
+    }>;
+    system_health?: Array<{
+      label: string;
+      value: string;
+      status: string;
+    }>;
+  };
+}
+
+export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
+  const stats = data?.stats
+    ? [
+        { label: 'Total Universities', value: String(data.stats.total_universities ?? 0), change: 'Live data', icon: Building2, color: 'blue' },
+        { label: 'Management Accounts', value: String(data.stats.management_accounts ?? 0), change: 'Live data', icon: Users, color: 'purple' },
+        { label: 'Total Applications', value: String(data.stats.total_applications ?? 0), change: 'Live data', icon: FileText, color: 'green' },
+        { label: 'Pending Drafts', value: String(data.stats.pending_drafts ?? 0), change: 'Requires attention', icon: Clock, color: 'orange' },
+      ]
+    : [
     { label: 'Total Universities', value: '847', change: '+12 this month', icon: Building2, color: 'blue' },
     { label: 'Management Accounts', value: '2,341', change: '+45 this month', icon: Users, color: 'purple' },
     { label: 'Total Applications', value: '156,892', change: '+3,421 today', icon: FileText, color: 'green' },
     { label: 'Pending Drafts', value: '12', change: 'Requires attention', icon: Clock, color: 'orange' },
   ];
 
-  const recentActivity = [
+  const recentActivity = data?.recent_activity ?? [
     {
       id: 1,
       type: 'University Created',
@@ -54,7 +93,7 @@ export default function SuperuserOverview() {
     },
   ];
 
-  const pendingDrafts = [
+  const pendingDrafts = data?.pending_drafts ?? [
     {
       id: 'DR-2024-001',
       type: 'Create Management Account',
@@ -81,7 +120,7 @@ export default function SuperuserOverview() {
     },
   ];
 
-  const systemHealth = [
+  const systemHealth = data?.system_health ?? [
     { label: 'API Response Time', value: '124ms', status: 'good' },
     { label: 'Database Connections', value: '847/1000', status: 'good' },
     { label: 'Error Rate', value: '0.02%', status: 'good' },
@@ -154,7 +193,7 @@ export default function SuperuserOverview() {
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-[#A3A3A3]">{draft.createdAt}</span>
+                  <span className="text-xs text-[#A3A3A3]">{draft.createdAt ?? draft.created_at}</span>
                 </div>
                 <div className="font-medium text-[#171717] mb-1">{draft.type}</div>
                 <div className="text-sm text-[#737373] mb-2">Target: {draft.target}</div>

@@ -22,7 +22,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../ui/sheet';
-import { applicants } from '../../data/sampleData';
+import { useParams } from 'react-router-dom';
+import { useManagementApplicantsData } from '../../hooks/useManagementApplicantsData';
 
 interface PortalApplicantsListProps {
   onNavigate?: (page: string) => void;
@@ -30,12 +31,248 @@ interface PortalApplicantsListProps {
 }
 
 export function PortalApplicantsList({ onNavigate, variant = 'default' }: PortalApplicantsListProps) {
+  const { universityId } = useParams();
+  const { items, loading } = useManagementApplicantsData(universityId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [filterProgram, setFilterProgram] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCitizenship, setFilterCitizenship] = useState('all');
   const [filterIntake, setFilterIntake] = useState('all');
+  const [selectedApplicant, setSelectedApplicant] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const formatBytes = (size) => {
+    if (typeof size !== 'number' || Number.isNaN(size) || size <= 0) {
+      return 'Unknown size';
+    }
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
+  const isPrimitive = (value) => (
+    value === null ||
+    value === undefined ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  );
+
+  const normalizeFileLike = (value, applicationId) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+
+    const file = value;
+    const id = typeof file.id === 'string'
+      ? file.id
+      : typeof file.file_id === 'string'
+        ? file.file_id
+        : typeof file.fileId === 'string'
+          ? file.fileId
+          : '';
+    const storage = typeof file.storage === 'string' ? file.storage : '';
+    const name = typeof file.name === 'string'
+      ? file.name
+      : typeof file.file_name === 'string'
+        ? file.file_name
+        : typeof file.fileName === 'string'
+          ? file.fileName
+          : 'Uploaded file';
+    const type = typeof file.type === 'string'
+      ? file.type
+      : typeof file.content_type === 'string'
+        ? file.content_type
+        : typeof file.contentType === 'string'
+          ? file.contentType
+          : 'application/octet-stream';
+    const size = typeof file.size === 'number'
+      ? file.size
+      : typeof file.file_size === 'number'
+        ? file.file_size
+        : typeof file.fileSize === 'number'
+          ? file.fileSize
+          : 0;
+    const urlCandidates = [
+      file.url,
+      file.download_url,
+      file.downloadUrl,
+      file.signed_url,
+      file.signedUrl,
+      file.data_url,
+      file.dataUrl,
+    ];
+    let previewUrl = urlCandidates.find((candidate) => typeof candidate === 'string' && candidate.trim() !== '') ?? null;
+    if (!previewUrl && storage === 'application_file' && id && applicationId) {
+      previewUrl = `/adminapi/v1.0/applications/${applicationId}/files/${id}/download`;
+    }
+
+    return {
+      id,
+      name,
+      type,
+      size,
+      previewUrl,
+      lastModified: typeof file.lastModified === 'number' ? file.lastModified : null,
+    };
+  };
+
+  const isFileLikeObject = (value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return false;
+    }
+    const file = value;
+    const hasName =
+      (typeof file.name === 'string' && file.name.trim() !== '') ||
+      (typeof file.file_name === 'string' && file.file_name.trim() !== '') ||
+      (typeof file.fileName === 'string' && file.fileName.trim() !== '');
+    const hasMimeType =
+      (typeof file.type === 'string' && file.type.includes('/')) ||
+      (typeof file.content_type === 'string' && file.content_type.includes('/')) ||
+      (typeof file.contentType === 'string' && file.contentType.includes('/'));
+    const hasSize =
+      typeof file.size === 'number' ||
+      typeof file.file_size === 'number' ||
+      typeof file.fileSize === 'number';
+    const hasUrl =
+      typeof file.url === 'string' ||
+      typeof file.download_url === 'string' ||
+      typeof file.downloadUrl === 'string' ||
+      typeof file.signed_url === 'string' ||
+      typeof file.signedUrl === 'string' ||
+      typeof file.data_url === 'string' ||
+      typeof file.dataUrl === 'string';
+    return hasName || hasMimeType || hasSize || hasUrl;
+  };
+
+  const renderFileCard = (file, key, applicationId) => {
+    const normalized = normalizeFileLike(file, applicationId);
+    if (!normalized) {
+      return null;
+    }
+    const previewUrl = normalized.previewUrl;
+    const fileType = normalized.type || 'Unknown type';
+    const fileName = normalized.name || 'Uploaded file';
+    const isImage = fileType.startsWith('image/') && !!previewUrl;
+
+    return (
+      <div key={key} className="rounded-lg border bg-card p-3 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-sm font-medium break-all">{fileName}</p>
+            <p className="text-xs text-muted-foreground">{fileType}</p>
+          </div>
+          <Badge variant="outline">{formatBytes(normalized.size)}</Badge>
+        </div>
+
+        {isImage ? (
+          <div className="rounded-md border overflow-hidden bg-muted/20">
+            <img src={previewUrl} alt={fileName} className="h-32 w-full object-cover" />
+          </div>
+        ) : null}
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!previewUrl}
+            onClick={() => {
+              if (!previewUrl) {
+                return;
+              }
+              window.open(previewUrl, '_blank', 'noopener,noreferrer');
+            }}
+          >
+            {previewUrl ? 'Open File' : 'No Preview URL'}
+          </Button>
+          {typeof normalized.lastModified === 'number' ? (
+            <span className="text-xs text-muted-foreground">
+              Updated {new Date(normalized.lastModified).toLocaleDateString('en-US')}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const renderValue = (value, depth = 0, applicationId) => {
+    if (depth > 3) {
+      return (
+        <pre className="whitespace-pre-wrap break-all text-xs bg-muted/40 rounded-md p-2">
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      );
+    }
+
+    if (value === null || value === undefined || value === '') {
+      return '—';
+    }
+
+    if (isPrimitive(value)) {
+      return String(value);
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return <span className="text-sm text-muted-foreground">No items</span>;
+      }
+
+      if (value.every((item) => isFileLikeObject(item))) {
+        return (
+          <div className="grid gap-2 md:grid-cols-2">
+            {value.map((file, index) => renderFileCard(file, `file-${index}`, applicationId))}
+          </div>
+        );
+      }
+
+      if (value.every((item) => isPrimitive(item))) {
+        return (
+          <div className="flex flex-wrap gap-2">
+            {value.map((item, index) => (
+              <Badge key={`value-${index}`} variant="secondary">
+                {String(item)}
+              </Badge>
+            ))}
+          </div>
+        );
+      }
+
+      return (
+          <div className="space-y-2">
+            {value.map((item, index) => (
+              <div key={`nested-${index}`} className="rounded-md border p-2">
+                {renderValue(item, depth + 1, applicationId)}
+              </div>
+            ))}
+          </div>
+      );
+    }
+
+    if (isFileLikeObject(value)) {
+      return renderFileCard(value, 'file-single', applicationId);
+    }
+
+    if (typeof value === 'object') {
+      const entries = Object.entries(value);
+      if (entries.length === 0) {
+        return <span className="text-sm text-muted-foreground">No fields</span>;
+      }
+      return (
+        <div className="space-y-2 rounded-md border p-3 bg-muted/10">
+          {entries.map(([nestedKey, nestedValue]) => (
+            <div key={nestedKey}>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{nestedKey}</p>
+              <div className="text-sm">{renderValue(nestedValue, depth + 1, applicationId)}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return String(value);
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
@@ -48,6 +285,35 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
       waitlisted: { label: 'Waitlisted', className: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400' },
     };
     return statusConfig[status] || statusConfig.new;
+  };
+
+  const applicants = items.map((item) => {
+    const applicantInfo = item.applicantInfo ?? {};
+    const applicationData = item.applicationData ?? {};
+    const normalizedName = String(
+      applicantInfo.name ??
+      `${applicantInfo.first_name ?? ''} ${applicantInfo.last_name ?? ''}`
+    ).trim();
+    return {
+      id: item.id,
+      name: normalizedName || 'Applicant',
+      gender: String(applicantInfo.gender ?? applicationData.gender ?? 'Unknown'),
+      citizenship: String(applicantInfo.citizenship ?? 'Unknown'),
+      program: String(applicationData.program ?? applicantInfo.program ?? 'General'),
+      gpa: Number(applicationData.gpa ?? applicantInfo.gpa ?? 0) || 0,
+      sat: Number(applicationData.sat ?? applicantInfo.sat ?? 0) || 0,
+      ielts: Number(applicationData.ielts ?? applicantInfo.ielts ?? 0) || 0,
+      status: item.status === 'pending' ? 'new' : item.status,
+      intake: String(item.applicationCycle ?? 'Unknown'),
+      submittedDate: item.submittedAt ?? item.receivedAt,
+      applicantInfo,
+      applicationData,
+    };
+  });
+
+  const openApplicantDetails = (applicant) => {
+    setSelectedApplicant(applicant);
+    setDetailsOpen(true);
   };
 
   // Filter and sort
@@ -268,7 +534,9 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
         {/* Applicants Table */}
         <Card>
           <CardContent className="p-0">
-            {filteredApplicants.length > 0 ? (
+            {loading ? (
+              <div className="p-12 text-center text-muted-foreground">Loading applicants...</div>
+            ) : filteredApplicants.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -282,6 +550,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                       <TableHead>IELTS</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Submitted</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -291,7 +560,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                         <TableRow
                           key={applicant.id}
                           className="cursor-pointer hover:bg-accent/50"
-                          onClick={() => onNavigate?.('university-applicant-detail')}
+                          onClick={() => openApplicantDetails(applicant)}
                         >
                           <TableCell className="font-medium">{applicant.name}</TableCell>
                           <TableCell className="text-muted-foreground">{applicant.gender}</TableCell>
@@ -315,6 +584,18 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                               day: 'numeric',
                               year: 'numeric'
                             })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openApplicantDetails(applicant);
+                              }}
+                            >
+                              View
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );
@@ -344,6 +625,97 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
           </CardContent>
         </Card>
       </div>
+
+      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Application Details</SheetTitle>
+            <SheetDescription>
+              Review applicant profile and submitted application payload.
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedApplicant ? (
+            <div className="mt-6 space-y-6">
+              <Card>
+                <CardContent className="pt-6 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold">{selectedApplicant.name}</h3>
+                      <p className="text-sm text-muted-foreground">{selectedApplicant.citizenship}</p>
+                    </div>
+                    <Badge variant="secondary" className={getStatusBadge(selectedApplicant.status).className}>
+                      {getStatusBadge(selectedApplicant.status).label}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Program</p>
+                      <p className="font-medium">{selectedApplicant.program}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Intake</p>
+                      <p className="font-medium">{selectedApplicant.intake}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Submitted</p>
+                      <p className="font-medium">
+                        {new Date(selectedApplicant.submittedDate).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Email</p>
+                      <p className="font-medium">{String(selectedApplicant.applicantInfo?.email ?? '—')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Applicant Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(selectedApplicant.applicantInfo ?? {}).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No applicant info provided.</p>
+                  ) : (
+                    Object.entries(selectedApplicant.applicantInfo ?? {}).map(([key, value]) => (
+                      <div key={key}>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{key}</p>
+                        <div className="text-sm">{renderValue(value, 0, selectedApplicant.id)}</div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Application Data</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(selectedApplicant.applicationData ?? {}).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No application data provided.</p>
+                  ) : (
+                    Object.entries(selectedApplicant.applicationData ?? {}).map(([key, value]) => (
+                      <div key={key}>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{key}</p>
+                        <div className="text-sm">{renderValue(value, 0, selectedApplicant.id)}</div>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

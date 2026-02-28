@@ -15,6 +15,7 @@ import (
 type CtxKey string
 
 const CtxPostgresKey CtxKey = "postgres"
+const CtxClientPostgresKey CtxKey = "client_postgres"
 const CtxClaimsKey CtxKey = "claims" // JWT claims injected by RequireAuth middleware
 const AccessTokenKey = "access_token"
 
@@ -40,6 +41,15 @@ func PassPgPoolConn(pool *pgxpool.Pool) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), CtxPostgresKey, pool)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func PassClientPgPoolConn(pool *pgxpool.Pool) mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), CtxClientPostgresKey, pool)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

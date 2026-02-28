@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { AccessDenied } from "../../components/management/AccessDenied";
 import { useSession } from "../../hooks/useSession";
 import { routes } from "../../routes/routeConfig";
+import { isValidUUID } from "../../utils/validation";
 
 export function ManagementAccessDeniedPage() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export function ManagementAccessDeniedPage() {
       void navigate(routes.student.dashboard);
       return;
     }
-    if (user.role === "partner" && user.universityLinked) {
+    if (user.role === "partner" && user.universityLinked && isValidUUID(user.universityLinked)) {
       void navigate(routes.management.university.dashboard(user.universityLinked));
       return;
     }

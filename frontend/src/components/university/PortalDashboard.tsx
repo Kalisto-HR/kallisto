@@ -5,7 +5,8 @@ import { Button } from '../ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { applicants } from '../../data/sampleData';
+import { useParams } from 'react-router-dom';
+import { useManagementDashboardData } from '../../hooks/useManagementDashboardData';
 
 interface PortalDashboardProps {
   onNavigate?: (page: string) => void;
@@ -13,58 +14,45 @@ interface PortalDashboardProps {
 }
 
 export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashboardProps) {
-  // Calculate statistics from real applicants data
-  const totalApplicants = applicants.length;
-  const maleCount = applicants.filter(a => a.gender === 'Male').length;
-  const femaleCount = applicants.filter(a => a.gender === 'Female').length;
-  
-  // Calculate averages from applicants with scores
-  const applicantsWithSAT = applicants.filter(a => a.sat);
-  const avgSAT = applicantsWithSAT.length > 0
-    ? Math.round(applicantsWithSAT.reduce((sum, a) => sum + (a.sat || 0), 0) / applicantsWithSAT.length)
-    : 0;
-  
-  const applicantsWithIELTS = applicants.filter(a => a.ielts);
-  const avgIELTS = applicantsWithIELTS.length > 0
-    ? (applicantsWithIELTS.reduce((sum, a) => sum + (a.ielts || 0), 0) / applicantsWithIELTS.length).toFixed(1)
-    : '0.0';
-  
-  // New applications (last 7 days)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const newApplications = applicants.filter(a =>
-    new Date(a.submittedDate) >= sevenDaysAgo
-  ).length;
+  const { universityId } = useParams();
+  const { data: dashboardData, loading: dashboardLoading } = useManagementDashboardData(universityId);
+  const currentVariant = variant === 'default' && dashboardLoading ? 'loading' : variant;
 
   const stats = {
-    newApplications,
-    totalApplicants,
-    avgSAT,
-    avgIELTS,
+    newApplications: dashboardData?.newApplications ?? 0,
+    totalApplicants: dashboardData?.totalApplicants ?? 0,
+    avgSAT: dashboardData?.avgSAT ?? 0,
+    avgIELTS: (dashboardData?.avgIELTS ?? 0).toFixed(1),
   };
 
   const genderDistribution = {
-    male: maleCount,
-    female: femaleCount,
+    male: dashboardData?.maleCount ?? 0,
+    female: dashboardData?.femaleCount ?? 0,
   };
+  const totalForPercent = Math.max(stats.totalApplicants, 1);
 
-  // Get recent applications (last 10)
-  const recentApplications = [...applicants]
-    .sort((a, b) => new Date(b.submittedDate).getTime() - new Date(a.submittedDate).getTime())
-    .slice(0, 10);
+  const recentApplications = (dashboardData?.recentApplications ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    program: item.program,
+    citizenship: item.citizenship,
+    status: item.status === 'pending' ? 'new' : item.status,
+    submittedDate: item.submittedAt ?? new Date().toISOString(),
+  }));
 
-  const notifications = [
-    { id: '1', type: 'application', message: `New application from ${applicants[0].name} for ${applicants[0].program}`, time: '2 hours ago', read: false },
-    { id: '2', type: 'document', message: `Documents updated by ${applicants[1].name}`, time: '5 hours ago', read: false },
-    { id: '3', type: 'status', message: `Application status changed for ${applicants[2].name}`, time: '1 day ago', read: true },
-    { id: '4', type: 'application', message: `New application from ${applicants[3].name} for ${applicants[3].program}`, time: '2 days ago', read: true },
-    { id: '5', type: 'document', message: `Transcript uploaded by ${applicants[4].name}`, time: '3 days ago', read: true },
-  ];
+  const notifications = (dashboardData?.notifications ?? []).map((item) => ({
+    id: item.id,
+    type: item.type,
+    message: item.message,
+    time: item.time,
+    read: item.read,
+  }));
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       new: { label: 'New', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
       reviewing: { label: 'Reviewing', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+      pending: { label: 'Pending', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
       shortlisted: { label: 'Shortlisted', className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
       interview: { label: 'Interview', className: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
       accepted: { label: 'Accepted', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
@@ -73,7 +61,7 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
     return statusConfig[status] || statusConfig.new;
   };
 
-  if (variant === 'empty') {
+  if (currentVariant === 'empty') {
     return (
       <div className="min-h-screen bg-background p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
@@ -135,7 +123,7 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
     );
   }
 
-  if (variant === 'loading') {
+  if (currentVariant === 'loading') {
     return (
       <div className="min-h-screen bg-background p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
@@ -426,16 +414,16 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Male</span>
-                  <span className="font-medium">{genderDistribution.male} ({((genderDistribution.male / stats.totalApplicants) * 100).toFixed(1)}%)</span>
+                  <span className="font-medium">{genderDistribution.male} ({((genderDistribution.male / totalForPercent) * 100).toFixed(1)}%)</span>
                 </div>
-                <Progress value={(genderDistribution.male / stats.totalApplicants) * 100} className="h-2" />
+                <Progress value={(genderDistribution.male / totalForPercent) * 100} className="h-2" />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Female</span>
-                  <span className="font-medium">{genderDistribution.female} ({((genderDistribution.female / stats.totalApplicants) * 100).toFixed(1)}%)</span>
+                  <span className="font-medium">{genderDistribution.female} ({((genderDistribution.female / totalForPercent) * 100).toFixed(1)}%)</span>
                 </div>
-                <Progress value={(genderDistribution.female / stats.totalApplicants) * 100} className="h-2" />
+                <Progress value={(genderDistribution.female / totalForPercent) * 100} className="h-2" />
               </div>
             </CardContent>
           </Card>

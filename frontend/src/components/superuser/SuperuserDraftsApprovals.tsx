@@ -53,13 +53,23 @@ interface Draft {
   comments: number;
 }
 
-export default function SuperuserDraftsApprovals() {
+interface SuperuserDraftsApprovalsProps {
+  draftsData?: Draft[];
+  onApproveDraft?: (draftId: string, notes?: string) => Promise<void> | void;
+  onRejectDraft?: (draftId: string, reason: string) => Promise<void> | void;
+}
+
+export default function SuperuserDraftsApprovals({
+  draftsData,
+  onApproveDraft,
+  onRejectDraft,
+}: SuperuserDraftsApprovalsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<DraftType | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<DraftStatus | 'all'>('all');
   const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null);
 
-  const drafts: Draft[] = [
+  const drafts: Draft[] = draftsData ?? [
     {
       id: 'DR-2024-001',
       type: 'create-mgmt-account',
@@ -216,7 +226,8 @@ export default function SuperuserDraftsApprovals() {
       'restore-university': { label: 'Restore University', icon: Building2, color: 'bg-green-50 text-green-700' },
     };
 
-    const { label, icon: Icon, color } = config[type];
+    const fallback = { label: type, icon: Edit, color: 'bg-gray-50 text-gray-700' };
+    const { label, icon: Icon, color } = config[type] || fallback;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
@@ -418,6 +429,8 @@ export default function SuperuserDraftsApprovals() {
         <DraftDetailModal
           draft={selectedDraft}
           onClose={() => setSelectedDraft(null)}
+          onApproveDraft={onApproveDraft}
+          onRejectDraft={onRejectDraft}
         />
       )}
     </div>
@@ -425,11 +438,23 @@ export default function SuperuserDraftsApprovals() {
 }
 
 // Draft Detail Modal Component
-function DraftDetailModal({ draft, onClose }: { draft: Draft; onClose: () => void }) {
+function DraftDetailModal({
+  draft,
+  onClose,
+  onApproveDraft,
+  onRejectDraft,
+}: {
+  draft: Draft;
+  onClose: () => void;
+  onApproveDraft?: (draftId: string, notes?: string) => Promise<void> | void;
+  onRejectDraft?: (draftId: string, reason: string) => Promise<void> | void;
+}) {
   const [activeTab, setActiveTab] = useState<'overview' | 'diff' | 'comments' | 'timeline'>('overview');
   const [comment, setComment] = useState('');
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [approvalNotes, setApprovalNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
 
   // Helper functions for badges
   const getStatusBadge = (status: DraftStatus) => {
@@ -467,7 +492,8 @@ function DraftDetailModal({ draft, onClose }: { draft: Draft; onClose: () => voi
       'restore-university': { label: 'Restore University', icon: Building2, color: 'bg-green-50 text-green-700' },
     };
 
-    const { label, icon: Icon, color } = config[type];
+    const fallback = { label: type, icon: Edit, color: 'bg-gray-50 text-gray-700' };
+    const { label, icon: Icon, color } = config[type] || fallback;
 
     return (
       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${color}`}>
@@ -759,6 +785,8 @@ function DraftDetailModal({ draft, onClose }: { draft: Draft; onClose: () => voi
                   Approval Notes (Optional)
                 </label>
                 <textarea
+                  value={approvalNotes}
+                  onChange={(e) => setApprovalNotes(e.target.value)}
                   rows={3}
                   placeholder="Add notes about your decision..."
                   className="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#171717] focus:border-transparent resize-none"
@@ -772,7 +800,16 @@ function DraftDetailModal({ draft, onClose }: { draft: Draft; onClose: () => voi
               >
                 Cancel
               </button>
-              <button className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+              <button
+                className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                onClick={async () => {
+                  if (onApproveDraft) {
+                    await onApproveDraft(draft.id, approvalNotes);
+                  }
+                  setShowApprovalModal(false);
+                  onClose();
+                }}
+              >
                 Approve & Execute
               </button>
             </div>
@@ -799,6 +836,8 @@ function DraftDetailModal({ draft, onClose }: { draft: Draft; onClose: () => voi
                   Reason for Rejection *
                 </label>
                 <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
                   rows={3}
                   placeholder="Explain why this request is being rejected..."
                   className="w-full px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#171717] focus:border-transparent resize-none"
@@ -812,7 +851,16 @@ function DraftDetailModal({ draft, onClose }: { draft: Draft; onClose: () => voi
               >
                 Cancel
               </button>
-              <button className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
+              <button
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+                onClick={async () => {
+                  if (onRejectDraft) {
+                    await onRejectDraft(draft.id, rejectionReason || "Rejected by superuser");
+                  }
+                  setShowRejectionModal(false);
+                  onClose();
+                }}
+              >
                 Reject Draft
               </button>
             </div>

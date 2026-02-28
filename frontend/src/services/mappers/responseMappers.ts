@@ -1,15 +1,20 @@
 import type {
   AdminSubmittedApplication,
   ApiEnvelope,
+  ApplicationTestScoreImportResult,
   Pagination,
   Profile,
   StudentApplication,
   StudentApplicationListItem,
+  StudentTestScore,
   University,
   UniversityListItem,
 } from "../../types/domain";
 
 export function toPortalRole(role: string): "student" | "partner" | "staff" {
+  if (role === "applicant" || role === "student") {
+    return "student";
+  }
   if (role === "partner") {
     return "partner";
   }
@@ -106,6 +111,7 @@ export function normalizeUniversity(value: unknown): University {
     campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
     visaRequired: toNullableBool(source.visa_required ?? source.visaRequired),
     applicationSchema: toRecord(source.application_schema ?? source.applicationSchema),
+    managementProfile: toRecord(source.management_profile ?? source.managementProfile),
     metadata: toRecord(source.metadata),
     createdAt: toString(source.created_at ?? source.createdAt),
   };
@@ -145,6 +151,44 @@ export function normalizeStudentApplication(value: unknown): StudentApplication 
     data: toRecord(source.data),
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
     createdAt: toString(source.created_at ?? source.createdAt),
+  };
+}
+
+export function normalizeStudentTestScore(value: unknown): StudentTestScore {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    userId: toString(source.user_id ?? source.userId),
+    testType: toString(source.test_type ?? source.testType) as StudentTestScore["testType"],
+    otherTestName: toNullableString(source.other_test_name ?? source.otherTestName),
+    score: toNumber(source.score),
+    outOf: toNumber(source.out_of ?? source.outOf),
+    takenOn: toNullableString(source.taken_on ?? source.takenOn),
+    createdAt: toString(source.created_at ?? source.createdAt),
+    updatedAt: toString(source.updated_at ?? source.updatedAt),
+  };
+}
+
+export function normalizeApplicationTestScoreImportResult(value: unknown): ApplicationTestScoreImportResult {
+  const source = (value ?? {}) as Record<string, unknown>;
+  const rows = Array.isArray(source.test_scores ?? source.testScores)
+    ? ((source.test_scores ?? source.testScores) as unknown[])
+    : [];
+
+  return {
+    importedCount: toNumber(source.imported_count ?? source.importedCount),
+    testScores: rows.map((row) => {
+      const item = (row ?? {}) as Record<string, unknown>;
+      return {
+        id: toString(item.id),
+        testType: toString(item.test_type ?? item.testType) as StudentTestScore["testType"],
+        otherTestName: toNullableString(item.other_test_name ?? item.otherTestName),
+        score: toNumber(item.score),
+        outOf: toNumber(item.out_of ?? item.outOf),
+        takenOn: toNullableString(item.taken_on ?? item.takenOn),
+        normalized: toNullableNumber(item.normalized),
+      };
+    }),
   };
 }
 

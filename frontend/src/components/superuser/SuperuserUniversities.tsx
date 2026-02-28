@@ -32,13 +32,17 @@ interface University {
   lastActive: string;
 }
 
-export default function SuperuserUniversities() {
+interface SuperuserUniversitiesProps {
+  universitiesData?: University[];
+}
+
+export default function SuperuserUniversities({ universitiesData }: SuperuserUniversitiesProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<UniversityStatus | 'all'>('all');
   const [selectedType, setSelectedType] = useState<UniversityType | 'all'>('all');
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
-  const universities: University[] = [
+  const universities: University[] = universitiesData ?? [
     {
       id: 'UNI-001',
       name: '清华大学',

@@ -3,6 +3,7 @@ package usecases_impl
 
 import (
 	"context"
+	"encoding/json"
 	"kallisto/services/client/internal/models"
 	"testing"
 )
@@ -127,6 +128,69 @@ func TestDeleteApplication_RequiresDBConnection(t *testing.T) {
 		}
 		if err.Error() != "could not establish connection with the database" {
 			t.Errorf("unexpected error: %v", err)
+		}
+	})
+}
+
+func TestExtractTranscriptRecords_OnlyTranscriptSections(t *testing.T) {
+	t.Run("parses transcript array and ignores unrelated arrays", func(t *testing.T) {
+		payload := map[string]any{
+			"transcripts": []any{
+				map[string]any{
+					"institutionName": "National University",
+					"country":         "Uzbekistan",
+					"gpa":             "3.7",
+					"year":            2023,
+				},
+			},
+			"essays": []any{
+				map[string]any{
+					"country": "Kazakhstan",
+					"gpa":     "4.0",
+					"year":    2022,
+				},
+			},
+		}
+		raw, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("marshal payload: %v", err)
+		}
+
+		records, err := extractTranscriptRecords(raw)
+		if err != nil {
+			t.Fatalf("extractTranscriptRecords returned error: %v", err)
+		}
+		if len(records) != 1 {
+			t.Fatalf("expected 1 transcript record, got %d", len(records))
+		}
+		if records[0].InstitutionName != "National University" {
+			t.Fatalf("unexpected institution name: %s", records[0].InstitutionName)
+		}
+	})
+
+	t.Run("does not parse non-transcript section arrays", func(t *testing.T) {
+		payload := map[string]any{
+			"educationHistory": []any{
+				map[string]any{
+					"institutionName": "Some School",
+					"country":         "Japan",
+					"degree":          "BSc",
+					"gpa":             "3.4",
+					"year":            2021,
+				},
+			},
+		}
+		raw, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("marshal payload: %v", err)
+		}
+
+		records, err := extractTranscriptRecords(raw)
+		if err != nil {
+			t.Fatalf("extractTranscriptRecords returned error: %v", err)
+		}
+		if len(records) != 0 {
+			t.Fatalf("expected 0 transcript records, got %d", len(records))
 		}
 	})
 }

@@ -1,6 +1,11 @@
 import { clientApi } from "../api/httpClient";
-import { normalizeEnvelope, normalizeStudentApplication, normalizeStudentApplicationListItem } from "../mappers/responseMappers";
-import type { StudentApplication, StudentApplicationListItem } from "../../types/domain";
+import {
+  normalizeApplicationTestScoreImportResult,
+  normalizeEnvelope,
+  normalizeStudentApplication,
+  normalizeStudentApplicationListItem,
+} from "../mappers/responseMappers";
+import type { ApplicationTestScoreImportResult, StudentApplication, StudentApplicationListItem } from "../../types/domain";
 
 export async function fetchStudentApplications(): Promise<StudentApplicationListItem[]> {
   const result = await clientApi.get<unknown>("/v1.0/applications");
@@ -60,4 +65,24 @@ export async function submitStudentApplication(universityId: string, cycle: stri
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to submit application");
   }
+}
+
+export async function importStudentProfileTestScoresToApplication(
+  universityId: string,
+  cycle: string,
+  testScoreIds?: string[],
+): Promise<ApplicationTestScoreImportResult> {
+  const result = await clientApi.post<unknown>(`/v1.0/applications/${universityId}/${cycle}/import-test-scores`, {
+    test_score_ids: testScoreIds,
+  });
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to import test scores");
+  }
+
+  const envelope = normalizeEnvelope<unknown>(result.data);
+  if (!envelope.success) {
+    throw new Error(envelope.message || "Failed to import test scores");
+  }
+
+  return normalizeApplicationTestScoreImportResult(envelope.data);
 }

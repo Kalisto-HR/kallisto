@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../ui/utils';
 import type { ManagementContext } from '../../types/managementLiteral';
+import { useManagementStaffData } from '../../hooks/useManagementStaffData';
 
 interface UsersStaffProps {
   onNavigate?: (page: string) => void;
@@ -72,12 +73,16 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [showStaffDrawer, setShowStaffDrawer] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const isSuperuser = userRole === 'superuser';
+  const universityId = context?.type === 'university' ? context.universityId : undefined;
   const universityName = context?.type === 'university' ? context.universityName : 'Stanford University';
+  const { payload, loading, createStaff, editStaff, setStaffStatus, resendInvite, setQuery } = useManagementStaffData(universityId);
 
   // Mock staff data
-  const staffMembers: StaffMember[] = [
+  const mockStaffMembers: StaffMember[] = [
     {
       id: 'staff-1',
       name: 'Sarah Chen',
@@ -126,7 +131,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
   ];
 
   // Mock roles data
-  const roles: Role[] = [
+  const mockRoles: Role[] = [
     {
       id: 'role-1',
       name: 'University Manager',
@@ -158,7 +163,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
   ];
 
   // Mock invitations data
-  const invitations: Invitation[] = [
+  const mockInvitations: Invitation[] = [
     {
       id: 'inv-1',
       email: 'new.staff@stanford.edu',
@@ -183,10 +188,73 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
     setShowActionMenu(null);
   };
 
-  const handleRequestChange = (action: string, staffId?: string) => {
-    // In real app, this would create a draft request
-    alert(`Creating draft request: ${action}${staffId ? ` for staff ${staffId}` : ''}`);
-    setShowActionMenu(null);
+  const staffMembers: StaffMember[] = loading
+    ? mockStaffMembers
+    : payload.items.map((item) => ({
+      id: item.id,
+      name: `${item.firstName} ${item.lastName}`.trim(),
+      email: item.email,
+      role: item.staffRole,
+      status: item.status === 'deactivated' ? 'suspended' : item.status,
+      lastActive: item.lastActiveAt ? new Date(item.lastActiveAt).toLocaleDateString('en-US') : 'Never',
+      createdDate: new Date(item.createdAt).toLocaleDateString('en-US'),
+    }));
+  const roles: Role[] = loading
+    ? mockRoles
+    : payload.roles.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      userCount: item.userCount,
+      permissions: item.permissions,
+    }));
+  const invitations: Invitation[] = loading
+    ? mockInvitations
+    : payload.invitations.map((item) => ({
+      id: item.id,
+      email: item.email,
+      role: item.staffRole,
+      sentDate: new Date(item.createdAt).toLocaleDateString('en-US'),
+      expiresDate: new Date(item.expiresAt).toLocaleDateString('en-US'),
+      status: item.status === 'cancelled' ? 'expired' : item.status,
+    }));
+
+  const handleRequestChange = async (action: string, staffId?: string) => {
+    setActionBusy(true);
+    setActionError(null);
+    try {
+      if (action.includes('Create') || action.includes('Send invitation') || action.includes('Request staff change')) {
+        const email = window.prompt('Staff email');
+        const firstName = window.prompt('First name');
+        const lastName = window.prompt('Last name');
+        const password = window.prompt('Temporary password (min 8 chars)');
+        if (!email || !firstName || !lastName || !password) return;
+        await createStaff({
+          email,
+          firstName,
+          lastName,
+          password,
+          staffRole: 'Admissions Officer',
+          status: 'active',
+        });
+      } else if (action.includes('Change role') || action.includes('Edit role') || action.includes('Request role change')) {
+        if (!staffId) return;
+        const role = window.prompt('New role (University Manager, Admissions Officer, Reviewer, Read-only)');
+        if (!role) return;
+        await editStaff(staffId, { staffRole: role as any });
+      } else if (action.includes('Disable')) {
+        if (!staffId) return;
+        await setStaffStatus(staffId, 'suspended', 'Disabled from Users & Staff page');
+      } else if (action.includes('Resend invitation')) {
+        if (!staffId) return;
+        await resendInvite(staffId);
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Operation failed');
+    } finally {
+      setShowActionMenu(null);
+      setActionBusy(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -246,25 +314,17 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
             </p>
           </div>
           <div className="flex gap-2">
-            {isSuperuser ? (
-              <>
-                <Button variant="outline" onClick={() => handleRequestChange('Create staff account')}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Create Staff Account
-                </Button>
-                <Button variant="outline" onClick={() => handleRequestChange('Disable account')}>
-                  <UserX className="h-4 w-4 mr-2" />
-                  Disable Account
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => handleRequestChange('Request staff change')}>
-                <FileText className="h-4 w-4 mr-2" />
-                Request Staff Change
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => void handleRequestChange('Create staff account')} disabled={actionBusy}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              {actionBusy ? 'Working...' : 'Create Staff Account'}
+            </Button>
+            <Button variant="outline" onClick={() => void handleRequestChange('Disable account')} disabled={actionBusy}>
+              <UserX className="h-4 w-4 mr-2" />
+              Disable Account
+            </Button>
           </div>
         </div>
+        {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
         {/* Tabs */}
         <div className="border-b">
@@ -320,7 +380,10 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                         type="text"
                         placeholder="Search by name or email..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setQuery((prev) => ({ ...prev, search: e.target.value, page: 1 }));
+                        }}
                         className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
                       />
                     </div>
@@ -329,7 +392,10 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                   {/* Role Filter */}
                   <select
                     value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
+                    onChange={(e) => {
+                      setRoleFilter(e.target.value);
+                      setQuery((prev) => ({ ...prev, role: e.target.value as any, page: 1 }));
+                    }}
                     className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
                   >
                     <option value="all">All Roles</option>
@@ -342,7 +408,10 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                   {/* Status Filter */}
                   <select
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setQuery((prev) => ({ ...prev, status: e.target.value as any, page: 1 }));
+                    }}
                     className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
                   >
                     <option value="all">All Statuses</option>
@@ -421,22 +490,22 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleRequestChange('Change role', staff.id);
+                                              void handleRequestChange('Change role', staff.id);
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center gap-2"
                                           >
                                             <Edit className="h-4 w-4" />
-                                            Create Draft: Change Role
+                                            Change Role
                                           </button>
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleRequestChange('Disable account', staff.id);
+                                              void handleRequestChange('Disable account', staff.id);
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center gap-2 text-red-600"
                                           >
                                             <UserX className="h-4 w-4" />
-                                            Create Draft: Disable
+                                            Disable Account
                                           </button>
                                         </>
                                       ) : (
@@ -444,22 +513,22 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleRequestChange('Request role change', staff.id);
+                                              void handleRequestChange('Change role', staff.id);
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center gap-2"
                                           >
                                             <FileText className="h-4 w-4" />
-                                            Request Role Change
+                                            Change Role
                                           </button>
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleRequestChange('Request disable account', staff.id);
+                                              void handleRequestChange('Disable account', staff.id);
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center gap-2 text-red-600"
                                           >
                                             <FileText className="h-4 w-4" />
-                                            Request Disable Account
+                                            Disable Account
                                           </button>
                                         </>
                                       )}
@@ -485,9 +554,9 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                       ? 'Try adjusting your filters'
                       : 'Get started by creating your first staff account'}
                   </p>
-                  <Button onClick={() => handleRequestChange(isSuperuser ? 'Create staff account' : 'Request staff change')}>
+                  <Button onClick={() => void handleRequestChange('Create staff account')} disabled={actionBusy}>
                     <UserPlus className="h-4 w-4 mr-2" />
-                    {isSuperuser ? 'Create Staff Account' : 'Request Staff Change'}
+                    Create Staff Account
                   </Button>
                 </CardContent>
               </Card>
@@ -519,7 +588,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                           <CardDescription>{role.description}</CardDescription>
                         </div>
                         {isSuperuser && (
-                          <Button variant="outline" size="sm" onClick={() => handleRequestChange('Edit role', role.id)}>
+                          <Button variant="outline" size="sm" onClick={() => void handleRequestChange('Edit role', role.id)}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit Role
                           </Button>
@@ -556,7 +625,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                     <CardTitle>Pending Invitations</CardTitle>
                     <CardDescription>Manage staff invitations</CardDescription>
                   </div>
-                  <Button onClick={() => handleRequestChange('Send invitation')}>
+                  <Button onClick={() => void handleRequestChange('Send invitation')} disabled={actionBusy}>
                     <Mail className="h-4 w-4 mr-2" />
                     Send Invitation
                   </Button>
@@ -596,10 +665,21 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                               <div className="flex items-center justify-center gap-2">
                                 {invitation.status === 'pending' && (
                                   <>
-                                    <Button variant="outline" size="sm" onClick={() => handleRequestChange('Resend invitation', invitation.id)}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        const linkedStaff = staffMembers.find((staff) => staff.email === invitation.email);
+                                        if (!linkedStaff) {
+                                          setActionError('Cannot resend invitation: matching staff account not found');
+                                          return;
+                                        }
+                                        void handleRequestChange('Resend invitation', linkedStaff.id);
+                                      }}
+                                    >
                                       Resend
                                     </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => handleRequestChange('Cancel invitation', invitation.id)}>
+                                    <Button variant="ghost" size="sm" onClick={() => void handleRequestChange('Disable account', staffMembers.find((staff) => staff.email === invitation.email)?.id)}>
                                       Cancel
                                     </Button>
                                   </>
@@ -618,7 +698,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                     <p className="text-muted-foreground mb-6">
                       Send invitations to add new staff members
                     </p>
-                    <Button onClick={() => handleRequestChange('Send invitation')}>
+                    <Button onClick={() => void handleRequestChange('Send invitation')} disabled={actionBusy}>
                       <Mail className="h-4 w-4 mr-2" />
                       Send Invitation
                     </Button>
