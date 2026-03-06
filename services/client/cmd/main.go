@@ -107,11 +107,12 @@ func main() {
 
 	srv := &http.Server{
 		Handler: router,
-		Addr:    "0.0.0.0:8080",
+		Addr:    "0.0.0.0:8081",
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 
+	zap.L().Info("Client service starting on port 8081")
 	zap.L().Fatal(srv.ListenAndServe().Error())
 }
