@@ -412,6 +412,10 @@ func ReviewApplication(ctx context.Context, id string, reviewerId string, req *m
 	if !ok {
 		return errors.New("could not establish connection with the database")
 	}
+	clientConn, ok := ctx.Value(middlewares.CtxClientPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return errors.New("could not establish connection with the client database")
+	}
 
 	// Validate status transition
 	validStatuses := map[string]bool{
@@ -424,24 +428,42 @@ func ReviewApplication(ctx context.Context, id string, reviewerId string, req *m
 		return utils.NewHandlerFuncErr(http.StatusBadRequest, "invalid status value")
 	}
 
-	// Get current application status
-	var currentStatus string
-	err := conn.QueryRow(ctx, "SELECT status FROM submitted_applications WHERE id = $1", id).Scan(&currentStatus)
+	var (
+		currentStatus    string
+		userID           string
+		universityID     string
+		applicationCycle string
+	)
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start review transaction: %s", err.Error())
+	}
+	defer tx.Rollback(ctx)
+
+	err = tx.QueryRow(
+		ctx,
+		`SELECT status, user_id, university_id, application_cycle
+		 FROM submitted_applications
+		 WHERE id = $1
+		 FOR UPDATE`,
+		id,
+	).Scan(&currentStatus, &userID, &universityID, &applicationCycle)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return utils.NewHandlerFuncErr(http.StatusNotFound, "application not found")
 		}
-		return fmt.Errorf("failed to get current status: %s", err.Error())
+		return fmt.Errorf("failed to get current application state: %s", err.Error())
 	}
 
-	// Validate status transition (can't change from accepted/rejected back to pending)
-	if (currentStatus == "accepted" || currentStatus == "rejected") && req.Status == "pending" {
-		return utils.NewHandlerFuncErr(http.StatusBadRequest, "cannot revert a finalized application to pending")
+	// Finalized applications cannot be moved back to non-terminal states.
+	if (currentStatus == "accepted" || currentStatus == "rejected") && (req.Status == "pending" || req.Status == "reviewing") {
+		return utils.NewHandlerFuncErr(http.StatusBadRequest, "cannot revert a finalized application to a non-final status")
 	}
 
-	// Update the application
 	reviewedAt := time.Now()
-	result, err := conn.Exec(ctx,
+	result, err := tx.Exec(
+		ctx,
 		`UPDATE submitted_applications
 		 SET status = $1, reviewed_by = $2, reviewed_at = $3, notes = $4
 		 WHERE id = $5`,
@@ -454,10 +476,60 @@ func ReviewApplication(ctx context.Context, id string, reviewerId string, req *m
 	if err != nil {
 		return fmt.Errorf("failed to update application: %s", err.Error())
 	}
-
 	if result.RowsAffected() == 0 {
 		return utils.NewHandlerFuncErr(http.StatusNotFound, "application not found")
 	}
 
+	previousClientStatus := mapAdminReviewStatusToClient(currentStatus)
+	nextClientStatus := mapAdminReviewStatusToClient(req.Status)
+
+	if nextClientStatus != "" {
+		clientResult, clientErr := clientConn.Exec(
+			ctx,
+			`UPDATE applications
+			 SET status = $1
+			 WHERE user_id = $2 AND university_id = $3 AND application_cycle = $4 AND status <> 'draft'`,
+			nextClientStatus,
+			userID,
+			universityID,
+			applicationCycle,
+		)
+		if clientErr != nil {
+			return fmt.Errorf("failed to sync application status to client database: %s", clientErr.Error())
+		}
+		if clientResult.RowsAffected() == 0 {
+			return fmt.Errorf("failed to sync application status to client database: application row not found")
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		if nextClientStatus != "" && previousClientStatus != "" && previousClientStatus != nextClientStatus {
+			_, _ = clientConn.Exec(
+				ctx,
+				`UPDATE applications
+				 SET status = $1
+				 WHERE user_id = $2 AND university_id = $3 AND application_cycle = $4 AND status <> 'draft'`,
+				previousClientStatus,
+				userID,
+				universityID,
+				applicationCycle,
+			)
+		}
+		return fmt.Errorf("failed to commit review update: %s", err.Error())
+	}
+
 	return nil
+}
+
+func mapAdminReviewStatusToClient(status string) string {
+	switch status {
+	case "accepted":
+		return "accepted"
+	case "rejected":
+		return "rejected"
+	case "pending", "reviewing", "submitted":
+		return "submitted"
+	default:
+		return ""
+	}
 }

@@ -9,7 +9,9 @@ import {
   Download,
   FileText,
   Info,
+  Plus,
   Send,
+  Trash2,
 } from "lucide-react";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
@@ -19,6 +21,14 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Progress } from "../../components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { Textarea } from "../../components/ui/textarea";
 import { ErrorState } from "../../components/common/PageState";
 import { COUNTRY_OPTIONS } from "../../data/countries";
 import { useApplicationFlowData } from "../../hooks/useApplicationFlowData";
@@ -27,6 +37,8 @@ import {
   fetchStudentApplication,
   fetchStudentApplications,
   importStudentProfileTestScoresToApplication,
+  uploadStudentApplicationFiles,
+  type ApplicationUploadedFile,
 } from "../../services/client/applicationsService";
 import { fetchStudentTestScores } from "../../services/client/profileService";
 import { fetchUniversityById } from "../../services/client/universitiesService";
@@ -46,7 +58,13 @@ type SchemaFieldType =
   | "dropdown"
   | "country"
   | "essay"
-  | "agreement";
+  | "agreement"
+  | "file-upload"
+  | "document"
+  | "rating"
+  | "address"
+  | "repeating-group"
+  | "recommender";
 
 interface SchemaField {
   id: string;
@@ -57,6 +75,21 @@ interface SchemaField {
   required?: boolean;
   dataKey?: string;
   options?: string[];
+  validation?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    wordLimit?: number;
+    fileTypes?: string[];
+    maxFileSize?: number;
+    maxFiles?: number;
+  };
+  visibility?: {
+    applicant?: boolean;
+    reviewer?: boolean;
+    admin?: boolean;
+  };
 }
 
 interface SchemaSection {
@@ -64,28 +97,28 @@ interface SchemaSection {
   title?: string;
   name?: string;
   description?: string;
+  order?: number;
+  visible?: boolean;
   fields: SchemaField[];
+}
+
+interface RecommenderEntry {
+  name: string;
+  email: string;
+  relationship: string;
 }
 
 const steps = [
   { number: 1, label: "Overview" },
   { number: 2, label: "Requirements" },
-  { number: 3, label: "Personal Info" },
+  { number: 3, label: "Application Form" },
   { number: 4, label: "Review" },
 ] as const;
-
-const BASIC_PERSONAL_FIELD_TYPES = new Set<SchemaFieldType>([
-  "short-text",
-  "email",
-  "phone",
-  "date",
-  "country",
-]);
 
 const fallbackPersonalSection: SchemaSection = {
   id: "personal-info",
   title: "Personal Information",
-  description: "Basic personal information",
+  description: "Basic applicant details",
   fields: [
     { id: "full_name", type: "short-text", label: "Full Name", required: true, dataKey: "full_name" },
     { id: "email", type: "email", label: "Email", required: true, dataKey: "email" },
@@ -98,37 +131,33 @@ function fieldKey(field: SchemaField): string {
   return field.dataKey && field.dataKey.trim() ? field.dataKey : field.id;
 }
 
+function hasMeaningfulValue(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return !Number.isNaN(value);
+  }
+  if (Array.isArray(value)) {
+    return value.some((item) => hasMeaningfulValue(item));
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).some((item) => hasMeaningfulValue(item));
+  }
+  return true;
+}
+
 function isMissingRequired(field: SchemaField, formData: Record<string, unknown>): boolean {
   if (!field.required) {
     return false;
   }
-  const value = formData[fieldKey(field)];
-  if (value === null || value === undefined) {
-    return true;
-  }
-  if (typeof value === "string") {
-    return value.trim() === "";
-  }
-  if (Array.isArray(value)) {
-    return value.length === 0;
-  }
-  return false;
-}
-
-function isBasicPersonalField(field: SchemaField): boolean {
-  if (!BASIC_PERSONAL_FIELD_TYPES.has(field.type)) {
-    return false;
-  }
-  const normalized = `${field.label} ${field.dataKey ?? field.id}`.toLowerCase();
-  return (
-    normalized.includes("name") ||
-    normalized.includes("email") ||
-    normalized.includes("phone") ||
-    normalized.includes("dob") ||
-    normalized.includes("birth") ||
-    normalized.includes("citizenship") ||
-    normalized.includes("country")
-  );
+  return !hasMeaningfulValue(formData[fieldKey(field)]);
 }
 
 function formatTestScoreLabel(item: StudentTestScore): string {
@@ -139,6 +168,180 @@ function formatTestScoreLabel(item: StudentTestScore): string {
 
 function buildDraftSignature(cycle: string, data: Record<string, unknown>): string {
   return JSON.stringify({ cycle: cycle.trim(), data });
+}
+
+function normalizedFieldDescriptor(field: SchemaField): string {
+  return `${field.label} ${field.dataKey ?? ""} ${field.id}`.toLowerCase();
+}
+
+function isEducationHistoryField(field: SchemaField): boolean {
+  const descriptor = normalizedFieldDescriptor(field);
+  return descriptor.includes("education") || descriptor.includes("transcript") || descriptor.includes("academic history");
+}
+
+function coerceString(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return String(value);
+  }
+  return "";
+}
+
+function coerceStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function coerceUploadedFiles(value: unknown): ApplicationUploadedFile[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const file = item as Record<string, unknown>;
+      const id = typeof file.id === "string" ? file.id : "";
+      if (!id) {
+        return null;
+      }
+      return {
+        id,
+        name:
+          typeof file.name === "string"
+            ? file.name
+            : typeof file.file_name === "string"
+              ? file.file_name
+              : "Uploaded file",
+        type:
+          typeof file.type === "string"
+            ? file.type
+            : typeof file.content_type === "string"
+              ? file.content_type
+              : "application/octet-stream",
+        size:
+          typeof file.size === "number"
+            ? file.size
+            : typeof file.file_size === "number"
+              ? file.file_size
+              : 0,
+        storage: typeof file.storage === "string" ? file.storage : "application_file",
+        downloadUrl:
+          typeof file.download_url === "string"
+            ? file.download_url
+            : typeof file.downloadUrl === "string"
+              ? file.downloadUrl
+              : typeof file.url === "string"
+                ? file.url
+                : "",
+      };
+    })
+    .filter((item): item is ApplicationUploadedFile => item !== null);
+}
+
+function coerceEducationEntries(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [] as Array<{
+      institutionName: string;
+      country: string;
+      degreeAwarded: string;
+      gpa: string;
+      graduationYear: string;
+      transcriptFiles: ApplicationUploadedFile[];
+    }>;
+  }
+  return value.map((item) => {
+    const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    return {
+      institutionName: coerceString(row.institutionName ?? row.institution_name ?? row.school ?? row.school_name),
+      country: coerceString(row.country),
+      degreeAwarded: coerceString(row.degreeAwarded ?? row.degree_awarded ?? row.degree),
+      gpa: coerceString(row.gpa),
+      graduationYear: coerceString(row.graduationYear ?? row.graduation_year ?? row.year),
+      transcriptFiles: coerceUploadedFiles(row.transcriptFiles ?? row.files),
+    };
+  });
+}
+
+function createEmptyEducationEntry() {
+  return {
+    institutionName: "",
+    country: "",
+    degreeAwarded: "",
+    gpa: "",
+    graduationYear: "",
+    transcriptFiles: [] as ApplicationUploadedFile[],
+  };
+}
+
+function coerceRepeatingGroupItems(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((item) => coerceString(item)).filter((item) => item.trim().length > 0);
+}
+
+function coerceRecommenderEntries(value: unknown): RecommenderEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((item) => {
+    const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+    return {
+      name: coerceString(row.name ?? row.full_name ?? row.fullName),
+      email: coerceString(row.email),
+      relationship: coerceString(row.relationship ?? row.title ?? row.role),
+    };
+  });
+}
+
+function createEmptyRecommenderEntry(): RecommenderEntry {
+  return {
+    name: "",
+    email: "",
+    relationship: "",
+  };
+}
+
+function createAddressValue(value: unknown) {
+  const record = value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+  return {
+    street: coerceString(record.street),
+    city: coerceString(record.city),
+    state: coerceString(record.state),
+    postalCode: coerceString(record.postalCode ?? record.postal_code),
+    country: coerceString(record.country),
+  };
+}
+
+function toggleCheckboxValue(currentValue: unknown, option: string, checked: boolean): string[] {
+  const current = new Set(coerceStringArray(currentValue));
+  if (checked) {
+    current.add(option);
+  } else {
+    current.delete(option);
+  }
+  return Array.from(current);
+}
+
+function formatFileSize(size: number): string {
+  if (!Number.isFinite(size) || size <= 0) {
+    return "Unknown size";
+  }
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function StudentApplicationCreatePage() {
@@ -163,6 +366,8 @@ export function StudentApplicationCreatePage() {
   const [testScoresError, setTestScoresError] = useState<string | null>(null);
   const [importingScores, setImportingScores] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [uploadingFieldKey, setUploadingFieldKey] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const lastSavedSignatureRef = useRef(buildDraftSignature(flow.cycle, flow.formData));
@@ -197,14 +402,27 @@ export function StudentApplicationCreatePage() {
           })
           .map((section) => {
             const current = section as unknown as SchemaSection;
+            const fields = current.fields
+              .filter((field): field is SchemaField => !!field && typeof field === "object")
+              .filter((field) => field.visibility?.applicant !== false)
+              .sort((left, right) => {
+                const leftOrder = typeof (left as SchemaField & { order?: number }).order === "number"
+                  ? (left as SchemaField & { order?: number }).order ?? 0
+                  : 0;
+                const rightOrder = typeof (right as SchemaField & { order?: number }).order === "number"
+                  ? (right as SchemaField & { order?: number }).order ?? 0
+                  : 0;
+                return leftOrder - rightOrder;
+              });
             return {
               ...current,
-              fields: current.fields.filter(
-                (field) => !!field && typeof field === "object" && isBasicPersonalField(field as SchemaField),
-              ),
+              fields,
             };
           })
+          .filter((section) => section.visible !== false)
           .filter((section) => section.fields.length > 0);
+
+        sections.sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
 
         setSchemaSections(sections.length > 0 ? sections : [fallbackPersonalSection]);
       } catch (err) {
@@ -440,6 +658,360 @@ export function StudentApplicationCreatePage() {
     flow.setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateObjectFieldValue = (
+    field: SchemaField,
+    property: string,
+    propertyValue: unknown,
+    createDefault: () => Record<string, unknown>,
+  ) => {
+    const key = fieldKey(field);
+    flow.setFormData((previous) => {
+      const current =
+        previous[key] && typeof previous[key] === "object" && !Array.isArray(previous[key])
+          ? { ...(previous[key] as Record<string, unknown>) }
+          : createDefault();
+      return {
+        ...previous,
+        [key]: {
+          ...current,
+          [property]: propertyValue,
+        },
+      };
+    });
+  };
+
+  const updateArrayEntryValue = <T extends object>(
+    field: SchemaField,
+    index: number,
+    property: keyof T,
+    propertyValue: unknown,
+    currentEntries: T[],
+  ) => {
+    const next = currentEntries.map((entry, entryIndex) =>
+      entryIndex === index
+        ? {
+            ...entry,
+            [property]: propertyValue,
+          }
+        : entry,
+    );
+    setFieldValue(field, next);
+  };
+
+  const uploadFilesForField = async (field: SchemaField, files: File[]) => {
+    if (!universityId || files.length === 0) {
+      return;
+    }
+
+    setUploadingFieldKey(fieldKey(field));
+    setUploadError(null);
+    try {
+      const uploadedFiles = await uploadStudentApplicationFiles(universityId, flow.cycle, files, fieldKey(field));
+      const existingFiles = coerceUploadedFiles(flow.formData[fieldKey(field)]);
+      const maxFiles = field.validation?.maxFiles;
+      const mergedFiles = [...existingFiles, ...uploadedFiles];
+      setFieldValue(field, typeof maxFiles === "number" && maxFiles > 0 ? mergedFiles.slice(0, maxFiles) : mergedFiles);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to upload files");
+    } finally {
+      setUploadingFieldKey(null);
+    }
+  };
+
+  const uploadEducationFiles = async (field: SchemaField, index: number, files: File[]) => {
+    if (!universityId || files.length === 0) {
+      return;
+    }
+
+    setUploadingFieldKey(fieldKey(field));
+    setUploadError(null);
+    try {
+      const uploadedFiles = await uploadStudentApplicationFiles(universityId, flow.cycle, files, fieldKey(field));
+      const entries = coerceEducationEntries(flow.formData[fieldKey(field)]);
+      const nextEntries = entries.map((entry, entryIndex) =>
+        entryIndex === index
+          ? {
+              ...entry,
+              transcriptFiles: [...entry.transcriptFiles, ...uploadedFiles],
+            }
+          : entry,
+      );
+      setFieldValue(field, nextEntries);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Failed to upload transcript files");
+    } finally {
+      setUploadingFieldKey(null);
+    }
+  };
+
+  const removeUploadedFile = (field: SchemaField, fileId: string) => {
+    const remaining = coerceUploadedFiles(flow.formData[fieldKey(field)]).filter((item) => item.id !== fileId);
+    setFieldValue(field, remaining);
+  };
+
+  const renderUploadedFiles = (field: SchemaField, files: ApplicationUploadedFile[]) => {
+    if (files.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-2">
+        {files.map((file) => (
+          <div
+            key={file.id}
+            className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-slate-900">{file.name}</p>
+              <p className="text-xs text-slate-500">
+                {file.type} · {formatFileSize(file.size)}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {file.downloadUrl ? (
+                <Button type="button" size="sm" variant="outline" asChild>
+                  <a href={file.downloadUrl} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                </Button>
+              ) : null}
+              <Button type="button" size="sm" variant="ghost" onClick={() => removeUploadedFile(field, file.id)}>
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Remove
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderEducationRepeatingGroup = (field: SchemaField) => {
+    const key = fieldKey(field);
+    const entries = coerceEducationEntries(flow.formData[key]);
+    return (
+      <div key={field.id} className="space-y-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-slate-900">
+            {field.label}
+            {field.required ? <span className="text-red-600">*</span> : null}
+          </div>
+          {field.helperText ? <p className="text-xs text-muted-foreground">{field.helperText}</p> : null}
+        </div>
+        <div className="space-y-4">
+          {entries.map((entry, index) => (
+            <div key={`${key}-${index}`} className="space-y-4 rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-900">Institution {index + 1}</p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFieldValue(field, entries.filter((_, entryIndex) => entryIndex !== index))}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Institution Name</Label>
+                  <Input
+                    value={entry.institutionName}
+                    onChange={(event) =>
+                      updateArrayEntryValue(field, index, "institutionName", event.target.value, entries)
+                    }
+                    placeholder="e.g. Westminster International University"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <Input
+                    list={`${key}-education-country-options`}
+                    value={entry.country}
+                    onChange={(event) => updateArrayEntryValue(field, index, "country", event.target.value, entries)}
+                    placeholder="Type country name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Degree Awarded</Label>
+                  <Input
+                    value={entry.degreeAwarded}
+                    onChange={(event) =>
+                      updateArrayEntryValue(field, index, "degreeAwarded", event.target.value, entries)
+                    }
+                    placeholder="e.g. Bachelor of Science"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>GPA</Label>
+                  <Input
+                    value={entry.gpa}
+                    onChange={(event) => updateArrayEntryValue(field, index, "gpa", event.target.value, entries)}
+                    placeholder="e.g. 3.8"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Graduation Year</Label>
+                  <Input
+                    value={entry.graduationYear}
+                    onChange={(event) =>
+                      updateArrayEntryValue(field, index, "graduationYear", event.target.value, entries)
+                    }
+                    placeholder="e.g. 2024"
+                  />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor={`${key}-transcripts-${index}`}>Academic Transcripts</Label>
+                  <Input
+                    id={`${key}-transcripts-${index}`}
+                    type="file"
+                    multiple
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files ?? []);
+                      if (files.length === 0) {
+                        return;
+                      }
+                      void uploadEducationFiles(field, index, files);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">Upload transcript files for this institution.</p>
+                </div>
+                {entry.transcriptFiles.length > 0 ? (
+                  <div className="space-y-2">
+                    {entry.transcriptFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-slate-900">{file.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {file.type} · {formatFileSize(file.size)}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {file.downloadUrl ? (
+                            <Button type="button" size="sm" variant="outline" asChild>
+                              <a href={file.downloadUrl} target="_blank" rel="noreferrer">
+                                Open
+                              </a>
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              updateArrayEntryValue(
+                                field,
+                                index,
+                                "transcriptFiles",
+                                entry.transcriptFiles.filter((item) => item.id !== file.id),
+                                entries,
+                              )
+                            }
+                          >
+                            <Trash2 className="mr-1.5 h-4 w-4" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+          <datalist id={`${key}-education-country-options`}>
+            {COUNTRY_OPTIONS.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setFieldValue(field, [...entries, createEmptyEducationEntry()])}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add education entry
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderRecommenderField = (field: SchemaField) => {
+    const entries = coerceRecommenderEntries(flow.formData[fieldKey(field)]);
+    return (
+      <div key={field.id} className="space-y-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-slate-900">
+            {field.label}
+            {field.required ? <span className="text-red-600">*</span> : null}
+          </div>
+          {field.helperText ? <p className="text-xs text-muted-foreground">{field.helperText}</p> : null}
+        </div>
+        {entries.map((entry, index) => (
+          <div key={`${field.id}-${index}`} className="space-y-4 rounded-xl border border-slate-200 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium text-slate-900">Recommender {index + 1}</p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setFieldValue(field, entries.filter((_, entryIndex) => entryIndex !== index))}
+              >
+                <Trash2 className="mr-1.5 h-4 w-4" />
+                Remove
+              </Button>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  value={entry.name}
+                  onChange={(event) => updateArrayEntryValue(field, index, "name", event.target.value, entries)}
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={entry.email}
+                  onChange={(event) => updateArrayEntryValue(field, index, "email", event.target.value, entries)}
+                  placeholder="name@example.com"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Relationship</Label>
+                <Input
+                  value={entry.relationship}
+                  onChange={(event) =>
+                    updateArrayEntryValue(field, index, "relationship", event.target.value, entries)
+                  }
+                  placeholder="Professor, counselor, employer..."
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setFieldValue(field, [...entries, createEmptyRecommenderEntry()])}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add recommender
+        </Button>
+      </div>
+    );
+  };
+
   const toggleTestScoreSelection = (id: string, checked: boolean) => {
     setSelectedTestScoreIds((current) => {
       if (checked) {
@@ -536,34 +1108,287 @@ export function StudentApplicationCreatePage() {
   const renderField = (field: SchemaField) => {
     const key = fieldKey(field);
     const value = flow.formData[key];
+    const options = Array.isArray(field.options) ? field.options.filter((option) => option.trim().length > 0) : [];
     const commonLabel = (
       <Label htmlFor={key} className="flex items-center gap-1.5">
         {field.label}
         {field.required ? <span className="text-red-600">*</span> : null}
       </Label>
     );
-
     const helpText = field.helperText ? <p className="text-xs text-muted-foreground">{field.helperText}</p> : null;
 
+    if (field.type === "repeating-group" && isEducationHistoryField(field)) {
+      return renderEducationRepeatingGroup(field);
+    }
+
+    if (field.type === "recommender") {
+      return renderRecommenderField(field);
+    }
+
+    if (field.type === "repeating-group") {
+      const items = coerceRepeatingGroupItems(value);
+      return (
+        <div key={field.id} className="space-y-3">
+          {commonLabel}
+          {helpText}
+          {items.map((item, index) => (
+            <div key={`${key}-${index}`} className="flex items-center gap-2">
+              <Input
+                value={item}
+                placeholder={field.placeholder ?? `Entry ${index + 1}`}
+                onChange={(event) =>
+                  setFieldValue(
+                    field,
+                    items.map((current, currentIndex) => (currentIndex === index ? event.target.value : current)),
+                  )
+                }
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setFieldValue(field, items.filter((_, currentIndex) => currentIndex !== index))}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setFieldValue(field, [...items, ""])}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add entry
+          </Button>
+        </div>
+      );
+    }
+
+    if (field.type === "address") {
+      const address = createAddressValue(value);
+      return (
+        <div key={field.id} className="space-y-3">
+          {commonLabel}
+          {helpText}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor={`${key}-street`}>Street Address</Label>
+              <Input
+                id={`${key}-street`}
+                value={address.street}
+                onChange={(event) =>
+                  updateObjectFieldValue(field, "street", event.target.value, () => createAddressValue(undefined))
+                }
+                placeholder="Street address"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${key}-city`}>City</Label>
+              <Input
+                id={`${key}-city`}
+                value={address.city}
+                onChange={(event) =>
+                  updateObjectFieldValue(field, "city", event.target.value, () => createAddressValue(undefined))
+                }
+                placeholder="City"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${key}-state`}>State / Province</Label>
+              <Input
+                id={`${key}-state`}
+                value={address.state}
+                onChange={(event) =>
+                  updateObjectFieldValue(field, "state", event.target.value, () => createAddressValue(undefined))
+                }
+                placeholder="State or province"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${key}-postal`}>Postal Code</Label>
+              <Input
+                id={`${key}-postal`}
+                value={address.postalCode}
+                onChange={(event) =>
+                  updateObjectFieldValue(field, "postalCode", event.target.value, () => createAddressValue(undefined))
+                }
+                placeholder="Postal code"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${key}-country`}>Country</Label>
+              <Input
+                id={`${key}-country`}
+                list={`${key}-address-country-options`}
+                value={address.country}
+                onChange={(event) =>
+                  updateObjectFieldValue(field, "country", event.target.value, () => createAddressValue(undefined))
+                }
+                placeholder="Type country name"
+              />
+              <datalist id={`${key}-address-country-options`}>
+                {COUNTRY_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (field.type === "file-upload" || field.type === "document") {
+      const files = coerceUploadedFiles(value);
+      const accept = field.validation?.fileTypes?.join(",");
+      return (
+        <div key={field.id} className="space-y-3">
+          {commonLabel}
+          {helpText}
+          <Input
+            id={key}
+            type="file"
+            multiple={(field.validation?.maxFiles ?? 1) > 1}
+            accept={accept}
+            onChange={(event) => {
+              const filesToUpload = Array.from(event.target.files ?? []);
+              if (filesToUpload.length === 0) {
+                return;
+              }
+              void uploadFilesForField(field, filesToUpload);
+              event.currentTarget.value = "";
+            }}
+          />
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {typeof field.validation?.maxFiles === "number" ? <span>Max files: {field.validation.maxFiles}</span> : null}
+            {typeof field.validation?.maxFileSize === "number" ? <span>Max size: {field.validation.maxFileSize} MB</span> : null}
+            {field.validation?.fileTypes?.length ? <span>Allowed: {field.validation.fileTypes.join(", ")}</span> : null}
+          </div>
+          {uploadingFieldKey === key ? <p className="text-xs text-[#4F46E5]">Uploading files...</p> : null}
+          {renderUploadedFiles(field, files)}
+        </div>
+      );
+    }
+
     if (field.type === "country") {
-      const options = Array.isArray(field.options) && field.options.length > 0 ? field.options : COUNTRY_OPTIONS;
-      const listId = `${key}-country-options`;
+      const countryOptions = options.length > 0 ? options : COUNTRY_OPTIONS;
       return (
         <div key={field.id} className="space-y-2">
           {commonLabel}
           <Input
             id={key}
-            list={listId}
+            list={`${key}-country-options`}
             placeholder={field.placeholder ?? "Type country name..."}
-            value={typeof value === "string" ? value : ""}
+            value={coerceString(value)}
             onChange={(event) => setFieldValue(field, event.target.value)}
           />
-          <datalist id={listId}>
-            {options.map((option) => (
+          <datalist id={`${key}-country-options`}>
+            {countryOptions.map((option) => (
               <option key={option} value={option} />
             ))}
           </datalist>
           {helpText}
+        </div>
+      );
+    }
+
+    if (field.type === "radio") {
+      return (
+        <div key={field.id} className="space-y-3">
+          {commonLabel}
+          {helpText}
+          <div className="space-y-2">
+            {options.map((option) => (
+              <label key={option} className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name={key}
+                  checked={coerceString(value) === option}
+                  onChange={() => setFieldValue(field, option)}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (field.type === "checkbox") {
+      const selectedValues = coerceStringArray(value);
+      return (
+        <div key={field.id} className="space-y-3">
+          {commonLabel}
+          {helpText}
+          <div className="space-y-2">
+            {options.map((option) => (
+              <label key={option} className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={selectedValues.includes(option)}
+                  onCheckedChange={(checked) => setFieldValue(field, toggleCheckboxValue(value, option, checked === true))}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (field.type === "dropdown") {
+      return (
+        <div key={field.id} className="space-y-2">
+          {commonLabel}
+          <Select value={coerceString(value)} onValueChange={(nextValue) => setFieldValue(field, nextValue)}>
+            <SelectTrigger id={key}>
+              <SelectValue placeholder={field.placeholder ?? "Select an option"} />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {helpText}
+        </div>
+      );
+    }
+
+    if (field.type === "agreement") {
+      return (
+        <div key={field.id} className="space-y-2 rounded-lg border border-slate-200 p-4">
+          <label className="flex items-start gap-3 text-sm">
+            <Checkbox
+              checked={value === true}
+              onCheckedChange={(checked) => setFieldValue(field, checked === true)}
+            />
+            <span className="leading-6">
+              {field.label}
+              {field.required ? <span className="ml-1 text-red-600">*</span> : null}
+            </span>
+          </label>
+          {helpText}
+        </div>
+      );
+    }
+
+    if (field.type === "long-text" || field.type === "essay") {
+      return (
+        <div key={field.id} className="space-y-2">
+          {commonLabel}
+          <Textarea
+            id={key}
+            rows={field.type === "essay" ? 8 : 5}
+            placeholder={field.placeholder ?? ""}
+            value={coerceString(value)}
+            onChange={(event) => setFieldValue(field, event.target.value)}
+          />
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {helpText}
+            {typeof field.validation?.wordLimit === "number" ? <span>Word limit: {field.validation.wordLimit}</span> : null}
+          </div>
         </div>
       );
     }
@@ -575,6 +1400,8 @@ export function StudentApplicationCreatePage() {
         ? "email"
         : field.type === "phone"
         ? "tel"
+        : field.type === "number" || field.type === "rating"
+        ? "number"
         : "text";
 
     return (
@@ -584,10 +1411,16 @@ export function StudentApplicationCreatePage() {
           id={key}
           type={inputType}
           placeholder={field.placeholder ?? ""}
+          min={field.validation?.min}
+          max={field.validation?.max}
           value={typeof value === "string" || typeof value === "number" ? String(value) : ""}
           onChange={(event) => setFieldValue(field, event.target.value)}
         />
-        {helpText}
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+          {helpText}
+          {typeof field.validation?.min === "number" ? <span>Min: {field.validation.min}</span> : null}
+          {typeof field.validation?.max === "number" ? <span>Max: {field.validation.max}</span> : null}
+        </div>
       </div>
     );
   };
@@ -629,7 +1462,7 @@ export function StudentApplicationCreatePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Application Process</h1>
         <Badge variant="secondary">{universityName}</Badge>
@@ -693,7 +1526,7 @@ export function StudentApplicationCreatePage() {
             </div>
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertDescription>This flow uses personal-information-only fields.</AlertDescription>
+              <AlertDescription>This flow follows the application structure published by the university.</AlertDescription>
             </Alert>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link to={routes.student.universities} className="flex-1">
@@ -742,7 +1575,7 @@ export function StudentApplicationCreatePage() {
       {currentStep === 3 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
+            <CardTitle>Application Form</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -772,6 +1605,7 @@ export function StudentApplicationCreatePage() {
               {testScoresLoading ? <p className="text-sm text-muted-foreground">Loading profile test scores...</p> : null}
               {testScoresError ? <p className="text-sm text-red-600">{testScoresError}</p> : null}
               {importFeedback ? <p className="text-sm text-[#4F46E5]">{importFeedback}</p> : null}
+              {uploadError ? <p className="text-sm text-red-600">{uploadError}</p> : null}
 
               {!testScoresLoading && !testScoresError && profileTestScores.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -837,7 +1671,7 @@ export function StudentApplicationCreatePage() {
               <div className="font-medium">Submission checklist</div>
               <div className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
                 <FileText className="mt-0.5 h-4 w-4" />
-                Confirm all personal information before submission.
+                Confirm all required university application fields before submission.
               </div>
             </div>
 

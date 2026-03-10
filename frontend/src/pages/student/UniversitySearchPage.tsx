@@ -332,7 +332,7 @@ export function UniversitySearchPage() {
 
   return (
     <div className="space-y-6">
-      <section className="sticky top-0 z-10 border-b bg-background pb-4">
+      <section className="border-b bg-background pb-4">
         <div className="space-y-4">
           <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -366,15 +366,12 @@ export function UniversitySearchPage() {
               Filters
               {activeFilterCount > 0 ? <Badge variant="secondary">{activeFilterCount}</Badge> : null}
             </Button>
-            <Button variant="outline" onClick={() => void refresh()}>
-              Refresh
-            </Button>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="hidden h-fit xl:sticky xl:top-24 xl:block">
+      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)] xl:items-start">
+        <aside className="hidden xl:sticky xl:top-24 xl:block xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto">
           {filterPanel}
         </aside>
 
@@ -388,7 +385,7 @@ export function UniversitySearchPage() {
           </SheetContent>
         </Sheet>
 
-        <section className="space-y-4">
+        <section className="space-y-4 xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto xl:pr-2">
           {loading ? <LoadingState label="Loading universities..." /> : null}
           {error ? <ErrorState message={error} onRetry={() => void refresh()} /> : null}
 

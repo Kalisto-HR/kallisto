@@ -33,7 +33,7 @@ interface PortalApplicantsListProps {
 export function PortalApplicantsList({ onNavigate, variant = 'default' }: PortalApplicantsListProps) {
   const { universityId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { items, loading } = useManagementApplicantsData(universityId);
+  const { items, loading, error, review } = useManagementApplicantsData(universityId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [filterProgram, setFilterProgram] = useState('all');
@@ -42,6 +42,8 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
   const [filterIntake, setFilterIntake] = useState('all');
   const [selectedApplicant, setSelectedApplicant] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [reviewBusyId, setReviewBusyId] = useState(null);
+  const [reviewError, setReviewError] = useState(null);
   const requestedApplicationId = searchParams.get('applicationId');
 
   const formatBytes = (size) => {
@@ -289,6 +291,37 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
     return statusConfig[status] || statusConfig.new;
   };
 
+  const syncLocalApplicantStatus = (applicationId, nextStatus) => {
+    const normalizedStatus = nextStatus === 'pending' ? 'new' : nextStatus;
+    setSelectedApplicant((current) => {
+      if (!current || current.id !== applicationId) {
+        return current;
+      }
+      return {
+        ...current,
+        reviewStatus: nextStatus,
+        status: normalizedStatus,
+      };
+    });
+  };
+
+  const handleReview = async (event, applicant, nextStatus) => {
+    event.stopPropagation();
+    setReviewBusyId(applicant.id);
+    setReviewError(null);
+    try {
+      await review(applicant.id, nextStatus);
+      syncLocalApplicantStatus(applicant.id, nextStatus);
+    } catch (err) {
+      setReviewError(err instanceof Error ? err.message : 'Failed to update application status');
+    } finally {
+      setReviewBusyId(null);
+    }
+  };
+
+  const canReviewApplicant = (applicant) =>
+    applicant.reviewStatus === 'pending' || applicant.reviewStatus === 'reviewing';
+
   const applicants = items.map((item) => {
     const applicantInfo = item.applicantInfo ?? {};
     const applicationData = item.applicationData ?? {};
@@ -305,6 +338,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
       gpa: Number(applicationData.gpa ?? applicantInfo.gpa ?? 0) || 0,
       sat: Number(applicationData.sat ?? applicantInfo.sat ?? 0) || 0,
       ielts: Number(applicationData.ielts ?? applicantInfo.ielts ?? 0) || 0,
+      reviewStatus: item.status,
       status: item.status === 'pending' ? 'new' : item.status,
       intake: String(item.applicationCycle ?? 'Unknown'),
       submittedDate: item.submittedAt ?? item.receivedAt,
@@ -407,7 +441,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -424,6 +458,16 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
         </div>
 
         {/* Search and Filters */}
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+        {reviewError ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {reviewError}
+          </div>
+        ) : null}
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col lg:flex-row gap-3">
@@ -606,6 +650,36 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                       <Button variant="outline" size="sm" className="w-full">
                         View details
                       </Button>
+                      {canReviewApplicant(applicant) ? (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {applicant.reviewStatus !== 'reviewing' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(event) => void handleReview(event, applicant, 'reviewing')}
+                              disabled={reviewBusyId === applicant.id}
+                            >
+                              Mark Reviewing
+                            </Button>
+                          ) : null}
+                          <Button
+                            size="sm"
+                            onClick={(event) => void handleReview(event, applicant, 'accepted')}
+                            disabled={reviewBusyId === applicant.id}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={(event) => void handleReview(event, applicant, 'rejected')}
+                            disabled={reviewBusyId === applicant.id}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -623,7 +697,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                       <TableHead>IELTS</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Submitted</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="w-[220px] text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -658,17 +732,49 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                               year: 'numeric'
                             })}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                openApplicantDetails(applicant);
-                              }}
-                            >
-                              View
-                            </Button>
+                          <TableCell className="w-[220px]">
+                            <div className="flex justify-end gap-2">
+                              {canReviewApplicant(applicant) && applicant.reviewStatus !== 'reviewing' ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(event) => void handleReview(event, applicant, 'reviewing')}
+                                  disabled={reviewBusyId === applicant.id}
+                                >
+                                  Review
+                                </Button>
+                              ) : null}
+                              {canReviewApplicant(applicant) ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={(event) => void handleReview(event, applicant, 'accepted')}
+                                    disabled={reviewBusyId === applicant.id}
+                                  >
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={(event) => void handleReview(event, applicant, 'rejected')}
+                                    disabled={reviewBusyId === applicant.id}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              ) : null}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openApplicantDetails(applicant);
+                                }}
+                              >
+                                View
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -748,6 +854,36 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                       <p className="font-medium">{String(selectedApplicant.applicantInfo?.email ?? '—')}</p>
                     </div>
                   </div>
+                  {canReviewApplicant(selectedApplicant) ? (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {selectedApplicant.reviewStatus !== 'reviewing' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(event) => void handleReview(event, selectedApplicant, 'reviewing')}
+                          disabled={reviewBusyId === selectedApplicant.id}
+                        >
+                          Mark Reviewing
+                        </Button>
+                      ) : null}
+                      <Button
+                        size="sm"
+                        onClick={(event) => void handleReview(event, selectedApplicant, 'accepted')}
+                        disabled={reviewBusyId === selectedApplicant.id}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={(event) => void handleReview(event, selectedApplicant, 'rejected')}
+                        disabled={reviewBusyId === selectedApplicant.id}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
 

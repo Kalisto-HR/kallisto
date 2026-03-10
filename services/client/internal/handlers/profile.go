@@ -98,6 +98,14 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 				Field:   "data",
 				Message: "must be a valid JSON object",
 			})
+		} else if genderValue, exists := data["gender"]; exists {
+			gender, ok := genderValue.(string)
+			if !ok || !isSupportedStudentGender(gender) {
+				validationErrors = append(validationErrors, &validation.ValidationError{
+					Field:   "data.gender",
+					Message: "must be one of: male, female, other, prefer_not_to_say",
+				})
+			}
 		}
 	}
 	if len(validationErrors) > 0 {
@@ -303,6 +311,15 @@ func DeleteProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := utils.NewApiResponse[any](true, nil, "account deleted successfully")
 	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
+func isSupportedStudentGender(value string) bool {
+	switch strings.TrimSpace(value) {
+	case "male", "female", "other", "prefer_not_to_say":
+		return true
+	default:
+		return false
+	}
 }
 
 func GetProfileTestScoresHandler(w http.ResponseWriter, r *http.Request) {

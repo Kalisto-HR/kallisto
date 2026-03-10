@@ -1,4 +1,4 @@
-import { CreditCard, HelpCircle, LogOut, Menu, Search, Settings, ShoppingBasket } from "lucide-react";
+import { CreditCard, HelpCircle, LogOut, Menu, Settings, ShoppingBasket } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -8,7 +8,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Input } from "./ui/input";
 
 interface HeaderProps {
   userName: string;
@@ -50,17 +49,6 @@ export function Header({
             <span className="text-sm font-semibold text-white">K</span>
           </div>
           <span className="hidden text-xl font-semibold tracking-tight sm:inline">Kallisto</span>
-        </div>
-
-        <div className="hidden flex-1 items-center gap-4 px-4 md:flex">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search universities, programs..."
-              className="border-0 bg-secondary pl-9"
-            />
-          </div>
         </div>
 
         <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 md:gap-3">

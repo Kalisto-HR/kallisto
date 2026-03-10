@@ -34,7 +34,7 @@ export function StudentApplicationsPage() {
     () => ({
       total: items.length,
       drafts: items.filter((item) => item.status === "draft").length,
-      submitted: items.filter((item) => item.status === "submitted").length,
+      submitted: items.filter((item) => item.status !== "draft").length,
     }),
     [items],
   );

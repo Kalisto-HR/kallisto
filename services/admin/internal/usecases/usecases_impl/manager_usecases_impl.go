@@ -42,27 +42,57 @@ func GetUniversityDashboard(ctx context.Context, universityId string) (*models.M
 	resp := &models.ManagerDashboardResponse{}
 
 	err := conn.QueryRow(ctx, `
-		SELECT
-			COUNT(*) FILTER (WHERE received_at >= NOW() - INTERVAL '7 days') AS new_applications,
-			COUNT(*) AS total_applicants,
-			COALESCE(ROUND(AVG(
+		WITH application_metrics AS (
+			SELECT
+				received_at,
 				CASE
 					WHEN COALESCE(application_data->>'sat', applicant_info->>'sat') ~ '^[0-9]+(\.[0-9]+)?$'
 					THEN (COALESCE(application_data->>'sat', applicant_info->>'sat'))::numeric
-					ELSE NULL
-				END
-			))::int, 0) AS avg_sat,
-			COALESCE(ROUND(AVG(
+					ELSE (
+						SELECT MAX(
+							CASE
+								WHEN COALESCE(score_item->>'score', '') ~ '^[0-9]+(\.[0-9]+)?$'
+								THEN (score_item->>'score')::numeric
+								ELSE NULL
+							END
+						)
+						FROM jsonb_array_elements(COALESCE(application_data->'test_scores', '[]'::jsonb)) AS score_item
+						WHERE UPPER(COALESCE(score_item->>'test_type', '')) = 'SAT'
+					)
+				END AS sat_score,
 				CASE
 					WHEN COALESCE(application_data->>'ielts', applicant_info->>'ielts') ~ '^[0-9]+(\.[0-9]+)?$'
 					THEN (COALESCE(application_data->>'ielts', applicant_info->>'ielts'))::numeric
-					ELSE NULL
-				END
-			), 1), 0) AS avg_ielts,
-			COUNT(*) FILTER (WHERE LOWER(COALESCE(applicant_info->>'gender', application_data->>'gender', '')) = 'male') AS male_count,
-			COUNT(*) FILTER (WHERE LOWER(COALESCE(applicant_info->>'gender', application_data->>'gender', '')) = 'female') AS female_count
-		FROM submitted_applications
-		WHERE university_id = $1
+					ELSE (
+						SELECT MAX(
+							CASE
+								WHEN COALESCE(score_item->>'score', '') ~ '^[0-9]+(\.[0-9]+)?$'
+								THEN (score_item->>'score')::numeric
+								ELSE NULL
+							END
+						)
+						FROM jsonb_array_elements(COALESCE(application_data->'test_scores', '[]'::jsonb)) AS score_item
+						WHERE UPPER(COALESCE(score_item->>'test_type', '')) = 'IELTS'
+					)
+				END AS ielts_score,
+				LOWER(TRIM(COALESCE(
+					NULLIF(applicant_info->>'gender', ''),
+					NULLIF(application_data->>'gender', ''),
+					NULLIF(applicant_info->>'sex', ''),
+					NULLIF(application_data->>'sex', ''),
+					''
+				))) AS gender_value
+			FROM submitted_applications
+			WHERE university_id = $1
+		)
+		SELECT
+			COUNT(*) FILTER (WHERE received_at >= NOW() - INTERVAL '7 days') AS new_applications,
+			COUNT(*) AS total_applicants,
+			COALESCE(ROUND(AVG(sat_score))::int, 0) AS avg_sat,
+			COALESCE(ROUND(AVG(ielts_score), 1), 0) AS avg_ielts,
+			COUNT(*) FILTER (WHERE gender_value IN ('male', 'm', 'man', 'boy')) AS male_count,
+			COUNT(*) FILTER (WHERE gender_value IN ('female', 'f', 'woman', 'girl')) AS female_count
+		FROM application_metrics
 	`, universityId).Scan(
 		&resp.NewApplications,
 		&resp.TotalApplicants,

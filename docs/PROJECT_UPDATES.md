@@ -1,6 +1,50 @@
 # Kallisto Project Updates
 
+## 2026-03-11
+
+### Review sync, gender analytics, and working application templates
+
+- Manager review decisions now sync terminal outcomes back into `client_db.applications` after admin review updates:
+  - `accepted` -> student-facing `accepted`
+  - `rejected` -> student-facing `rejected`
+  - non-terminal manager review states keep the student-facing record at `submitted`
+- Student dashboard, applications list, and application detail pages now reflect accepted and rejected outcomes correctly.
+- Added gender capture to student profile settings and server-side validation for supported values:
+  - `male`
+  - `female`
+  - `other`
+  - `prefer_not_to_say`
+- Student application submission now mirrors profile gender into forwarded `applicant_info.gender` so management analytics can use a reliable source of truth.
+- Replaced the stubbed manager `Use Template` action in Application Structure with a real template catalog plus a confirmation-driven replace flow.
+- Added working built-in application-structure templates:
+  - `Common App Standard`
+  - `Graduate Program`
+  - `Scholarship Application`
+  - `International Student`
+- Expanded manager preview parity for builder-supported field types:
+  - `country`
+  - `rating`
+  - `address`
+  - `recommender`
+  - `repeating-group`
+
 ## 2026-03-10
+
+### Manager and student workflow fixes
+
+- Fixed management dashboard analytics to derive average SAT / IELTS and gender distribution from real submitted application payloads, including imported `test_scores` fallback data.
+- Fixed management applications page actions:
+  - aligned desktop action column
+  - added explicit review / accept / reject actions
+  - kept application detail viewing intact
+- Fixed management Users & Staff runtime behavior so the page no longer renders dummy staff/role/invitation content before live data arrives.
+- Removed the unused student header search input from the dashboard shell.
+- Removed the extra refresh action from Find Universities and adjusted desktop scrolling so filters and university results scroll independently instead of dragging the whole page awkwardly.
+- Restored schema-driven student application rendering:
+  - student application flow now loads university-published sections instead of filtering down to personal-only fields
+  - added support for essay, choice, dropdown, agreement, address, recommender, repeating-group, and file/document upload field types
+  - added transcript uploads inside education-history repeating groups
+  - kept draft autosave/resume behavior intact while allowing full university-configured payload submission
 
 ### Mobile responsiveness hardening
 

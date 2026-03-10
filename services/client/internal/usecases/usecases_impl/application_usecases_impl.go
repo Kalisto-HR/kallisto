@@ -192,13 +192,27 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		// Don't fail the submission, just log the error
 	}
 
-	var userEmail, userFirstName, userLastName string
+	var (
+		userEmail     string
+		userFirstName string
+		userLastName  string
+		userData      json.RawMessage
+	)
 	err = conn.QueryRow(ctx,
-		"SELECT email, first_name, last_name FROM users WHERE id=$1",
-		userId).Scan(&userEmail, &userFirstName, &userLastName)
+		"SELECT email, first_name, last_name, data FROM users WHERE id=$1",
+		userId).Scan(&userEmail, &userFirstName, &userLastName, &userData)
 	if err != nil {
 		log.Error("failed to fetch user info for forwarding", zap.Error(err))
 		// Don't fail the submission, just log the error
+	}
+
+	applicantInfo := map[string]string{
+		"email":      userEmail,
+		"first_name": userFirstName,
+		"last_name":  userLastName,
+	}
+	if gender := extractProfileGender(userData); gender != "" {
+		applicantInfo["gender"] = gender
 	}
 
 	// Forward application to admin service
@@ -222,9 +236,7 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		universityId,
 		cycle,
 		applicationData,
-		userEmail,
-		userFirstName,
-		userLastName,
+		applicantInfo,
 		fileAssets,
 		submittedAt,
 	)
@@ -236,7 +248,7 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 func forwardApplicationToAdmin(
 	userId, universityId, cycle string,
 	applicationData json.RawMessage,
-	email, firstName, lastName string,
+	applicantInfo map[string]string,
 	fileAssets []models.ApplicationFileAsset,
 	submittedAt time.Time,
 ) {
@@ -247,11 +259,7 @@ func forwardApplicationToAdmin(
 		"user_id":           userId,
 		"university_id":     universityId,
 		"application_cycle": cycle,
-		"applicant_info": map[string]string{
-			"email":      email,
-			"first_name": firstName,
-			"last_name":  lastName,
-		},
+		"applicant_info":    applicantInfo,
 		"application_data": applicationData,
 		"file_assets":      fileAssets,
 		"submitted_at":     submittedAt.Format(time.RFC3339),
@@ -301,6 +309,36 @@ func forwardApplicationToAdmin(
 			zap.String("user_id", userId),
 			zap.String("university_id", universityId),
 			zap.String("cycle", cycle))
+	}
+}
+
+func extractProfileGender(raw json.RawMessage) string {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" || trimmed == "null" {
+		return ""
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return ""
+	}
+
+	value, ok := payload["gender"].(string)
+	if !ok {
+		return ""
+	}
+
+	switch strings.TrimSpace(strings.ToLower(value)) {
+	case "male":
+		return "male"
+	case "female":
+		return "female"
+	case "other":
+		return "other"
+	case "prefer_not_to_say":
+		return "prefer_not_to_say"
+	default:
+		return ""
 	}
 }
 

@@ -7,6 +7,15 @@ import {
 } from "../mappers/responseMappers";
 import type { ApplicationTestScoreImportResult, StudentApplication, StudentApplicationListItem } from "../../types/domain";
 
+export interface ApplicationUploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  storage: string;
+  downloadUrl: string;
+}
+
 export async function fetchStudentApplications(): Promise<StudentApplicationListItem[]> {
   const result = await clientApi.get<unknown>("/v1.0/applications");
   if (!result.ok || !result.data) {
@@ -85,4 +94,56 @@ export async function importStudentProfileTestScoresToApplication(
   }
 
   return normalizeApplicationTestScoreImportResult(envelope.data);
+}
+
+export async function uploadStudentApplicationFiles(
+  universityId: string,
+  cycle: string,
+  files: File[],
+  fieldKey?: string,
+): Promise<ApplicationUploadedFile[]> {
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
+  const query = new URLSearchParams({
+    university_id: universityId,
+    cycle,
+  });
+  if (fieldKey) {
+    query.set("field_key", fieldKey);
+  }
+
+  const response = await clientApi.raw(`/v1.0/application-files/upload?${query.toString()}`, {
+    method: "POST",
+    body: formData,
+  });
+  const payload = (await response.json().catch(() => null)) as unknown;
+  const envelope = normalizeEnvelope<unknown>(payload);
+  if (!response.ok || !envelope.success) {
+    throw new Error(envelope.message || "Failed to upload application files");
+  }
+  if (!Array.isArray(envelope.data)) {
+    return [];
+  }
+
+  return envelope.data
+    .map((value) => {
+      const item = (value ?? {}) as Record<string, unknown>;
+      return {
+        id: typeof item.id === "string" ? item.id : "",
+        name: typeof item.name === "string" ? item.name : "Uploaded file",
+        type: typeof item.type === "string" ? item.type : "application/octet-stream",
+        size: typeof item.size === "number" ? item.size : 0,
+        storage: typeof item.storage === "string" ? item.storage : "application_file",
+        downloadUrl:
+          typeof item.download_url === "string"
+            ? item.download_url
+            : typeof item.downloadUrl === "string"
+              ? item.downloadUrl
+              : "",
+      };
+    })
+    .filter((item) => item.id.length > 0);
 }

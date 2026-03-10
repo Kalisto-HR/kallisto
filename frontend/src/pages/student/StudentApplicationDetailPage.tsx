@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, XCircle } from "lucide-react";
 import { fetchStudentApplication } from "../../services/client/applicationsService";
 import { fetchUniversityById } from "../../services/client/universitiesService";
 import type { StudentApplication } from "../../types/domain";
@@ -123,6 +123,34 @@ export function StudentApplicationDetailPage() {
               <div>
                 <p className="font-medium text-blue-700">Application submitted successfully</p>
                 <p className="text-sm text-muted-foreground">Your application is currently in review.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {application.status === "accepted" ? (
+        <Card className="border-green-200 bg-green-50/70">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium text-green-700">Application accepted</p>
+                <p className="text-sm text-muted-foreground">This university has marked your application as accepted.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {application.status === "rejected" ? (
+        <Card className="border-red-200 bg-red-50/70">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <XCircle className="mt-0.5 h-5 w-5 text-red-600" />
+              <div>
+                <p className="font-medium text-red-700">Application not accepted</p>
+                <p className="text-sm text-muted-foreground">This university has marked your application as rejected.</p>
               </div>
             </div>
           </CardContent>

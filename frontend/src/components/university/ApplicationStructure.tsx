@@ -190,6 +190,254 @@ const fieldTypeInfo: Record<FieldType, { icon: any; label: string; description: 
   'repeating-group': { icon: List, label: 'Repeating Group', description: 'Add multiple entries (e.g., education history)' },
 };
 
+const defaultFieldVisibility = {
+  applicant: true,
+  reviewer: true,
+  admin: true,
+};
+
+function createBuilderId(prefix: string) {
+  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function cloneTemplateSections(sectionDescriptors: Array<{
+  name: string;
+  title: string;
+  description?: string;
+  fields: Array<Partial<Field> & Pick<Field, 'type' | 'label'>>;
+}>): Section[] {
+  return sectionDescriptors.map((section, sectionIndex) => ({
+    id: createBuilderId(`section_${sectionIndex + 1}`),
+    name: section.name,
+    title: section.title,
+    description: section.description,
+    order: sectionIndex + 1,
+    visible: true,
+    fields: section.fields.map((field, fieldIndex) => ({
+      id: createBuilderId(`field_${sectionIndex + 1}_${fieldIndex + 1}`),
+      type: field.type,
+      label: field.label,
+      helperText: field.helperText,
+      placeholder: field.placeholder,
+      required: field.required ?? false,
+      order: fieldIndex + 1,
+      validation: field.validation,
+      options: field.options,
+      conditional: field.conditional,
+      dataKey: field.dataKey ?? `field_${sectionIndex + 1}_${fieldIndex + 1}`,
+      exportLabel: field.exportLabel ?? field.label,
+      visibility: field.visibility ?? { ...defaultFieldVisibility },
+    })),
+  }));
+}
+
+const APPLICATION_STRUCTURE_TEMPLATES = [
+  {
+    id: 'common-app',
+    name: 'Common App Standard',
+    description: 'Personal details, academics, activities, essays, and applicant confirmation.',
+    sections: [
+      {
+        name: 'Personal Information',
+        title: 'Personal Information',
+        description: 'Basic identity and contact details.',
+        fields: [
+          { type: 'short-text', label: 'Full Name', required: true, dataKey: 'full_name', helperText: 'Enter your legal full name.' },
+          { type: 'email', label: 'Email Address', required: true, dataKey: 'email' },
+          { type: 'phone', label: 'Phone Number', required: true, dataKey: 'phone' },
+          { type: 'date', label: 'Date of Birth', required: true, dataKey: 'dob' },
+          { type: 'country', label: 'Country of Citizenship', required: true, dataKey: 'citizenship' },
+          { type: 'address', label: 'Current Mailing Address', required: true, dataKey: 'mailing_address' },
+        ],
+      },
+      {
+        name: 'Academic History',
+        title: 'Academic History',
+        description: 'School history and standardized testing.',
+        fields: [
+          { type: 'repeating-group', label: 'Education History', required: true, dataKey: 'education_history', helperText: 'Add each school you attended.' },
+          { type: 'number', label: 'Cumulative GPA', required: true, dataKey: 'gpa', validation: { min: 0, max: 4 } },
+          { type: 'number', label: 'SAT Score', dataKey: 'sat', validation: { min: 0, max: 1600 } },
+          { type: 'number', label: 'IELTS Score', dataKey: 'ielts', validation: { min: 0, max: 9 } },
+        ],
+      },
+      {
+        name: 'Activities and Honors',
+        title: 'Activities and Honors',
+        description: 'Extracurricular activity and distinction summary.',
+        fields: [
+          { type: 'repeating-group', label: 'Activities and Honors', dataKey: 'activities_honors', helperText: 'Add important activities, awards, or honors.' },
+          { type: 'long-text', label: 'Community Impact', dataKey: 'community_impact', helperText: 'Summarize your most meaningful contributions.' },
+        ],
+      },
+      {
+        name: 'Essays',
+        title: 'Essay Responses',
+        description: 'Written responses for admission review.',
+        fields: [
+          { type: 'essay', label: 'Personal Essay', required: true, dataKey: 'personal_essay', validation: { wordLimit: 650 } },
+          { type: 'agreement', label: 'I confirm that all information in this application is accurate.', required: true, dataKey: 'application_agreement' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'graduate',
+    name: 'Graduate Program',
+    description: 'Graduate admissions with program selection, research background, recommenders, and documents.',
+    sections: [
+      {
+        name: 'Applicant Details',
+        title: 'Applicant Details',
+        description: 'Core applicant and contact information.',
+        fields: [
+          { type: 'short-text', label: 'Full Name', required: true, dataKey: 'full_name' },
+          { type: 'email', label: 'Email Address', required: true, dataKey: 'email' },
+          { type: 'date', label: 'Date of Birth', required: true, dataKey: 'dob' },
+          { type: 'country', label: 'Citizenship', required: true, dataKey: 'citizenship' },
+        ],
+      },
+      {
+        name: 'Program Selection',
+        title: 'Program Selection',
+        description: 'Program and intake preferences.',
+        fields: [
+          { type: 'dropdown', label: 'Program of Interest', required: true, dataKey: 'program', options: ['Computer Science', 'Data Science', 'Business Analytics', 'Engineering'] },
+          { type: 'dropdown', label: 'Preferred Intake', required: true, dataKey: 'preferred_intake', options: ['2026-Fall', '2027-Spring', '2027-Fall'] },
+          { type: 'radio', label: 'Study Mode', required: true, dataKey: 'study_mode', options: ['Full-time', 'Part-time'] },
+        ],
+      },
+      {
+        name: 'Academic Background',
+        title: 'Academic Background',
+        description: 'Previous higher-education records.',
+        fields: [
+          { type: 'repeating-group', label: 'Previous Education', required: true, dataKey: 'education_history' },
+          { type: 'number', label: 'Undergraduate GPA', required: true, dataKey: 'gpa', validation: { min: 0, max: 4 } },
+          { type: 'long-text', label: 'Research or Work Experience', dataKey: 'research_experience' },
+        ],
+      },
+      {
+        name: 'Assessments and References',
+        title: 'Assessments and References',
+        description: 'Testing and recommendation requirements.',
+        fields: [
+          { type: 'number', label: 'TOEFL Score', dataKey: 'toefl', validation: { min: 0, max: 120 } },
+          { type: 'number', label: 'IELTS Score', dataKey: 'ielts', validation: { min: 0, max: 9 } },
+          { type: 'recommender', label: 'Academic or Professional Recommenders', required: true, dataKey: 'recommenders' },
+          { type: 'rating', label: 'Research Readiness Rating', dataKey: 'research_readiness', validation: { min: 1, max: 5 }, helperText: 'Rate your readiness for advanced research on a 1-5 scale.' },
+        ],
+      },
+      {
+        name: 'Supporting Documents',
+        title: 'Supporting Documents',
+        description: 'Upload required graduate application documents.',
+        fields: [
+          { type: 'document', label: 'Statement of Purpose', required: true, dataKey: 'statement_of_purpose_document', validation: { maxFiles: 1, fileTypes: ['.pdf', '.doc', '.docx'], maxFileSize: 10 } },
+          { type: 'file-upload', label: 'Resume or CV', required: true, dataKey: 'resume', validation: { maxFiles: 1, fileTypes: ['.pdf', '.doc', '.docx'], maxFileSize: 10 } },
+          { type: 'essay', label: 'Short Research Statement', dataKey: 'research_statement', validation: { wordLimit: 500 } },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'scholarship',
+    name: 'Scholarship Application',
+    description: 'Scholarship-focused sections for merit, need, leadership, and commitments.',
+    sections: [
+      {
+        name: 'Applicant Profile',
+        title: 'Applicant Profile',
+        description: 'Basic profile for scholarship review.',
+        fields: [
+          { type: 'short-text', label: 'Full Name', required: true, dataKey: 'full_name' },
+          { type: 'email', label: 'Email Address', required: true, dataKey: 'email' },
+          { type: 'country', label: 'Citizenship', required: true, dataKey: 'citizenship' },
+          { type: 'number', label: 'Current GPA', required: true, dataKey: 'gpa', validation: { min: 0, max: 4 } },
+        ],
+      },
+      {
+        name: 'Financial Need',
+        title: 'Financial Need',
+        description: 'Describe your financial context and funding need.',
+        fields: [
+          { type: 'number', label: 'Requested Scholarship Amount', required: true, dataKey: 'requested_amount' },
+          { type: 'long-text', label: 'Financial Need Statement', required: true, dataKey: 'financial_need_statement' },
+          { type: 'file-upload', label: 'Proof of Financial Need', dataKey: 'financial_need_documents', validation: { maxFiles: 3, fileTypes: ['.pdf', '.jpg', '.jpeg', '.png'], maxFileSize: 10 } },
+        ],
+      },
+      {
+        name: 'Leadership and Service',
+        title: 'Leadership and Service',
+        description: 'Leadership experience and service involvement.',
+        fields: [
+          { type: 'repeating-group', label: 'Leadership and Service Experiences', dataKey: 'leadership_experiences' },
+          { type: 'rating', label: 'Leadership Confidence', dataKey: 'leadership_confidence', validation: { min: 1, max: 5 } },
+          { type: 'essay', label: 'Scholarship Essay', required: true, dataKey: 'scholarship_essay', validation: { wordLimit: 750 } },
+        ],
+      },
+      {
+        name: 'Certification',
+        title: 'Certification',
+        description: 'Final applicant acknowledgement.',
+        fields: [
+          { type: 'agreement', label: 'I certify that my scholarship application is complete and truthful.', required: true, dataKey: 'scholarship_agreement' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'international',
+    name: 'International Student',
+    description: 'Citizenship, English proficiency, funding, visa, and required documents.',
+    sections: [
+      {
+        name: 'Identity and Contact',
+        title: 'Identity and Contact',
+        description: 'Identity and international contact details.',
+        fields: [
+          { type: 'short-text', label: 'Full Name', required: true, dataKey: 'full_name' },
+          { type: 'email', label: 'Email Address', required: true, dataKey: 'email' },
+          { type: 'phone', label: 'Phone Number', required: true, dataKey: 'phone' },
+          { type: 'country', label: 'Country of Citizenship', required: true, dataKey: 'citizenship' },
+          { type: 'document', label: 'Passport Copy', required: true, dataKey: 'passport_copy', validation: { maxFiles: 1, fileTypes: ['.pdf', '.jpg', '.jpeg', '.png'], maxFileSize: 10 } },
+        ],
+      },
+      {
+        name: 'Academic Preparation',
+        title: 'Academic Preparation',
+        description: 'Prior education and transcript records.',
+        fields: [
+          { type: 'repeating-group', label: 'Education History', required: true, dataKey: 'education_history' },
+          { type: 'number', label: 'Current GPA', dataKey: 'gpa', validation: { min: 0, max: 4 } },
+          { type: 'file-upload', label: 'Academic Transcript Files', required: true, dataKey: 'academic_transcripts', validation: { maxFiles: 5, fileTypes: ['.pdf', '.jpg', '.jpeg', '.png'], maxFileSize: 10 } },
+        ],
+      },
+      {
+        name: 'English Proficiency',
+        title: 'English Proficiency',
+        description: 'English-language requirements and waivers.',
+        fields: [
+          { type: 'number', label: 'IELTS Score', dataKey: 'ielts', validation: { min: 0, max: 9 } },
+          { type: 'number', label: 'TOEFL Score', dataKey: 'toefl', validation: { min: 0, max: 120 } },
+          { type: 'checkbox', label: 'English Waiver Basis', dataKey: 'english_waiver_basis', options: ['Native speaker', 'Prior English-medium study', 'Waiver requested'] },
+        ],
+      },
+      {
+        name: 'Finance and Visa',
+        title: 'Finance and Visa',
+        description: 'Financial support and immigration details.',
+        fields: [
+          { type: 'number', label: 'Available Annual Funding', required: true, dataKey: 'annual_funding' },
+          { type: 'dropdown', label: 'Visa Sponsorship Needed', required: true, dataKey: 'visa_sponsorship_needed', options: ['Yes', 'No'] },
+          { type: 'file-upload', label: 'Financial Support Documents', required: true, dataKey: 'financial_support_docs', validation: { maxFiles: 3, fileTypes: ['.pdf', '.jpg', '.jpeg', '.png'], maxFileSize: 10 } },
+          { type: 'agreement', label: 'I understand that visa issuance is subject to university and embassy approval.', required: true, dataKey: 'visa_acknowledgement' },
+        ],
+      },
+    ],
+  },
+];
+
 export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) {
   const { universityId } = useParams();
   const { user } = useSession();
@@ -203,6 +451,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [showAddQuestionModal, setShowAddQuestionModal] = useState(false);
   const [showTemplatesDrawer, setShowTemplatesDrawer] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [showPublishWarning, setShowPublishWarning] = useState(false);
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -387,6 +636,18 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     };
   }, [resolvedUniversityId]);
 
+  useEffect(() => {
+    if (sections.length === 0) {
+      setSelectedSectionId(null);
+      setSelectedFieldId(null);
+      return;
+    }
+    if (!selectedSectionId || !sections.some((section) => section.id === selectedSectionId)) {
+      setSelectedSectionId(sections[0].id);
+      setSelectedFieldId(null);
+    }
+  }, [sections, selectedSectionId]);
+
   // Helper functions
   const selectedSection = sections.find(s => s.id === selectedSectionId);
   const selectedField = selectedSection?.fields.find(f => f.id === selectedFieldId);
@@ -566,9 +827,25 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
   };
 
   const handleLoadTemplate = (templateId: string) => {
-    // Load template logic here
+    setPendingTemplateId(templateId);
+  };
+
+  const handleConfirmTemplateReplace = () => {
+    const template = APPLICATION_STRUCTURE_TEMPLATES.find((item) => item.id === pendingTemplateId);
+    if (!template) {
+      setPendingTemplateId(null);
+      return;
+    }
+
+    const nextSections = cloneTemplateSections(template.sections);
+    setSections(nextSections);
+    setSelectedSectionId(nextSections[0]?.id ?? null);
+    setSelectedFieldId(null);
     setShowTemplatesDrawer(false);
+    setPendingTemplateId(null);
     setUnsavedChanges(true);
+    setPublishStatus('draft');
+    setSaveError(null);
   };
 
   // Render functions
@@ -981,7 +1258,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                 />
               </div>
 
-              {['short-text', 'long-text', 'email', 'number'].includes(selectedField.type) && (
+              {['short-text', 'long-text', 'email', 'phone', 'number', 'country', 'essay'].includes(selectedField.type) && (
                 <div className="space-y-2">
                   <Label htmlFor="field-placeholder">Placeholder</Label>
                   <Input
@@ -1083,13 +1360,13 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                           validation: { ...selectedField.validation, maxLength: parseInt(e.target.value) || undefined },
                         })
                       }
-                      placeholder="∞"
+                      placeholder="8"
                     />
                   </div>
                 </div>
               )}
 
-              {selectedField.type === 'number' && (
+              {['number', 'rating'].includes(selectedField.type) && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="min-value">Minimum</Label>
@@ -1360,6 +1637,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
               <CardContent className="space-y-6">
                 {section.fields.filter(f => f.visibility?.applicant !== false).map((field) => {
                   const FieldIcon = fieldTypeInfo[field.type].icon;
+                  const ratingMax = Math.max(1, Number(field.validation?.max || 5));
                   
                   return (
                     <div key={field.id} className="space-y-2">
@@ -1425,6 +1703,9 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                           </SelectTrigger>
                         </Select>
                       )}
+                      {field.type === 'country' && (
+                        <Input placeholder={field.placeholder || 'Type country name...'} disabled />
+                      )}
                       {['file-upload', 'document'].includes(field.type) && (
                         <div className="border-2 border-dashed rounded-lg p-6 text-center">
                           <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
@@ -1441,7 +1722,56 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                       {field.type === 'agreement' && (
                         <div className="flex items-start gap-2 p-3 border rounded-lg">
                           <input type="checkbox" className="mt-1" disabled />
-                          <span className="text-sm">{field.helperText || 'I agree to the terms and conditions'}</span>
+                          <span className="text-sm">{field.label}</span>
+                        </div>
+                      )}
+                      {field.type === 'rating' && (
+                        <div className="rounded-lg border p-4">
+                          <div className="flex items-center gap-2">
+                            {Array.from({ length: ratingMax }).map((_, index) => (
+                              <Star key={index} className="h-5 w-5 text-muted-foreground" />
+                            ))}
+                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Scale from {field.validation?.min ?? 1} to {ratingMax}
+                          </p>
+                        </div>
+                      )}
+                      {field.type === 'address' && (
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <Input placeholder="Street address" disabled className="md:col-span-2" />
+                          <Input placeholder="City" disabled />
+                          <Input placeholder="State / Province" disabled />
+                          <Input placeholder="Postal code" disabled />
+                          <Input placeholder="Country" disabled />
+                        </div>
+                      )}
+                      {field.type === 'recommender' && (
+                        <div className="space-y-3 rounded-lg border p-4">
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <Input placeholder="Recommender name" disabled />
+                            <Input placeholder="Recommender email" disabled />
+                          </div>
+                          <Input placeholder="Relationship to applicant" disabled />
+                        </div>
+                      )}
+                      {field.type === 'repeating-group' && (
+                        <div className="space-y-3">
+                          {[1, 2].map((entry) => (
+                            <div key={entry} className="rounded-lg border p-4">
+                              <div className="mb-3 text-sm font-medium">Entry {entry}</div>
+                              <div className="grid gap-3 md:grid-cols-2">
+                                <Input placeholder="Institution or item name" disabled />
+                                <Input placeholder="Country / category" disabled />
+                                <Input placeholder="Degree / role" disabled />
+                                <Input placeholder="Year / duration" disabled />
+                              </div>
+                            </div>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" className="gap-2" disabled>
+                            <Plus className="h-3.5 w-3.5" />
+                            Add another entry
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -1454,6 +1784,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
       </div>
     );
   };
+
+  const pendingTemplate = APPLICATION_STRUCTURE_TEMPLATES.find((item) => item.id === pendingTemplateId) ?? null;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -1643,41 +1975,12 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
           <SheetHeader>
             <SheetTitle>Application Templates</SheetTitle>
             <SheetDescription>
-              Choose from pre-built templates or industry standards
+              Choose from working templates that replace the current draft structure
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-4 mt-6">
-            {[
-              {
-                id: 'common-app',
-                name: 'Common App Standard',
-                description: 'Based on the Common Application format used by 900+ universities',
-                sections: 6,
-                fields: 42,
-              },
-              {
-                id: 'graduate',
-                name: 'Graduate Program',
-                description: 'Standard application for Master\'s and PhD programs',
-                sections: 8,
-                fields: 35,
-              },
-              {
-                id: 'scholarship',
-                name: 'Scholarship Application',
-                description: 'Additional sections for scholarship applications',
-                sections: 4,
-                fields: 18,
-              },
-              {
-                id: 'international',
-                name: 'International Student',
-                description: 'Includes visa, financial proof, and language proficiency',
-                sections: 7,
-                fields: 38,
-              },
-            ].map((template) => (
+            {APPLICATION_STRUCTURE_TEMPLATES.map((template) => (
               <Card key={template.id} className="cursor-pointer hover:border-[#4F46E5] transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -1688,9 +1991,9 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                     <BookTemplate className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                    <span>{template.sections} sections</span>
+                    <span>{template.sections.length} sections</span>
                     <span>•</span>
-                    <span>{template.fields} fields</span>
+                    <span>{template.sections.reduce((count, section) => count + section.fields.length, 0)} fields</span>
                   </div>
                   <Button
                     size="sm"
@@ -1706,6 +2009,40 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={pendingTemplate !== null} onOpenChange={(open) => { if (!open) setPendingTemplateId(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Replace current draft with template?</DialogTitle>
+            <DialogDescription>
+              {pendingTemplate
+                ? `${pendingTemplate.name} will replace the current draft structure. Save and publish afterwards to make it live for students.`
+                : 'This template will replace the current draft structure.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingTemplate ? (
+            <div className="rounded-lg border bg-muted/20 p-4 text-sm">
+              <div className="font-medium">{pendingTemplate.name}</div>
+              <div className="mt-1 text-muted-foreground">{pendingTemplate.description}</div>
+              <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+                <span>{pendingTemplate.sections.length} sections</span>
+                <span>•</span>
+                <span>{pendingTemplate.sections.reduce((count, section) => count + section.fields.length, 0)} fields</span>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingTemplateId(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmTemplateReplace}>
+              Replace draft
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Publish Warning Dialog */}
       <Dialog open={showPublishWarning} onOpenChange={setShowPublishWarning}>

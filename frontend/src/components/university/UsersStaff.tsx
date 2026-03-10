@@ -79,7 +79,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
   const isSuperuser = userRole === 'superuser';
   const universityId = context?.type === 'university' ? context.universityId : undefined;
   const universityName = context?.type === 'university' ? context.universityName : 'Stanford University';
-  const { payload, loading, createStaff, editStaff, setStaffStatus, resendInvite, setQuery } = useManagementStaffData(universityId);
+  const { payload, loading, error, createStaff, editStaff, setStaffStatus, resendInvite, setQuery } = useManagementStaffData(universityId);
 
   // Mock staff data
   const mockStaffMembers: StaffMember[] = [
@@ -188,9 +188,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
     setShowActionMenu(null);
   };
 
-  const staffMembers: StaffMember[] = loading
-    ? mockStaffMembers
-    : payload.items.map((item) => ({
+  const staffMembers: StaffMember[] = payload.items.map((item) => ({
       id: item.id,
       name: `${item.firstName} ${item.lastName}`.trim(),
       email: item.email,
@@ -199,18 +197,14 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
       lastActive: item.lastActiveAt ? new Date(item.lastActiveAt).toLocaleDateString('en-US') : 'Never',
       createdDate: new Date(item.createdAt).toLocaleDateString('en-US'),
     }));
-  const roles: Role[] = loading
-    ? mockRoles
-    : payload.roles.map((item) => ({
+  const roles: Role[] = payload.roles.map((item) => ({
       id: item.id,
       name: item.name,
       description: item.description,
       userCount: item.userCount,
       permissions: item.permissions,
     }));
-  const invitations: Invitation[] = loading
-    ? mockInvitations
-    : payload.invitations.map((item) => ({
+  const invitations: Invitation[] = payload.invitations.map((item) => ({
       id: item.id,
       email: item.email,
       role: item.staffRole,
@@ -325,6 +319,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
           </div>
         </div>
         {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         {/* Tabs */}
         <div className="border-b">
@@ -424,7 +419,13 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
             </Card>
 
             {/* Staff Table */}
-            {filteredStaff.length > 0 ? (
+            {loading ? (
+              <Card>
+                <CardContent className="p-12 text-center text-muted-foreground">
+                  Loading staff accounts...
+                </CardContent>
+              </Card>
+            ) : filteredStaff.length > 0 ? (
               <Card>
                 <CardContent className="p-0">
                   <>
@@ -617,7 +618,9 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {roles.map((role) => (
+                {loading ? (
+                  <div className="py-12 text-center text-muted-foreground">Loading roles...</div>
+                ) : roles.length > 0 ? roles.map((role) => (
                   <Card key={role.id}>
                     <CardHeader>
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -650,7 +653,9 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )) : (
+                  <div className="py-12 text-center text-muted-foreground">No roles available.</div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -673,7 +678,9 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                 </div>
               </CardHeader>
               <CardContent>
-                {invitations.length > 0 ? (
+                {loading ? (
+                  <div className="py-12 text-center text-muted-foreground">Loading invitations...</div>
+                ) : invitations.length > 0 ? (
                   <>
                     <div className="space-y-3 md:hidden">
                     {invitations.map((invitation) => (

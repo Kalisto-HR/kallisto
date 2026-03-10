@@ -41,7 +41,7 @@ export function StudentDashboardPage() {
   }
 
   const draftCount = applications.filter((item) => item.status === "draft").length;
-  const submittedCount = applications.filter((item) => item.status === "submitted").length;
+  const submittedCount = applications.filter((item) => item.status !== "draft").length;
   const basicInfoComplete = Boolean(profile.firstName && profile.lastName);
   const applicationProfileComplete = applications.length > 0;
   const testScoresComplete = testScoresCount > 0;

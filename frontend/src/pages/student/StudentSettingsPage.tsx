@@ -56,6 +56,8 @@ interface EditableTestScore {
   deleting: boolean;
 }
 
+type StudentGender = "male" | "female" | "other" | "prefer_not_to_say";
+
 const TEST_SCORE_TYPES: Array<{ value: StudentTestScoreType; label: string }> = [
   { value: "IELTS", label: "IELTS" },
   { value: "SAT", label: "SAT" },
@@ -63,6 +65,25 @@ const TEST_SCORE_TYPES: Array<{ value: StudentTestScoreType; label: string }> = 
   { value: "ACT", label: "ACT" },
   { value: "OTHER", label: "Other" },
 ];
+
+const STUDENT_GENDER_OPTIONS: Array<{ value: StudentGender; label: string }> = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+  { value: "prefer_not_to_say", label: "Prefer not to say" },
+];
+
+function normalizeStudentGender(value: unknown): StudentGender {
+  switch (value) {
+    case "male":
+    case "female":
+    case "other":
+    case "prefer_not_to_say":
+      return value;
+    default:
+      return "prefer_not_to_say";
+  }
+}
 
 function toEditableTestScore(item: StudentTestScore): EditableTestScore {
   return {
@@ -97,6 +118,7 @@ export function StudentSettingsPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [bio, setBio] = useState("");
+  const [gender, setGender] = useState<StudentGender>("prefer_not_to_say");
   const [profileVisibility, setProfileVisibility] = useState("partners");
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -137,6 +159,7 @@ export function StudentSettingsPage() {
             : {};
 
         setBio(typeof profileData.bio === "string" ? profileData.bio : "");
+        setGender(normalizeStudentGender(profileData.gender));
         setEmailNotifications(typeof notifications.email === "boolean" ? notifications.email : true);
         setPushNotifications(typeof notifications.push === "boolean" ? notifications.push : true);
         const visibility =
@@ -184,7 +207,7 @@ export function StudentSettingsPage() {
       await updateStudentProfile({
         firstName,
         lastName,
-        data: { bio },
+        data: { bio, gender },
       });
 
       setProfile((current) => {
@@ -198,6 +221,7 @@ export function StudentSettingsPage() {
           data: {
             ...(current.data ?? {}),
             bio,
+            gender,
           },
         };
       });
@@ -581,6 +605,24 @@ export function StudentSettingsPage() {
                     onChange={(event) => setBio(event.target.value)}
                   />
                 </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Gender</Label>
+                  <Select value={gender} onValueChange={(value) => setGender(value as StudentGender)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STUDENT_GENDER_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Used for application analytics and partner reporting. You can change this later.
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-4 rounded-lg border p-4">
@@ -700,6 +742,7 @@ export function StudentSettingsPage() {
                   setFirstName(profile.firstName);
                   setLastName(profile.lastName);
                   setBio(typeof profile.data?.bio === "string" ? profile.data.bio : "");
+                  setGender(normalizeStudentGender(profile.data?.gender));
                   setSuccess(null);
                   setError(null);
                 }}>
