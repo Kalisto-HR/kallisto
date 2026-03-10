@@ -11,7 +11,7 @@ Kallisto is a monorepo with one React SPA and two Go backend services.
 ## Runtime Topology
 
 - Frontend: `http://localhost:5173`
-- Client API: `http://localhost:8080/v1.0`
+- Client API: `http://localhost:8081/v1.0`
 - Admin API: `http://localhost:8082/v1.0`
 
 The frontend uses API proxy routes (`/api` and `/adminapi`) to reach the two services.

@@ -4,7 +4,7 @@
 
 | Service | URL |
 |---------|-----|
-| Client API | http://localhost:8080/v1.0 |
+| Client API | http://localhost:8081/v1.0 |
 | Admin API | http://localhost:8082/v1.0 |
 
 ## Authentication
@@ -991,7 +991,7 @@ Upsert global platform settings.
 
 ### Sign Up
 ```bash
-curl -X POST http://localhost:8080/v1.0/signup \
+curl -X POST http://localhost:8081/v1.0/signup \
   -H "Content-Type: application/json" \
   -c cookies.txt \
   -d '{"email":"test@example.com","password":"password123","first_name":"Test","last_name":"User"}'
@@ -999,7 +999,7 @@ curl -X POST http://localhost:8080/v1.0/signup \
 
 ### Sign In
 ```bash
-curl -X POST http://localhost:8080/v1.0/signin \
+curl -X POST http://localhost:8081/v1.0/signin \
   -H "Content-Type: application/json" \
   -c cookies.txt \
   -d '{"email":"test@example.com","password":"password123"}'
@@ -1007,18 +1007,18 @@ curl -X POST http://localhost:8080/v1.0/signin \
 
 ### Get Profile (Protected)
 ```bash
-curl -X GET http://localhost:8080/v1.0/profile \
+curl -X GET http://localhost:8081/v1.0/profile \
   -b cookies.txt
 ```
 
 ### List Universities
 ```bash
-curl -X GET "http://localhost:8080/v1.0/universities?page=1&limit=10"
+curl -X GET "http://localhost:8081/v1.0/universities?page=1&limit=10"
 ```
 
 ### Create Application
 ```bash
-curl -X POST http://localhost:8080/v1.0/applications \
+curl -X POST http://localhost:8081/v1.0/applications \
   -H "Content-Type: application/json" \
   -b cookies.txt \
   -d '{"university_id":"uuid-here","application_cycle":"2026-Spring","data":{}}'

@@ -11,7 +11,7 @@ Kallisto is a monorepo for a university application platform.
 ## Services
 
 - Frontend: `http://localhost:5173`
-- Client API: `http://localhost:8080/v1.0`
+- Client API: `http://localhost:8081/v1.0`
 - Admin API: `http://localhost:8082/v1.0`
 
 ## Quick Start

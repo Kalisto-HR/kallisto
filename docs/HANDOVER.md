@@ -4,7 +4,7 @@
 - Product: university application management platform.
 - Stack: React SPA (Vite) + Go (Gorilla Mux) services + PostgreSQL.
 - Services:
-  - Client API for applicants: http://localhost:8080/v1.0
+  - Client API for applicants: http://localhost:8081/v1.0
   - Admin API for staff/partners: http://localhost:8082/v1.0
 
 ## Repo Layout
@@ -61,7 +61,7 @@
 - Rate limiting, caching, monitoring.
 
 ## Handover Checklist (for the meeting)
-- Verify APIs respond on :8080 and :8082.
+- Verify APIs respond on :8081 and :8082.
 - Demo signup -> draft -> submit -> admin review.
 - Call out university sync gap.
 - Show env vars in .env and Vite proxy config.

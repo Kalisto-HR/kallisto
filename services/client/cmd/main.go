@@ -107,10 +107,12 @@ func main() {
 
 	srv := &http.Server{
 		Handler:      router,
-		Addr:         "0.0.0.0:8080",
+		Addr:         "0.0.0.0:8081",
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
+
+	zap.L().Info("Client service starting on port 8081")
 
 	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

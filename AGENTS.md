@@ -26,7 +26,7 @@ This file defines the default working rules and project knowledge baseline for c
 
 ### 2.2 Services and Ports
 - Frontend dev server: `http://localhost:5173`
-- Client service API: `http://localhost:8080/v1.0`
+- Client service API: `http://localhost:8081/v1.0`
 - Admin service API: `http://localhost:8082/v1.0`
 - PostgreSQL default port: `5432`
 

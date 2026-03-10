@@ -101,7 +101,7 @@ npm run dev
 ## 5) Verify
 
 - Frontend: `http://localhost:5173`
-- Client API health path check via any endpoint on `http://localhost:8080/v1.0`
+- Client API health path check via any endpoint on `http://localhost:8081/v1.0`
 - Admin API health path check via any endpoint on `http://localhost:8082/v1.0`
 
 ## Seed Accounts
