@@ -18,17 +18,12 @@ type University struct {
 	Country              *string         `json:"country,omitempty" db:"country"`
 	AcceptanceRate       *float64        `json:"acceptance_rate,omitempty" db:"acceptance_rate"`
 	TuitionFee           *float64        `json:"tuition_fee,omitempty" db:"tuition_fee"`
-	LivingCost           *float64        `json:"living_cost,omitempty" db:"living_cost"`
-	TotalCost            *float64        `json:"total_cost,omitempty" db:"total_cost"`
 	ApplicationDeadline  *time.Time      `json:"application_deadline,omitempty" db:"application_deadline"`
 	IeltsMin             *float64        `json:"ielts_min,omitempty" db:"ielts_min"`
 	ToeflMin             *int            `json:"toefl_min,omitempty" db:"toefl_min"`
 	ScholarshipAvailable *bool           `json:"scholarship_available,omitempty" db:"scholarship_available"`
-	Competitiveness      *string         `json:"competitiveness,omitempty" db:"competitiveness"`
 	CityType             *string         `json:"city_type,omitempty" db:"city_type"`
-	SafetyLevel          *string         `json:"safety_level,omitempty" db:"safety_level"`
 	CampusVibe           *string         `json:"campus_vibe,omitempty" db:"campus_vibe"`
-	VisaRequired         *bool           `json:"visa_required,omitempty" db:"visa_required"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty" db:"application_schema"`
 	ManagementProfile    json.RawMessage `json:"management_profile,omitempty" db:"management_profile"`
 	Ranking              *int            `json:"ranking,omitempty" db:"ranking"`
@@ -46,17 +41,12 @@ type CreateUniversityRequest struct {
 	Country              *string         `json:"country,omitempty"`
 	AcceptanceRate       *float64        `json:"acceptance_rate,omitempty"`
 	TuitionFee           *float64        `json:"tuition_fee,omitempty"`
-	LivingCost           *float64        `json:"living_cost,omitempty"`
-	TotalCost            *float64        `json:"total_cost,omitempty"`
 	ApplicationDeadline  *time.Time      `json:"application_deadline,omitempty"`
 	IeltsMin             *float64        `json:"ielts_min,omitempty"`
 	ToeflMin             *int            `json:"toefl_min,omitempty"`
 	ScholarshipAvailable *bool           `json:"scholarship_available,omitempty"`
-	Competitiveness      *string         `json:"competitiveness,omitempty"`
 	CityType             *string         `json:"city_type,omitempty"`
-	SafetyLevel          *string         `json:"safety_level,omitempty"`
 	CampusVibe           *string         `json:"campus_vibe,omitempty"`
-	VisaRequired         *bool           `json:"visa_required,omitempty"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty"`
 	ManagementProfile    json.RawMessage `json:"management_profile,omitempty"`
 	Ranking              *int            `json:"ranking,omitempty"`
@@ -73,17 +63,12 @@ type UpdateUniversityRequest struct {
 	Country              *string         `json:"country,omitempty"`
 	AcceptanceRate       *float64        `json:"acceptance_rate,omitempty"`
 	TuitionFee           *float64        `json:"tuition_fee,omitempty"`
-	LivingCost           *float64        `json:"living_cost,omitempty"`
-	TotalCost            *float64        `json:"total_cost,omitempty"`
 	ApplicationDeadline  *time.Time      `json:"application_deadline,omitempty"`
 	IeltsMin             *float64        `json:"ielts_min,omitempty"`
 	ToeflMin             *int            `json:"toefl_min,omitempty"`
 	ScholarshipAvailable *bool           `json:"scholarship_available,omitempty"`
-	Competitiveness      *string         `json:"competitiveness,omitempty"`
 	CityType             *string         `json:"city_type,omitempty"`
-	SafetyLevel          *string         `json:"safety_level,omitempty"`
 	CampusVibe           *string         `json:"campus_vibe,omitempty"`
-	VisaRequired         *bool           `json:"visa_required,omitempty"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty"`
 	ManagementProfile    json.RawMessage `json:"management_profile,omitempty"`
 	Ranking              *int            `json:"ranking,omitempty"`
@@ -100,17 +85,12 @@ type ImportUniversityRequest struct {
 	Country              *string         `json:"country,omitempty"`
 	AcceptanceRate       *float64        `json:"acceptance_rate,omitempty"`
 	TuitionFee           *float64        `json:"tuition_fee,omitempty"`
-	LivingCost           *float64        `json:"living_cost,omitempty"`
-	TotalCost            *float64        `json:"total_cost,omitempty"`
 	ApplicationDeadline  *time.Time      `json:"application_deadline,omitempty"`
 	IeltsMin             *float64        `json:"ielts_min,omitempty"`
 	ToeflMin             *int            `json:"toefl_min,omitempty"`
 	ScholarshipAvailable *bool           `json:"scholarship_available,omitempty"`
-	Competitiveness      *string         `json:"competitiveness,omitempty"`
 	CityType             *string         `json:"city_type,omitempty"`
-	SafetyLevel          *string         `json:"safety_level,omitempty"`
 	CampusVibe           *string         `json:"campus_vibe,omitempty"`
-	VisaRequired         *bool           `json:"visa_required,omitempty"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty"`
 	ManagementProfile    json.RawMessage `json:"management_profile,omitempty"`
 	Ranking              *int            `json:"ranking,omitempty"`

@@ -161,12 +161,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold">University Profile</h1>
             <p className="text-muted-foreground mt-1">Manage your institution's information and programs</p>
           </div>
-          <Button onClick={() => void handleSave()} disabled={saving || loading}>
+          <Button className="w-full md:w-auto" onClick={() => void handleSave()} disabled={saving || loading}>
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -268,12 +268,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
         {/* Programs Offered */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Programs Offered</CardTitle>
                 <CardDescription>Manage your academic programs</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={addProgram}>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={addProgram}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Program
               </Button>
@@ -281,8 +281,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {programs.map((program, index) => (
-              <div key={program.id} className="flex items-start gap-3 p-4 rounded-lg border">
-                <div className="flex-1 grid sm:grid-cols-3 gap-3">
+              <div key={program.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start">
+                <div className="grid flex-1 gap-3 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor={`program-name-${index}`}>Program Name</Label>
                     <Input
@@ -316,7 +316,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="mt-7 shrink-0"
+                  className="self-end sm:mt-7 sm:self-start"
                   onClick={() => removeProgram(program.id)}
                 >
                   <X className="h-4 w-4" />
@@ -329,12 +329,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
         {/* Intake Terms */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Intake Terms & Deadlines</CardTitle>
                 <CardDescription>Set application periods and deadlines</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={addIntakeTerm}>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={addIntakeTerm}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Term
               </Button>
@@ -342,8 +342,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {intakeTerms.map((term, index) => (
-              <div key={term.id} className="flex items-start gap-3 p-4 rounded-lg border">
-                <div className="flex-1 grid sm:grid-cols-2 gap-3">
+              <div key={term.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start">
+                <div className="grid flex-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor={`term-name-${index}`}>Term Name</Label>
                     <Input
@@ -360,7 +360,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="mt-7 shrink-0"
+                  className="self-end sm:mt-7 sm:self-start"
                   onClick={() => removeIntakeTerm(term.id)}
                 >
                   <X className="h-4 w-4" />

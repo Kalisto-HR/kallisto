@@ -4,6 +4,17 @@ import { fetchSuperuserOverview, type SuperuserOverviewPayload } from "../../ser
 
 export function SuperuserOverviewPage() {
   const [data, setData] = useState<SuperuserOverviewPayload | undefined>(undefined);
+  const emptyOverview: SuperuserOverviewPayload = {
+    stats: {
+      total_universities: 0,
+      management_accounts: 0,
+      total_applications: 0,
+      pending_drafts: 0,
+    },
+    recent_activity: [],
+    pending_drafts: [],
+    system_health: [],
+  };
 
   useEffect(() => {
     let active = true;
@@ -21,5 +32,5 @@ export function SuperuserOverviewPage() {
     };
   }, []);
 
-  return <SuperuserOverview data={data} />;
+  return <SuperuserOverview data={data ?? emptyOverview} />;
 }

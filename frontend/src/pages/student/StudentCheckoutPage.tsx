@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, CreditCard, Lock } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -8,11 +8,22 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { routes } from "../../routes/routeConfig";
+import type { BasketCheckoutPreview } from "../../types/domain";
+import { formatRmb } from "../../utils/currency";
 
 export function StudentCheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const basketPreview = ((location.state as { basketPreview?: BasketCheckoutPreview } | null) ?? null)?.basketPreview ?? null;
+  const planName = basketPreview?.plan.name ?? "Pro Plan";
+  const planCapacity = basketPreview?.plan.capacity ?? 100;
+  const applicationCount = basketPreview?.applicationCount ?? 0;
+  const subtotal = basketPreview?.estimatedTotal ?? 199;
+  const tax = basketPreview ? 0 : 19.9;
+  const total = subtotal + tax;
 
   if (success) {
     return (
@@ -32,16 +43,22 @@ export function StudentCheckoutPage() {
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Plan</span>
-              <span className="font-medium">Pro</span>
+              <span className="font-medium">{planName}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Credits</span>
-              <span className="font-medium">100</span>
+              <span className="text-muted-foreground">Application capacity</span>
+              <span className="font-medium">{planCapacity}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Amount</span>
-              <span className="font-medium">$199/month</span>
+              <span className="font-medium">{formatRmb(total)}</span>
             </div>
+            {applicationCount > 0 ? (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Selected applications</span>
+                <span className="font-medium">{applicationCount}</span>
+              </div>
+            ) : null}
           </CardContent>
           <CardFooter className="flex flex-col gap-3 sm:flex-row">
             <Button className="w-full sm:flex-1" onClick={() => navigate(routes.student.dashboard)}>
@@ -62,8 +79,8 @@ export function StudentCheckoutPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <section className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(routes.student.pricing)}>
+      <section className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate(routes.student.basket)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -74,6 +91,19 @@ export function StudentCheckoutPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          {basketPreview?.warnings.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Checkout Notes</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                {basketPreview.warnings.map((warning) => (
+                  <p key={warning}>• {warning}</p>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle>Payment Method</CardTitle>
@@ -84,7 +114,7 @@ export function StudentCheckoutPage() {
                 <Label htmlFor="card-number">Card number</Label>
                 <Input id="card-number" placeholder="1234 5678 9012 3456" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="expiry">Expiry date</Label>
                   <Input id="expiry" placeholder="MM / YY" />
@@ -134,29 +164,31 @@ export function StudentCheckoutPage() {
         </div>
 
         <div>
-          <Card className="sticky top-6">
+          <Card className="top-6 lg:sticky">
             <CardHeader>
               <CardTitle>Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium">Pro Plan</div>
-                  <div className="text-sm text-muted-foreground">Monthly billing</div>
+                  <div className="font-medium">{planName}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {applicationCount > 0 ? `${applicationCount} selected universities` : "Concept checkout mode"}
+                  </div>
                 </div>
-                <Badge variant="secondary">100 credits</Badge>
+                <Badge variant="secondary">{planCapacity} capacity</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>$199.00</span>
+                <span>{formatRmb(subtotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Tax</span>
-                <span>$19.90</span>
+                <span>{formatRmb(tax, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <div className="flex items-center justify-between border-t pt-3">
                 <span className="font-semibold">Total</span>
-                <span className="text-2xl font-semibold">$218.90</span>
+                <span className="text-2xl font-semibold">{formatRmb(total, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
@@ -167,7 +199,7 @@ export function StudentCheckoutPage() {
                 onClick={() => setSuccess(true)}
               >
                 <Lock className="mr-2 h-4 w-4" />
-                Pay $218.90
+                Pay {formatRmb(total, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Button>
               <p className="text-xs text-muted-foreground">Encrypted checkout, parity mode.</p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

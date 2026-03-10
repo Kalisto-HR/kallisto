@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { ErrorState } from "../../components/common/PageState";
 import { Button } from "../../components/ui/button";
@@ -8,13 +8,16 @@ import { Label } from "../../components/ui/label";
 import { useSession } from "../../hooks/useSession";
 import { routes } from "../../routes/routeConfig";
 import { signInStudent } from "../../services/client/authService";
+import { SESSION_EXPIRED_REASON } from "../../services/sessionEvents";
 
 export function SignInStudentPage() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, initialized, isAuthenticated } = useSession();
+  const showSessionExpiredBanner = searchParams.get("reason") === SESSION_EXPIRED_REASON;
 
   useEffect(() => {
     if (!initialized || !isAuthenticated || !user) {
@@ -56,6 +59,12 @@ export function SignInStudentPage() {
   return (
     <AuthShell title="Student Sign In" subtitle="Access your student portal">
       <form className="space-y-4" onSubmit={onSubmit}>
+        {showSessionExpiredBanner ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            Your session expired due to inactivity. Please sign in again.
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
@@ -73,6 +82,9 @@ export function SignInStudentPage() {
 
         <div className="text-sm text-muted-foreground">
           New here? <Link to={routes.auth.signUp} className="text-primary underline">Create student account</Link>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Forgot password? <Link to={`${routes.auth.forgotPassword}?portal=student`} className="text-primary underline">Reset it</Link>
         </div>
         <div className="text-sm text-muted-foreground">
           Need another portal? <Link to={routes.auth.signIn} className="text-primary underline">Back to portal selection</Link>

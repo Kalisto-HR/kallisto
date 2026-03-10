@@ -23,17 +23,12 @@ export interface UniversityListItem {
   applicationFee: number | null;
   acceptanceRate: number | null;
   tuitionFee: number | null;
-  livingCost: number | null;
-  totalCost: number | null;
   applicationDeadline: string | null;
   ieltsMin: number | null;
   toeflMin: number | null;
   scholarshipAvailable: boolean | null;
-  competitiveness: string | null;
   cityType: string | null;
-  safetyLevel: string | null;
   campusVibe: string | null;
-  visaRequired: boolean | null;
 }
 
 export interface University {
@@ -48,21 +43,46 @@ export interface University {
   applicationFee: number | null;
   acceptanceRate: number | null;
   tuitionFee: number | null;
-  livingCost: number | null;
-  totalCost: number | null;
   applicationDeadline: string | null;
   ieltsMin: number | null;
   toeflMin: number | null;
   scholarshipAvailable: boolean | null;
-  competitiveness: string | null;
   cityType: string | null;
-  safetyLevel: string | null;
   campusVibe: string | null;
-  visaRequired: boolean | null;
   applicationSchema: Record<string, unknown> | null;
   managementProfile: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
   createdAt: string;
+}
+
+export interface BasketPlan {
+  id: string;
+  name: string;
+  capacity: number;
+  price: number;
+  perApp: number;
+  savings: number;
+  featured: boolean;
+  description: string;
+  priceCaption: string;
+}
+
+export interface StudentBasketState {
+  items: UniversityListItem[];
+  selectedPlanId: string | null;
+  recommendedPlanId: string | null;
+  totalUniversities: number;
+  maxPlanCapacity: number;
+}
+
+export interface BasketCheckoutPreview {
+  plan: BasketPlan;
+  universities: UniversityListItem[];
+  applicationCount: number;
+  estimatedTotal: number;
+  status: string;
+  readyForPaymentApi: boolean;
+  warnings: string[];
 }
 
 export interface Profile {

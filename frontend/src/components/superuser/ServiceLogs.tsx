@@ -425,9 +425,50 @@ export function ServiceLogs({ onNavigate, logsData }: ServiceLogsProps) {
       </div>
 
       {/* Logs Table - Responsive with Horizontal Scroll Container */}
-      <div className="px-4 sm:px-6 py-4 sm:py-6 w-full">
+      <div className="w-full px-4 py-4 sm:px-6 sm:py-6">
         <Card className="w-full">
-          <div className="overflow-x-auto">
+          <div className="space-y-3 p-4 md:hidden">
+            {filteredLogs.length === 0 ? (
+              <div className="rounded-lg border p-8 text-center">
+                <Terminal className="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-50" />
+                <div className="font-medium">No logs match your filters</div>
+                <p className="mt-1 text-sm text-muted-foreground">Try adjusting your filters or time range.</p>
+              </div>
+            ) : (
+              filteredLogs.map((log) => (
+                <div
+                  key={log.id}
+                  onClick={() => setSelectedLog(log)}
+                  className="cursor-pointer rounded-lg border p-4 space-y-3 transition-colors hover:bg-accent/50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-mono text-xs text-muted-foreground">{log.timestamp}</div>
+                      <div className="mt-1 text-sm font-medium">{log.message}</div>
+                    </div>
+                    <Badge variant="outline" className={`text-xs whitespace-nowrap ${getLevelColor(log.level)}`}>
+                      {log.level.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="grid gap-2 text-xs sm:grid-cols-2">
+                    <div>
+                      <div className="text-muted-foreground">Service</div>
+                      <div className="font-medium">{log.microservice}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">User ID</div>
+                      <div className="font-mono">{log.userId || '—'}</div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <div className="text-muted-foreground">Handler</div>
+                      <div className="font-mono break-all">{log.handler}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[800px]">
               <thead className="border-b bg-accent/50">
                 <tr>

@@ -272,7 +272,7 @@ export default function SuperuserDraftsApprovals({
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#171717] mb-2">Drafts & Approvals</h1>
@@ -282,7 +282,7 @@ export default function SuperuserDraftsApprovals({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
@@ -325,8 +325,8 @@ export default function SuperuserDraftsApprovals({
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-6 mb-6">
-        <div className="flex items-center gap-4">
+      <div className="mb-6 rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A3A3A3]" />
@@ -343,7 +343,7 @@ export default function SuperuserDraftsApprovals({
           <select
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value as DraftType | 'all')}
-            className="px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#171717] focus:border-transparent bg-white min-w-[200px]"
+            className="w-full min-w-0 rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#171717] lg:min-w-[200px]"
           >
             <option value="all">All Types</option>
             <option value="create-mgmt-account">Create Account</option>
@@ -358,7 +358,7 @@ export default function SuperuserDraftsApprovals({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as DraftStatus | 'all')}
-            className="px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#171717] focus:border-transparent bg-white"
+            className="w-full rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#171717] lg:w-auto"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -382,7 +382,7 @@ export default function SuperuserDraftsApprovals({
               onClick={() => setSelectedDraft(draft)}
               className="p-6 hover:bg-[#FAFAFA] transition-colors cursor-pointer"
             >
-              <div className="flex items-start justify-between mb-3">
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-mono text-[#737373]">{draft.id}</span>
                   {getTypeBadge(draft.type)}
@@ -397,7 +397,7 @@ export default function SuperuserDraftsApprovals({
               <h3 className="font-medium text-[#171717] mb-2">{draft.title}</h3>
               <p className="text-sm text-[#737373] mb-3">{draft.description}</p>
 
-              <div className="flex items-center gap-6 text-xs text-[#A3A3A3]">
+                <div className="flex flex-wrap items-center gap-4 text-xs text-[#A3A3A3] sm:gap-6">
                 <div className="flex items-center gap-1.5">
                   <User className="w-3 h-3" />
                   <span>{draft.requester}</span>

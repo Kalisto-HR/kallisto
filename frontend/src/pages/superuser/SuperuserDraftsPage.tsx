@@ -56,7 +56,7 @@ export function SuperuserDraftsPage() {
 
   return (
     <SuperuserDraftsApprovals
-      draftsData={mapped.length > 0 ? (mapped as any) : undefined}
+      draftsData={mapped as any}
       onApproveDraft={async (draftId, notes) => {
         await approveSuperuserDraft(draftId, notes);
         await loadDrafts();

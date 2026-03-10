@@ -7,7 +7,6 @@ import (
 	"time"
 
 	auth "kallisto/infra/auth/jwt"
-	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
 	"kallisto/infra/validation"
 	"kallisto/services/admin/internal/models"
@@ -28,7 +27,6 @@ func AdminSignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Validate input
 	errors := validation.Validate(
 		validation.ValidateRequired(req.Email, "email"),
 		validation.ValidateEmail(req.Email, "email"),
@@ -39,7 +37,6 @@ func AdminSignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Authenticate user
 	user, err := usecases_impl.AdminSignIn(r.Context(), &req)
 	if err != nil {
 		handleFuncErr, ok := err.(utils.HandlerFuncErr)
@@ -52,7 +49,6 @@ func AdminSignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT
 	claims := auth.Claims{
 		UID:       user.Id,
 		FirstName: user.FirstName,
@@ -61,37 +57,24 @@ func AdminSignInHandler(w http.ResponseWriter, r *http.Request) {
 		Iat:       time.Now().Unix(),
 	}
 
-	jwt, err := auth.NewJWTFromClaims(&claims)
+	jwtToken, err := auth.NewJWTFromClaims(&claims)
 	if err != nil {
 		log.Error("failed to create JWT", zap.Error(err))
 		utils.WriteJSONResponseWithMsg(w, "failed to create access token", http.StatusInternalServerError)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    jwt.TokenString,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false, // false for local dev, true in production
-		SameSite: http.SameSiteLaxMode,
-	})
+	if cookieErr := utils.SetAuthCookies(w, jwtToken.TokenString, &claims, user.UniversityLinked, user.Email); cookieErr != nil {
+		log.Error(cookieErr.Error())
+		utils.WriteJSONResponseWithMsg(w, "failed to issue auth cookie", http.StatusInternalServerError)
+		return
+	}
 
 	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
 }
 
 func AdminSignOutHandler(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Unix(0, 0),
-		MaxAge:   -1,
-	})
-
+	utils.ClearAuthCookies(w)
 	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
 }
 
@@ -107,7 +90,6 @@ func AdminSignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Validate input
 	errors := validation.Validate(
 		validation.ValidateRequired(req.Email, "email"),
 		validation.ValidateEmail(req.Email, "email"),
@@ -123,7 +105,6 @@ func AdminSignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create user
 	userId, err := usecases_impl.AdminSignUp(r.Context(), &req)
 	if err != nil {
 		handleFuncErr, ok := err.(utils.HandlerFuncErr)
@@ -140,34 +121,4 @@ func AdminSignUpHandler(w http.ResponseWriter, r *http.Request) {
 		"msg": "ok",
 		"id":  userId,
 	}, http.StatusCreated)
-}
-
-func GetAdminMeHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-
-	claims, err := middlewares.GetClaimsFromContext(r.Context())
-	if err != nil {
-		utils.WriteJSONResponseWithMsg(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	user, err := usecases_impl.GetAdminUserById(r.Context(), claims.UID)
-	if err != nil {
-		handleFuncErr, ok := err.(utils.HandlerFuncErr)
-		status := http.StatusInternalServerError
-		if ok {
-			status = handleFuncErr.Status()
-		}
-		log.Error(err.Error())
-		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-		return
-	}
-
-	utils.WriteJSONResponse(w, map[string]interface{}{
-		"id":                claims.UID,
-		"first_name":        claims.FirstName,
-		"last_name":         claims.LastName,
-		"role":              claims.Role,
-		"university_linked": user.UniversityLinked,
-	}, http.StatusOK)
 }

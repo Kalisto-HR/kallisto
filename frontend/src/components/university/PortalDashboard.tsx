@@ -5,8 +5,9 @@ import { Button } from '../ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useManagementDashboardData } from '../../hooks/useManagementDashboardData';
+import { routes } from '../../routes/routeConfig';
 
 interface PortalDashboardProps {
   onNavigate?: (page: string) => void;
@@ -15,8 +16,10 @@ interface PortalDashboardProps {
 
 export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashboardProps) {
   const { universityId } = useParams();
+  const navigate = useNavigate();
   const { data: dashboardData, loading: dashboardLoading } = useManagementDashboardData(universityId);
   const currentVariant = variant === 'default' && dashboardLoading ? 'loading' : variant;
+  const applicationsRoute = universityId ? routes.management.university.applications(universityId) : null;
 
   const stats = {
     newApplications: dashboardData?.newApplications ?? 0,
@@ -59,6 +62,15 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
       rejected: { label: 'Rejected', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
     };
     return statusConfig[status] || statusConfig.new;
+  };
+
+  const navigateToApplicants = (applicationId?: string) => {
+    if (applicationsRoute) {
+      const search = applicationId ? `?applicationId=${encodeURIComponent(applicationId)}` : '';
+      void navigate(`${applicationsRoute}${search}`);
+      return;
+    }
+    onNavigate?.('university-applicants');
   };
 
   if (currentVariant === 'empty') {
@@ -128,18 +140,18 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
       <div className="min-h-screen bg-background p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-semibold">Portal Dashboard</h1>
               <p className="text-muted-foreground mt-1">Overview of your applications and applicants</p>
             </div>
-            <Button onClick={() => onNavigate?.('university-applicants')}>
+            <Button className="w-full md:w-auto" onClick={() => onNavigate?.('university-applicants')}>
               View all applicants
             </Button>
           </div>
 
           {/* Summary Cards */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">New Applications</CardTitle>
@@ -199,7 +211,7 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
             </Card>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Gender Distribution */}
             <Card>
               <CardHeader>
@@ -231,13 +243,13 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
             {/* Notifications Preview */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <CardTitle>Recent Notifications</CardTitle>
-                    <CardDescription>Latest updates and alerts</CardDescription>
+                    <CardTitle>Recent Application Alerts</CardTitle>
+                    <CardDescription>Generated from the latest submissions</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => onNavigate?.('university-notifications')}>
-                    View all
+                  <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => navigateToApplicants()}>
+                    Open applications
                   </Button>
                 </div>
               </CardHeader>
@@ -246,7 +258,8 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
                   {notifications.map((notification) => (
                     <div
                       key={notification.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
+                      onClick={() => navigateToApplicants(notification.id)}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
                         notification.read ? 'bg-background' : 'bg-accent/50'
                       }`}
                     >
@@ -318,7 +331,7 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onNavigate?.('university-applicant-detail');
+                              navigateToApplicants(applicant.id);
                             }}
                           >
                             View
@@ -340,18 +353,18 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold">Portal Dashboard</h1>
             <p className="text-muted-foreground mt-1">Overview of your applications and applicants</p>
           </div>
-          <Button onClick={() => onNavigate?.('university-applicants')}>
+          <Button className="w-full md:w-auto" onClick={() => onNavigate?.('university-applicants')}>
             View all applicants
           </Button>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">New Applications</CardTitle>
@@ -403,7 +416,7 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Gender Distribution */}
           <Card>
             <CardHeader>
@@ -431,24 +444,25 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
           {/* Notifications Preview */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Recent Notifications</CardTitle>
-                  <CardDescription>Latest updates and alerts</CardDescription>
+                  <CardTitle>Recent Application Alerts</CardTitle>
+                  <CardDescription>Generated from the latest submissions</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => onNavigate?.('university-notifications')}>
-                  View all
-                </Button>
-              </div>
+                  <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => navigateToApplicants()}>
+                    Open applications
+                  </Button>
+                </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                      notification.read ? 'bg-background' : 'bg-accent/50'
-                    }`}
+                      onClick={() => navigateToApplicants(notification.id)}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                        notification.read ? 'bg-background' : 'bg-accent/50'
+                      }`}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm">{notification.message}</p>
@@ -467,18 +481,61 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
         {/* Recent Applications */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Recent Applications</CardTitle>
-                <CardDescription>Last 10 applications submitted</CardDescription>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle>Recent Applications</CardTitle>
+                  <CardDescription>Last 10 applications submitted</CardDescription>
+                </div>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => onNavigate?.('university-applicants')}>
+                  View all
+                </Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => onNavigate?.('university-applicants')}>
-                View all
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 md:hidden">
+                {recentApplications.map((applicant) => {
+                  const statusInfo = getStatusBadge(applicant.status);
+                  return (
+                    <div key={applicant.id} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-medium">{applicant.name}</div>
+                          <div className="text-sm text-muted-foreground">{applicant.citizenship}</div>
+                        </div>
+                        <Badge variant="secondary" className={statusInfo.className}>
+                          {statusInfo.label}
+                        </Badge>
+                      </div>
+                      <div className="grid gap-2 text-sm sm:grid-cols-2">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Program</div>
+                          <div>{applicant.program}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Submitted</div>
+                          <div>
+                            {new Date(applicant.submittedDate).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => navigateToApplicants(applicant.id)}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hidden md:block">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Applicant</TableHead>
@@ -518,7 +575,7 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onNavigate?.('university-applicant-detail');
+                            navigateToApplicants(applicant.id);
                           }}
                         >
                           View
@@ -528,9 +585,10 @@ export function PortalDashboard({ onNavigate, variant = 'default' }: PortalDashb
                   );
                 })}
               </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              </Table>
+              </div>
+            </CardContent>
+          </Card>
       </div>
     </div>
   );

@@ -517,7 +517,7 @@ export function StudentSettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Avatar className="h-24 w-24">
                   {photoUrl ? <AvatarImage src={photoUrl} alt={`${firstName} ${lastName}`} /> : null}
                   <AvatarFallback className="bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-2xl text-white">
@@ -584,7 +584,7 @@ export function StudentSettingsPage() {
               </div>
 
               <div className="space-y-4 rounded-lg border p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="font-medium">Test Scores</h3>
                     <p className="text-sm text-muted-foreground">
@@ -670,7 +670,7 @@ export function StudentSettingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                       <Button
                         type="button"
                         variant="outline"
@@ -695,7 +695,7 @@ export function StudentSettingsPage() {
                 ))}
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <Button variant="outline" onClick={() => {
                   setFirstName(profile.firstName);
                   setLastName(profile.lastName);
@@ -753,7 +753,7 @@ export function StudentSettingsPage() {
                   autoComplete="new-password"
                 />
               </div>
-              <div className="flex justify-end">
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                 <Button onClick={() => void savePassword()} disabled={savingPassword}>
                   <Save className="mr-2 h-4 w-4" />
                   {savingPassword ? "Updating..." : "Update password"}

@@ -35,5 +35,5 @@ export function SuperuserUniversitiesPage() {
     lastActive: item.last_active,
   }));
 
-  return <SuperuserUniversities universitiesData={mapped.length > 0 ? (mapped as any) : undefined} />;
+  return <SuperuserUniversities universitiesData={mapped as any} />;
 }

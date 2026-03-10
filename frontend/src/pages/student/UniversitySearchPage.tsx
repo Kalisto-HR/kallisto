@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -32,23 +33,12 @@ import {
 } from "../../hooks/useUniversitySearchData";
 import { addCompareItem, fetchCompareList, removeCompareItem } from "../../services/client/compareService";
 import { routes } from "../../routes/routeConfig";
-
-const COMPETITIVENESS_OPTIONS = [
-  { value: "reach", label: "Reach" },
-  { value: "match", label: "Match" },
-  { value: "safety", label: "Safety" },
-];
+import { formatRmb } from "../../utils/currency";
 
 const CITY_TYPE_OPTIONS = [
   { value: "urban", label: "Urban" },
   { value: "suburban", label: "Suburban" },
   { value: "rural", label: "Rural" },
-];
-
-const SAFETY_LEVEL_OPTIONS = [
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
 ];
 
 const IELTS_PRESETS = [6, 6.5, 7, 7.5];
@@ -136,7 +126,7 @@ export function UniversitySearchPage() {
     () =>
       result.items.map((item) => ({
         ...item,
-        competitiveness: item.ranking !== null && item.ranking <= 200 ? "Match" : "Reach",
+        fitLabel: item.ranking !== null && item.ranking <= 200 ? "Match" : "Reach",
       })),
     [result.items],
   );
@@ -166,11 +156,185 @@ export function UniversitySearchPage() {
     }
   };
 
+  const filterPanel = (
+    <div className="space-y-4 rounded-2xl border bg-card p-4">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-[#4F46E5]" />
+          <h2 className="text-2xl font-semibold">Advanced Filters</h2>
+          {activeFilterCount > 0 ? <Badge variant="secondary">{activeFilterCount}</Badge> : null}
+        </div>
+        <p className="text-sm text-muted-foreground">Refine your search to find the perfect match</p>
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button size="sm" onClick={onApplyFilters} disabled={!isFiltersDirty}>
+            Apply
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => clearFilters()}>
+            Clear
+          </Button>
+        </div>
+      </div>
+
+      {filterValidationError ? <p className="text-sm text-destructive">{filterValidationError}</p> : null}
+
+      <FilterSection title="Academic" open={academicOpen} onOpenChange={setAcademicOpen}>
+        <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <NumberFilterField
+              id="min-ranking"
+              label="Min Ranking"
+              value={draftFilters.minRanking}
+              onChange={(value) => setDraftFilter("minRanking", parseIntegerInput(value))}
+            />
+            <NumberFilterField
+              id="max-ranking"
+              label="Max Ranking"
+              value={draftFilters.maxRanking}
+              onChange={(value) => setDraftFilter("maxRanking", parseIntegerInput(value))}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="min-ielts">IELTS</Label>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-auto p-0 text-xs text-muted-foreground"
+                onClick={() => setDraftFilter("minIelts", undefined)}
+              >
+                Any
+              </Button>
+            </div>
+            <NumberFilterField
+              id="min-ielts"
+              label=""
+              hideLabel
+              value={draftFilters.minIelts}
+              onChange={(value) => setDraftFilter("minIelts", parseNumberInput(value))}
+            />
+            <PresetButtons
+              values={IELTS_PRESETS}
+              selected={draftFilters.minIelts}
+              onSelect={(value) => setDraftFilter("minIelts", value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="min-toefl">TOEFL iBT</Label>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-auto p-0 text-xs text-muted-foreground"
+                onClick={() => setDraftFilter("minToefl", undefined)}
+              >
+                Any
+              </Button>
+            </div>
+            <NumberFilterField
+              id="min-toefl"
+              label=""
+              hideLabel
+              value={draftFilters.minToefl}
+              onChange={(value) => setDraftFilter("minToefl", parseIntegerInput(value))}
+            />
+            <PresetButtons
+              values={TOEFL_PRESETS}
+              selected={draftFilters.minToefl}
+              onSelect={(value) => setDraftFilter("minToefl", value)}
+            />
+          </div>
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Financial" open={financialOpen} onOpenChange={setFinancialOpen}>
+        <div className="grid gap-3">
+          <NumberFilterField
+            id="max-fee"
+            label="Max Application Fee (RMB)"
+            value={draftFilters.maxFee}
+            onChange={(value) => setDraftFilter("maxFee", parseNumberInput(value))}
+          />
+          <NumberFilterField
+            id="max-tuition"
+            label="Max Tuition (RMB)"
+            value={draftFilters.maxTuition}
+            onChange={(value) => setDraftFilter("maxTuition", parseNumberInput(value))}
+          />
+          <BooleanFilterField
+            id="scholarship-available"
+            label="Scholarship Available"
+            value={draftFilters.scholarshipAvailable}
+            onChange={(value) => setDraftFilter("scholarshipAvailable", value)}
+          />
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Location" open={locationOpen} onOpenChange={setLocationOpen}>
+        <div className="grid gap-3">
+          <TextFilterField
+            id="country"
+            label="Country"
+            value={draftFilters.country}
+            onChange={(value) => setDraftFilter("country", value)}
+          />
+          <TextFilterField
+            id="province"
+            label="Province"
+            value={draftFilters.province}
+            onChange={(value) => setDraftFilter("province", value)}
+          />
+          <TextFilterField
+            id="city"
+            label="City"
+            value={draftFilters.city}
+            onChange={(value) => setDraftFilter("city", value)}
+          />
+          <SelectFilterField
+            id="city-type"
+            label="City Type"
+            placeholder="Any city type"
+            value={draftFilters.cityType ?? ""}
+            options={CITY_TYPE_OPTIONS}
+            onChange={(value) => setDraftFilter("cityType", value || undefined)}
+          />
+        </div>
+      </FilterSection>
+
+      <FilterSection title="Lifestyle" open={lifestyleOpen} onOpenChange={setLifestyleOpen}>
+        <div className="grid gap-3">
+          <TextFilterField
+            id="campus-vibe"
+            label="Campus Vibe"
+            value={draftFilters.campusVibe}
+            onChange={(value) => setDraftFilter("campusVibe", value)}
+            placeholder="e.g. collaborative"
+          />
+          <NumberFilterField
+            id="min-acceptance"
+            label="Min Acceptance Rate (%)"
+            value={draftFilters.minAcceptanceRate}
+            onChange={(value) => setDraftFilter("minAcceptanceRate", parseNumberInput(value))}
+          />
+          <NumberFilterField
+            id="max-acceptance"
+            label="Max Acceptance Rate (%)"
+            value={draftFilters.maxAcceptanceRate}
+            onChange={(value) => setDraftFilter("maxAcceptanceRate", parseNumberInput(value))}
+          />
+        </div>
+      </FilterSection>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <section className="sticky top-0 z-10 border-b bg-background pb-4">
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 pt-2">
+          <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-semibold">Find Universities</h1>
               <p className="text-sm text-muted-foreground">
@@ -178,12 +342,12 @@ export function UniversitySearchPage() {
                 <span className="font-semibold text-foreground">{result.total}</span> universities
               </p>
             </div>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="w-full gap-2 sm:w-auto">
               <Sparkles className="h-4 w-4" />
               AI Match
             </Button>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -210,232 +374,19 @@ export function UniversitySearchPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <aside
-          className={cn(
-            "space-y-4 rounded-2xl border bg-card p-4 h-fit xl:sticky xl:top-24",
-            showMobileFilters ? "block" : "hidden xl:block",
-          )}
-        >
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[#4F46E5]" />
-              <h2 className="text-2xl font-semibold">Advanced Filters</h2>
-              {activeFilterCount > 0 ? <Badge variant="secondary">{activeFilterCount}</Badge> : null}
-            </div>
-            <p className="text-sm text-muted-foreground">Refine your search to find the perfect match</p>
-            <div className="flex gap-2 pt-1">
-              <Button size="sm" onClick={onApplyFilters} disabled={!isFiltersDirty}>
-                Apply
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => clearFilters()}>
-                Clear
-              </Button>
-            </div>
-          </div>
-
-          {filterValidationError ? <p className="text-sm text-destructive">{filterValidationError}</p> : null}
-
-          <FilterSection title="Academic" open={academicOpen} onOpenChange={setAcademicOpen}>
-            <div className="space-y-3">
-              <div className="grid gap-3 md:grid-cols-2">
-                <NumberFilterField
-                  id="min-ranking"
-                  label="Min Ranking"
-                  value={draftFilters.minRanking}
-                  onChange={(value) => setDraftFilter("minRanking", parseIntegerInput(value))}
-                />
-                <NumberFilterField
-                  id="max-ranking"
-                  label="Max Ranking"
-                  value={draftFilters.maxRanking}
-                  onChange={(value) => setDraftFilter("maxRanking", parseIntegerInput(value))}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="min-ielts">IELTS</Label>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-auto p-0 text-xs text-muted-foreground"
-                    onClick={() => setDraftFilter("minIelts", undefined)}
-                  >
-                    Any
-                  </Button>
-                </div>
-                <NumberFilterField
-                  id="min-ielts"
-                  label=""
-                  hideLabel
-                  value={draftFilters.minIelts}
-                  onChange={(value) => setDraftFilter("minIelts", parseNumberInput(value))}
-                />
-                <PresetButtons
-                  values={IELTS_PRESETS}
-                  selected={draftFilters.minIelts}
-                  onSelect={(value) => setDraftFilter("minIelts", value)}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="min-toefl">TOEFL iBT</Label>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-auto p-0 text-xs text-muted-foreground"
-                    onClick={() => setDraftFilter("minToefl", undefined)}
-                  >
-                    Any
-                  </Button>
-                </div>
-                <NumberFilterField
-                  id="min-toefl"
-                  label=""
-                  hideLabel
-                  value={draftFilters.minToefl}
-                  onChange={(value) => setDraftFilter("minToefl", parseIntegerInput(value))}
-                />
-                <PresetButtons
-                  values={TOEFL_PRESETS}
-                  selected={draftFilters.minToefl}
-                  onSelect={(value) => setDraftFilter("minToefl", value)}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-1.5">
-                <Label>Competitiveness</Label>
-                <div className="flex flex-wrap gap-2">
-                  {COMPETITIVENESS_OPTIONS.map((option) => (
-                    <Button
-                      key={option.value}
-                      size="sm"
-                      variant={draftFilters.competitiveness === option.value ? "default" : "outline"}
-                      className={draftFilters.competitiveness === option.value ? "" : "bg-muted/70 border-border/80"}
-                      onClick={() =>
-                        setDraftFilter(
-                          "competitiveness",
-                          draftFilters.competitiveness === option.value ? undefined : option.value,
-                        )
-                      }
-                    >
-                      {option.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </FilterSection>
-
-          <FilterSection title="Financial" open={financialOpen} onOpenChange={setFinancialOpen}>
-            <div className="grid gap-3">
-              <NumberFilterField
-                id="max-fee"
-                label="Max Application Fee"
-                value={draftFilters.maxFee}
-                onChange={(value) => setDraftFilter("maxFee", parseNumberInput(value))}
-              />
-              <NumberFilterField
-                id="max-tuition"
-                label="Max Tuition"
-                value={draftFilters.maxTuition}
-                onChange={(value) => setDraftFilter("maxTuition", parseNumberInput(value))}
-              />
-              <NumberFilterField
-                id="max-living"
-                label="Max Living Cost"
-                value={draftFilters.maxLivingCost}
-                onChange={(value) => setDraftFilter("maxLivingCost", parseNumberInput(value))}
-              />
-              <NumberFilterField
-                id="max-total"
-                label="Max Total Cost"
-                value={draftFilters.maxTotalCost}
-                onChange={(value) => setDraftFilter("maxTotalCost", parseNumberInput(value))}
-              />
-              <BooleanFilterField
-                id="scholarship-available"
-                label="Scholarship Available"
-                value={draftFilters.scholarshipAvailable}
-                onChange={(value) => setDraftFilter("scholarshipAvailable", value)}
-              />
-            </div>
-          </FilterSection>
-
-          <FilterSection title="Location" open={locationOpen} onOpenChange={setLocationOpen}>
-            <div className="grid gap-3">
-              <TextFilterField
-                id="country"
-                label="Country"
-                value={draftFilters.country}
-                onChange={(value) => setDraftFilter("country", value)}
-              />
-              <TextFilterField
-                id="province"
-                label="Province"
-                value={draftFilters.province}
-                onChange={(value) => setDraftFilter("province", value)}
-              />
-              <TextFilterField
-                id="city"
-                label="City"
-                value={draftFilters.city}
-                onChange={(value) => setDraftFilter("city", value)}
-              />
-              <SelectFilterField
-                id="city-type"
-                label="City Type"
-                placeholder="Any city type"
-                value={draftFilters.cityType ?? ""}
-                options={CITY_TYPE_OPTIONS}
-                onChange={(value) => setDraftFilter("cityType", value || undefined)}
-              />
-              <SelectFilterField
-                id="safety-level"
-                label="Safety Level"
-                placeholder="Any safety level"
-                value={draftFilters.safetyLevel ?? ""}
-                options={SAFETY_LEVEL_OPTIONS}
-                onChange={(value) => setDraftFilter("safetyLevel", value || undefined)}
-              />
-            </div>
-          </FilterSection>
-
-          <FilterSection title="Lifestyle" open={lifestyleOpen} onOpenChange={setLifestyleOpen}>
-            <div className="grid gap-3">
-              <TextFilterField
-                id="campus-vibe"
-                label="Campus Vibe"
-                value={draftFilters.campusVibe}
-                onChange={(value) => setDraftFilter("campusVibe", value)}
-                placeholder="e.g. collaborative"
-              />
-              <NumberFilterField
-                id="min-acceptance"
-                label="Min Acceptance Rate (%)"
-                value={draftFilters.minAcceptanceRate}
-                onChange={(value) => setDraftFilter("minAcceptanceRate", parseNumberInput(value))}
-              />
-              <NumberFilterField
-                id="max-acceptance"
-                label="Max Acceptance Rate (%)"
-                value={draftFilters.maxAcceptanceRate}
-                onChange={(value) => setDraftFilter("maxAcceptanceRate", parseNumberInput(value))}
-              />
-              <BooleanFilterField
-                id="visa-required"
-                label="Visa Required"
-                value={draftFilters.visaRequired}
-                onChange={(value) => setDraftFilter("visaRequired", value)}
-              />
-            </div>
-          </FilterSection>
+        <aside className="hidden h-fit xl:sticky xl:top-24 xl:block">
+          {filterPanel}
         </aside>
+
+        <Sheet open={showMobileFilters} onOpenChange={setShowMobileFilters}>
+          <SheetContent side="left" className="w-full max-w-[420px] overflow-y-auto p-4 sm:w-[420px]">
+            <SheetHeader className="mb-4 text-left">
+              <SheetTitle>Advanced Filters</SheetTitle>
+              <SheetDescription>Adjust filters and apply them to your search results.</SheetDescription>
+            </SheetHeader>
+            {filterPanel}
+          </SheetContent>
+        </Sheet>
 
         <section className="space-y-4">
           {loading ? <LoadingState label="Loading universities..." /> : null}
@@ -460,7 +411,7 @@ export function UniversitySearchPage() {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-3">
+                        <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
                           <CardTitle className="text-xl transition-colors hover:text-[#4F46E5]">
                             {item.name}
                           </CardTitle>
@@ -469,36 +420,36 @@ export function UniversitySearchPage() {
                           </Badge>
                           <Badge
                             className={
-                              item.competitiveness === "Match"
+                              item.fitLabel === "Match"
                                 ? "border-blue-200 bg-blue-500/10 text-blue-700"
                                 : "border-amber-200 bg-amber-500/10 text-amber-700"
                             }
                           >
-                            {item.competitiveness}
+                            {item.fitLabel}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground sm:gap-3">
                           <span className="flex items-center gap-1.5">
                             <MapPin className="h-3.5 w-3.5" />
                             {[item.city, item.country, item.province].filter(Boolean).join(", ") || "Location unavailable"}
                           </span>
-                          <span>|</span>
+                          <span className="hidden sm:inline">|</span>
                           <span className="flex items-center gap-1.5">
                             <Award className="h-3.5 w-3.5" />
                             Ranking {item.ranking ?? "N/A"}
                           </span>
-                          <span>|</span>
+                          <span className="hidden sm:inline">|</span>
                           <span className="flex items-center gap-1.5">
                             <TrendingUp className="h-3.5 w-3.5" />
-                            Fee {item.applicationFee ?? item.tuitionFee ?? "N/A"}
+                            Fee {formatRmb(item.applicationFee ?? item.tuitionFee, { fallback: "N/A" })}
                           </span>
                         </div>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap gap-2">
                         <Badge variant="outline" className="text-xs">
                           Programs available
                         </Badge>
@@ -506,10 +457,11 @@ export function UniversitySearchPage() {
                           Application open
                         </Badge>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
                           variant={isInCompare ? "default" : "outline"}
                           size="sm"
+                          className="w-full sm:w-auto"
                           onClick={() => void toggleCompare(item.id)}
                         >
                           {isInCompare ? (
@@ -522,7 +474,7 @@ export function UniversitySearchPage() {
                           )}
                         </Button>
                         <Link to={routes.student.universityDetail(item.id)}>
-                          <Button size="sm">View Details</Button>
+                          <Button size="sm" className="w-full sm:w-auto">View Details</Button>
                         </Link>
                       </div>
                     </div>
@@ -533,7 +485,7 @@ export function UniversitySearchPage() {
             : null}
 
           {!loading && !error && result.totalPages > 1 ? (
-            <section className="flex items-center justify-between">
+            <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Button disabled={page <= 1} variant="outline" onClick={() => setPage(page - 1)}>
                 Previous
               </Button>
@@ -698,7 +650,7 @@ function BooleanFilterField({
 }: {
   id: string;
   label: string;
-  value: UniversityAdvancedFilters["scholarshipAvailable"] | UniversityAdvancedFilters["visaRequired"];
+  value: UniversityAdvancedFilters["scholarshipAvailable"];
   onChange: (value: boolean | undefined) => void;
 }) {
   return (

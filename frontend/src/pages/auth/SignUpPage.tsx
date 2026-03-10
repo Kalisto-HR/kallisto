@@ -40,7 +40,7 @@ export function SignUpPage() {
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="first-name">First name</Label>
             <Input id="first-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} required />

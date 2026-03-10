@@ -1,5 +1,5 @@
 import { clientApi } from "../api/httpClient";
-import { normalizeEnvelope, toPortalRole } from "../mappers/responseMappers";
+import { readSessionUserFromCookie } from "../sessionCookie";
 import type { SessionUser } from "../../types/session";
 
 interface SignInResponse {
@@ -8,13 +8,6 @@ interface SignInResponse {
 
 interface SignUpResponse {
   msg: string;
-}
-
-interface MeResponse {
-  id: string;
-  first_name: string;
-  last_name: string;
-  role: string;
 }
 
 export async function signInStudent(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
@@ -38,29 +31,28 @@ export async function signUpStudent(
 }
 
 export async function getStudentSessionUser(): Promise<SessionUser | null> {
-  const result = await clientApi.get<unknown>("/v1.0/me");
-  if (!result.ok || !result.data) {
-    return null;
-  }
-
-  const envelope = normalizeEnvelope<MeResponse>(result.data);
-  if (!envelope.success) {
-    return null;
-  }
-
-  // The client service /me endpoint echoes JWT claims and can return non-student
-  // roles when a management token is present. Treat those as non-student sessions.
-  if (envelope.data.role === "partner" || envelope.data.role === "staff" || envelope.data.role === "superuser-ui") {
+  const user = readSessionUserFromCookie();
+  if (!user || user.role !== "student") {
     return null;
   }
 
   return {
-    id: envelope.data.id,
-    firstName: envelope.data.first_name,
-    lastName: envelope.data.last_name,
-    role: toPortalRole(envelope.data.role),
+    ...user,
     area: "student",
   };
+}
+
+export async function requestStudentPasswordReset(email: string): Promise<{ ok: boolean; error?: string }> {
+  const result = await clientApi.post<{ msg: string }>("/v1.0/password/forgot", { email });
+  return { ok: result.ok, error: result.error ?? undefined };
+}
+
+export async function resetStudentPassword(token: string, newPassword: string): Promise<{ ok: boolean; error?: string }> {
+  const result = await clientApi.post<{ msg: string }>("/v1.0/password/reset", {
+    token,
+    new_password: newPassword,
+  });
+  return { ok: result.ok, error: result.error ?? undefined };
 }
 
 export async function signOutStudent(): Promise<void> {

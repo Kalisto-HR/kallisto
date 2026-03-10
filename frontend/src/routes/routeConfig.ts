@@ -11,6 +11,7 @@ export const routes = {
     dashboard: "/student/dashboard",
     universities: "/student/universities",
     universityDetail: (id: string) => `/student/universities/${id}`,
+    basket: "/student/basket",
     applications: "/student/applications",
     applicationDetail: (universityId: string, cycle: string) => `/student/applications/${universityId}/${cycle}`,
     applicationCreate: (universityId: string) => `/student/applications/new/${universityId}`,
@@ -18,7 +19,6 @@ export const routes = {
     settings: "/student/settings",
     help: "/student/help",
     billing: "/student/billing",
-    pricing: "/student/pricing",
     checkout: "/student/checkout",
   },
   management: {

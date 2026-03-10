@@ -26,18 +26,13 @@ function createEmptyFilters(): UniversityAdvancedFilters {
     maxRanking: undefined,
     maxFee: undefined,
     maxTuition: undefined,
-    maxLivingCost: undefined,
-    maxTotalCost: undefined,
     minAcceptanceRate: undefined,
     maxAcceptanceRate: undefined,
     minIelts: undefined,
     minToefl: undefined,
     scholarshipAvailable: undefined,
-    competitiveness: undefined,
     cityType: undefined,
-    safetyLevel: undefined,
     campusVibe: undefined,
-    visaRequired: undefined,
   };
 }
 
@@ -69,18 +64,13 @@ function normalizeFilters(filters: UniversityAdvancedFilters): UniversityAdvance
     maxRanking: normalizeInteger(filters.maxRanking),
     maxFee: normalizeNumber(filters.maxFee),
     maxTuition: normalizeNumber(filters.maxTuition),
-    maxLivingCost: normalizeNumber(filters.maxLivingCost),
-    maxTotalCost: normalizeNumber(filters.maxTotalCost),
     minAcceptanceRate: normalizeNumber(filters.minAcceptanceRate),
     maxAcceptanceRate: normalizeNumber(filters.maxAcceptanceRate),
     minIelts: normalizeNumber(filters.minIelts),
     minToefl: normalizeInteger(filters.minToefl),
     scholarshipAvailable: filters.scholarshipAvailable,
-    competitiveness: normalizeString(filters.competitiveness),
     cityType: normalizeString(filters.cityType),
-    safetyLevel: normalizeString(filters.safetyLevel),
     campusVibe: normalizeString(filters.campusVibe),
-    visaRequired: filters.visaRequired,
   };
 }
 
@@ -176,18 +166,13 @@ function parseSearchState(searchParams: URLSearchParams): ParsedSearchState {
     maxRanking: parseIntParam(searchParams.get("max_ranking")),
     maxFee: parseFloatParam(searchParams.get("max_fee")),
     maxTuition: parseFloatParam(searchParams.get("max_tuition")),
-    maxLivingCost: parseFloatParam(searchParams.get("max_living_cost")),
-    maxTotalCost: parseFloatParam(searchParams.get("max_total_cost")),
     minAcceptanceRate: parseFloatParam(searchParams.get("min_acceptance_rate")),
     maxAcceptanceRate: parseFloatParam(searchParams.get("max_acceptance_rate")),
     minIelts: parseFloatParam(searchParams.get("min_ielts")),
     minToefl: parseIntParam(searchParams.get("min_toefl")),
     scholarshipAvailable: parseBoolParam(searchParams.get("scholarship_available")),
-    competitiveness: searchParams.get("competitiveness") ?? undefined,
     cityType: searchParams.get("city_type") ?? undefined,
-    safetyLevel: searchParams.get("safety_level") ?? undefined,
     campusVibe: searchParams.get("campus_vibe") ?? undefined,
-    visaRequired: parseBoolParam(searchParams.get("visa_required")),
   });
 
   return {
@@ -216,8 +201,6 @@ function toSearchParams(query: string, page: number, filters: UniversityAdvanced
   if (typeof normalizedFilters.maxRanking === "number") params.set("max_ranking", String(normalizedFilters.maxRanking));
   if (typeof normalizedFilters.maxFee === "number") params.set("max_fee", String(normalizedFilters.maxFee));
   if (typeof normalizedFilters.maxTuition === "number") params.set("max_tuition", String(normalizedFilters.maxTuition));
-  if (typeof normalizedFilters.maxLivingCost === "number") params.set("max_living_cost", String(normalizedFilters.maxLivingCost));
-  if (typeof normalizedFilters.maxTotalCost === "number") params.set("max_total_cost", String(normalizedFilters.maxTotalCost));
   if (typeof normalizedFilters.minAcceptanceRate === "number") params.set("min_acceptance_rate", String(normalizedFilters.minAcceptanceRate));
   if (typeof normalizedFilters.maxAcceptanceRate === "number") params.set("max_acceptance_rate", String(normalizedFilters.maxAcceptanceRate));
   if (typeof normalizedFilters.minIelts === "number") params.set("min_ielts", String(normalizedFilters.minIelts));
@@ -225,11 +208,8 @@ function toSearchParams(query: string, page: number, filters: UniversityAdvanced
   if (typeof normalizedFilters.scholarshipAvailable === "boolean") {
     params.set("scholarship_available", String(normalizedFilters.scholarshipAvailable));
   }
-  if (normalizedFilters.competitiveness) params.set("competitiveness", normalizedFilters.competitiveness);
   if (normalizedFilters.cityType) params.set("city_type", normalizedFilters.cityType);
-  if (normalizedFilters.safetyLevel) params.set("safety_level", normalizedFilters.safetyLevel);
   if (normalizedFilters.campusVibe) params.set("campus_vibe", normalizedFilters.campusVibe);
-  if (typeof normalizedFilters.visaRequired === "boolean") params.set("visa_required", String(normalizedFilters.visaRequired));
 
   return params;
 }

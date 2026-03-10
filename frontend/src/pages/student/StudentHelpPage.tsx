@@ -52,8 +52,8 @@ export function StudentHelpPage() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
           <HelpCircle className="h-8 w-8 text-white" />
         </div>
-        <h1 className="text-4xl font-semibold">How can we help?</h1>
-        <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+        <h1 className="text-3xl font-semibold sm:text-4xl">How can we help?</h1>
+        <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
           Find answers to common questions or contact support.
         </p>
       </section>
@@ -142,9 +142,9 @@ export function StudentHelpPage() {
           <Button
             variant="ghost"
             className="justify-start"
-            onClick={() => navigate(routes.student.pricing)}
+            onClick={() => navigate(routes.student.billing)}
           >
-            View pricing plans
+            View billing
           </Button>
           <Button
             variant="ghost"

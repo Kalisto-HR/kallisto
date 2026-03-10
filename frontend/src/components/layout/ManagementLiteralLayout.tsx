@@ -79,7 +79,7 @@ export function ManagementLiteralLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden">
       <ManagementHeader
         userName={user ? `${user.firstName} ${user.lastName}`.trim() : "Manager"}
         userRole={userRole}
@@ -89,7 +89,7 @@ export function ManagementLiteralLayout({ children }: { children: ReactNode }) {
         onLogout={() => void handleLogout()}
       />
       <div className="flex flex-1 overflow-hidden">
-        <div className="hidden md:block">
+        <div className="hidden md:block h-full shrink-0">
           <ManagementSidebar
             userRole={userRole}
             currentContext={context}
@@ -115,7 +115,9 @@ export function ManagementLiteralLayout({ children }: { children: ReactNode }) {
           </SheetContent>
         </Sheet>
 
-        <main className="flex-1 overflow-y-auto bg-background">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -24,7 +24,7 @@ const studentNavItems = [
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   return (
-    <aside className="w-64 border-r bg-card">
+    <aside className="w-64 h-full border-r bg-card">
       <nav className="flex flex-col gap-1 p-4">
         {studentNavItems.map((item) => {
           const Icon = item.icon;

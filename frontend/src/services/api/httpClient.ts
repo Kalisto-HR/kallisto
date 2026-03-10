@@ -1,3 +1,5 @@
+import { AUTH_EXPIRED_EVENT } from "../sessionEvents";
+
 export interface HttpResult<T> {
   ok: boolean;
   status: number;
@@ -6,10 +8,35 @@ export interface HttpResult<T> {
 }
 
 type ApiBase = "/api" | "/adminapi";
+const UNAUTHORIZED_ERROR_MESSAGE = "Session expired. Please sign in again.";
+
+function dispatchAuthExpired(base: ApiBase, path: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(AUTH_EXPIRED_EVENT, {
+      detail: {
+        base,
+        path,
+        status: 401,
+        at: Date.now(),
+      },
+    }),
+  );
+}
 
 function buildPath(base: ApiBase, path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${base}${normalizedPath}`;
+}
+
+export async function requestRaw(base: ApiBase, path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(buildPath(base, path), {
+    credentials: "include",
+    ...init,
+  });
 }
 
 export async function requestJson<T>(
@@ -18,8 +45,7 @@ export async function requestJson<T>(
   init: RequestInit = {},
 ): Promise<HttpResult<T>> {
   try {
-    const response = await fetch(buildPath(base, path), {
-      credentials: "include",
+    const response = await requestRaw(base, path, {
       headers: {
         "Content-Type": "application/json",
         ...(init.headers ?? {}),
@@ -28,6 +54,16 @@ export async function requestJson<T>(
     });
 
     const data = (await response.json().catch(() => null)) as T | null;
+    if (response.status === 401) {
+      dispatchAuthExpired(base, path);
+      return {
+        ok: false,
+        status: response.status,
+        data,
+        error: UNAUTHORIZED_ERROR_MESSAGE,
+      };
+    }
+
     const defaultError = response.ok ? null : `Request failed (${response.status})`;
 
     return {
@@ -84,6 +120,7 @@ export const clientApi = {
   put: <T>(path: string, body?: unknown) =>
     requestJson<T>("/api", path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => requestJson<T>("/api", path, { method: "DELETE" }),
+  raw: (path: string, init: RequestInit = {}) => requestRaw("/api", path, init),
 };
 
 export const adminApi = {
@@ -93,4 +130,5 @@ export const adminApi = {
   put: <T>(path: string, body?: unknown) =>
     requestJson<T>("/adminapi", path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => requestJson<T>("/adminapi", path, { method: "DELETE" }),
+  raw: (path: string, init: RequestInit = {}) => requestRaw("/adminapi", path, init),
 };

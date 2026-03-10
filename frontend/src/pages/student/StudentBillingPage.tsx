@@ -4,6 +4,7 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { routes } from "../../routes/routeConfig";
+import { formatRmb } from "../../utils/currency";
 
 const packages = [
   { id: "pkg-5", applications: 5, price: 270, perApp: 54, savings: 20 },
@@ -24,16 +25,16 @@ export function StudentBillingPage() {
       </section>
 
       <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-        <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <AlertCircle className="mt-0.5 h-5 w-5 text-orange-600" />
           <div className="flex-1">
             <p className="text-sm font-medium text-orange-900">Billing APIs are not fully available yet.</p>
             <p className="text-sm text-orange-700">
-              Checkout actions route correctly, while payment posting remains disabled.
+              Choose universities in Basket first, then continue to checkout preview.
             </p>
           </div>
-          <Button size="sm" variant="outline" onClick={() => navigate(routes.student.pricing)}>
-            View plans
+          <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => navigate(routes.student.basket)}>
+            Open basket
           </Button>
         </div>
       </div>
@@ -69,7 +70,7 @@ export function StudentBillingPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg bg-accent/50 p-6 text-center">
-            <div className="text-4xl font-semibold">$58</div>
+            <div className="text-4xl font-semibold">{formatRmb(58)}</div>
             <div className="text-sm text-muted-foreground">per application</div>
           </div>
           <ul className="space-y-2 text-sm">
@@ -106,12 +107,12 @@ export function StudentBillingPage() {
               ) : null}
               <div className="text-center">
                 <div className="text-2xl font-semibold">{pkg.applications} Applications</div>
-                <div className="mt-1 text-3xl font-bold text-[#4F46E5]">${pkg.price}</div>
-                <div className="mt-1 text-xs text-muted-foreground">${pkg.perApp} per application</div>
+                <div className="mt-1 text-3xl font-bold text-[#4F46E5]">{formatRmb(pkg.price)}</div>
+                <div className="mt-1 text-xs text-muted-foreground">{formatRmb(pkg.perApp)} per application</div>
                 <div className="mt-2 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-700">
-                  Save ${pkg.savings}
+                  Save {formatRmb(pkg.savings)}
                 </div>
-                <Button className="mt-4 w-full" onClick={() => navigate(routes.student.checkout)}>
+                <Button className="mt-4 w-full" onClick={() => navigate(`${routes.student.basket}?plan=${encodeURIComponent(pkg.id)}`)}>
                   Buy Package
                 </Button>
               </div>
@@ -122,12 +123,12 @@ export function StudentBillingPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Invoices and Payments</CardTitle>
               <CardDescription>Billing history will appear once payment APIs are live.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" disabled>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" disabled>
               <Download className="mr-2 h-4 w-4" />
               Export All
             </Button>

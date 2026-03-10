@@ -28,9 +28,9 @@ export function SuperuserApplicationsPage() {
     const reviewing = applications.filter((a) => a.status === "reviewing").length;
     const accepted = applications.filter((a) => a.status === "accepted").length;
     return {
-      totalApplications: total > 0 ? total.toLocaleString() : undefined,
-      underReview: reviewing > 0 ? reviewing.toLocaleString() : undefined,
-      acceptedToday: accepted > 0 ? accepted.toLocaleString() : undefined,
+      totalApplications: total.toLocaleString(),
+      underReview: reviewing.toLocaleString(),
+      acceptedToday: accepted.toLocaleString(),
       avgReviewTime: "N/A",
     };
   }, [applications, total]);

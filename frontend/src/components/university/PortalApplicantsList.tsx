@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Search, Filter, Download, ChevronDown, ArrowUpDown, MoreVertical, FileDown, SlidersHorizontal, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
@@ -22,7 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '../ui/sheet';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useManagementApplicantsData } from '../../hooks/useManagementApplicantsData';
 
 interface PortalApplicantsListProps {
@@ -32,6 +32,7 @@ interface PortalApplicantsListProps {
 
 export function PortalApplicantsList({ onNavigate, variant = 'default' }: PortalApplicantsListProps) {
   const { universityId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { items, loading } = useManagementApplicantsData(universityId);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -41,6 +42,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
   const [filterIntake, setFilterIntake] = useState('all');
   const [selectedApplicant, setSelectedApplicant] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const requestedApplicationId = searchParams.get('applicationId');
 
   const formatBytes = (size) => {
     if (typeof size !== 'number' || Number.isNaN(size) || size <= 0) {
@@ -314,6 +316,18 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
   const openApplicantDetails = (applicant) => {
     setSelectedApplicant(applicant);
     setDetailsOpen(true);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.set('applicationId', applicant.id);
+    setSearchParams(nextSearchParams, { replace: true });
+  };
+
+  const handleDetailsOpenChange = (open) => {
+    setDetailsOpen(open);
+    if (!open) {
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.delete('applicationId');
+      setSearchParams(nextSearchParams, { replace: true });
+    }
   };
 
   // Filter and sort
@@ -343,6 +357,21 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
   const activeFiltersCount = [filterProgram, filterStatus, filterCitizenship, filterIntake].filter(
     (f) => f !== 'all'
   ).length;
+
+  useEffect(() => {
+    if (!requestedApplicationId || applicants.length === 0) {
+      return;
+    }
+    const matchingApplicant = applicants.find((applicant) => applicant.id === requestedApplicationId);
+    if (!matchingApplicant) {
+      return;
+    }
+    if (selectedApplicant?.id === matchingApplicant.id && detailsOpen) {
+      return;
+    }
+    setSelectedApplicant(matchingApplicant);
+    setDetailsOpen(true);
+  }, [requestedApplicationId, applicants, selectedApplicant?.id, detailsOpen]);
 
   if (variant === 'empty') {
     return (
@@ -380,7 +409,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-semibold">Applicants</h1>
             <p className="text-muted-foreground mt-1">
@@ -388,7 +417,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
               {activeFiltersCount > 0 && ` (${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active)`}
             </p>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
@@ -436,7 +465,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                     )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent>
+                <SheetContent className="overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle>Filter Applicants</SheetTitle>
                     <SheetDescription>Apply filters to narrow down your search</SheetDescription>
@@ -537,7 +566,51 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
             {loading ? (
               <div className="p-12 text-center text-muted-foreground">Loading applicants...</div>
             ) : filteredApplicants.length > 0 ? (
-              <div className="overflow-x-auto">
+              <>
+                <div className="space-y-3 p-4 md:hidden">
+                {filteredApplicants.map((applicant) => {
+                  const statusInfo = getStatusBadge(applicant.status);
+                  return (
+                    <div
+                      key={applicant.id}
+                      className="rounded-lg border p-4 space-y-3"
+                      onClick={() => openApplicantDetails(applicant)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-medium">{applicant.name}</div>
+                          <div className="text-sm text-muted-foreground">{applicant.citizenship}</div>
+                        </div>
+                        <Badge variant="secondary" className={statusInfo.className}>
+                          {statusInfo.label}
+                        </Badge>
+                      </div>
+                      <div className="grid gap-2 text-sm sm:grid-cols-2">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Program</div>
+                          <div>{applicant.program}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Submitted</div>
+                          <div>{new Date(applicant.submittedDate).toLocaleDateString('en-US')}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">GPA</div>
+                          <div>{applicant.gpa.toFixed(2)}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">SAT / IELTS</div>
+                          <div>{applicant.sat || '—'} / {applicant.ielts ? applicant.ielts.toFixed(1) : '—'}</div>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full">
+                        View details
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+                <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -602,7 +675,8 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
                     })}
                   </TableBody>
                 </Table>
-              </div>
+                </div>
+              </>
             ) : (
               <div className="p-12 text-center">
                 <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -626,7 +700,7 @@ export function PortalApplicantsList({ onNavigate, variant = 'default' }: Portal
         </Card>
       </div>
 
-      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+      <Sheet open={detailsOpen} onOpenChange={handleDetailsOpenChange}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Application Details</SheetTitle>

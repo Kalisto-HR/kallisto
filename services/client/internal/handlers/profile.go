@@ -299,40 +299,9 @@ func DeleteProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Unix(0, 0),
-		MaxAge:   -1,
-	})
+	utils.ClearAuthCookies(w)
 
 	resp := utils.NewApiResponse[any](true, nil, "account deleted successfully")
-	utils.WriteApiResponse(w, resp, http.StatusOK)
-}
-
-func GetMeHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-
-	claims, err := middlewares.GetClaimsFromContext(r.Context())
-	if err != nil {
-		log.Error(err.Error())
-		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
-		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
-		return
-	}
-
-	me := models.MeResponse{
-		Id:        claims.UID,
-		FirstName: claims.FirstName,
-		LastName:  claims.LastName,
-		Role:      claims.Role,
-	}
-
-	resp := utils.NewApiResponse(true, me, "ok")
 	utils.WriteApiResponse(w, resp, http.StatusOK)
 }
 

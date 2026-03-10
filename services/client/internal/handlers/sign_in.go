@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	auth "kallisto/infra/auth/jwt"
 	"net/http"
 
 	"kallisto/infra/utils"
@@ -36,29 +37,30 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken, err := usecases_impl.NewSignInUseCase(&signInRequest).SignIn(r.Context())
-
 	if err != nil {
 		handleFuncErr, ok := err.(utils.HandlerFuncErr)
 		status := http.StatusInternalServerError
-
 		if ok {
 			status = handleFuncErr.Status()
 		}
 
 		log.Error(err.Error())
 		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false, // false for local dev, true in production
-		SameSite: http.SameSiteLaxMode,
-	})
+	jwtFromToken, jwtErr := auth.NewJWTFromToken(&accessToken)
+	if jwtErr != nil {
+		log.Error(jwtErr.Error())
+		utils.WriteJSONResponseWithMsg(w, "failed to issue auth cookie", http.StatusInternalServerError)
+		return
+	}
+
+	if cookieErr := utils.SetAuthCookies(w, accessToken, &jwtFromToken.TokenClaims, nil, signInRequest.Email); cookieErr != nil {
+		log.Error(cookieErr.Error())
+		utils.WriteJSONResponseWithMsg(w, "failed to issue auth cookie", http.StatusInternalServerError)
+		return
+	}
 
 	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
 }

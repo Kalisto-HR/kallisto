@@ -1498,7 +1498,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="outline"
               size="sm"
@@ -1553,13 +1553,13 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
       </div>
 
       {/* Main Content Area - Responsive 3-Column Grid */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden xl:flex-row">
         {previewMode ? (
           renderPreview()
         ) : (
           <>
             {/* Left Panel - Sections List (Fixed Width 240-280px) */}
-            <div className="w-64 flex-shrink-0 border-r bg-card overflow-y-auto">
+            <div className="w-full flex-shrink-0 overflow-y-auto border-b bg-card xl:w-64 xl:border-b-0 xl:border-r">
               {renderLeftPanel()}
             </div>
 
@@ -1577,7 +1577,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
 
             {/* Mobile Field Settings Drawer */}
             <Sheet open={showFieldSettingsDrawer && selectedFieldId !== null} onOpenChange={setShowFieldSettingsDrawer}>
-              <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0 overflow-y-auto">
+              <SheetContent side="right" className="w-full max-w-[540px] p-0 overflow-y-auto sm:w-[540px]">
                 <SheetHeader className="p-6 border-b">
                   <SheetTitle>Field Settings</SheetTitle>
                   <SheetDescription>
@@ -1594,7 +1594,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             {selectedFieldId && (
               <button
                 onClick={() => setShowFieldSettingsDrawer(true)}
-                className="xl:hidden fixed bottom-6 right-6 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 hover:opacity-90 transition-opacity z-10"
+                className="fixed bottom-4 right-4 z-10 flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] px-4 py-3 text-white shadow-lg transition-opacity hover:opacity-90 xl:hidden"
               >
                 <Settings className="h-4 w-4" />
                 Field Settings
@@ -1614,7 +1614,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 py-4">
+          <div className="grid grid-cols-1 gap-3 py-4 sm:grid-cols-2">
             {Object.entries(fieldTypeInfo).map(([type, info]) => {
               const Icon = info.icon;
               return (

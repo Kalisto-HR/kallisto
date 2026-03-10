@@ -111,12 +111,7 @@ func SearchUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 	if maxTuition, err := strconv.ParseFloat(query.Get("max_tuition"), 64); err == nil {
 		params.MaxTuition = &maxTuition
 	}
-	if maxLivingCost, err := strconv.ParseFloat(query.Get("max_living_cost"), 64); err == nil {
-		params.MaxLivingCost = &maxLivingCost
-	}
-	if maxTotalCost, err := strconv.ParseFloat(query.Get("max_total_cost"), 64); err == nil {
-		params.MaxTotalCost = &maxTotalCost
-	}
+
 	if minAcceptanceRate, err := strconv.ParseFloat(query.Get("min_acceptance_rate"), 64); err == nil {
 		params.MinAcceptanceRate = &minAcceptanceRate
 	}
@@ -132,22 +127,12 @@ func SearchUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 	if scholarshipAvailable, ok := parseBoolQuery(query.Get("scholarship_available")); ok {
 		params.ScholarshipAvailable = &scholarshipAvailable
 	}
-	if competitiveness := query.Get("competitiveness"); competitiveness != "" {
-		params.Competitiveness = &competitiveness
-	}
 	if cityType := query.Get("city_type"); cityType != "" {
 		params.CityType = &cityType
-	}
-	if safetyLevel := query.Get("safety_level"); safetyLevel != "" {
-		params.SafetyLevel = &safetyLevel
 	}
 	if campusVibe := query.Get("campus_vibe"); campusVibe != "" {
 		params.CampusVibe = &campusVibe
 	}
-	if visaRequired, ok := parseBoolQuery(query.Get("visa_required")); ok {
-		params.VisaRequired = &visaRequired
-	}
-
 	items, total, err := usecases_impl.SearchUniversities(r.Context(), params)
 	if err != nil {
 		log.Error(err.Error())

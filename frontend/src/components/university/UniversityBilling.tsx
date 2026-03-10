@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import type { ManagementContext } from '../../types/managementLiteral';
+import { formatRmb } from '../../utils/currency';
 
 interface UniversityBillingProps {
   onNavigate?: (page: string) => void;
@@ -39,7 +40,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
     billingPeriodStart: '2024-01-01',
     billingPeriodEnd: '2024-01-31',
     applicationsSubmitted: 8,
-    totalCostThisPeriod: 464, // 8 apps × $58/app
+    totalCostThisPeriod: 464, // 8 apps × ¥58/app
     activePackageBalance: 12, // 12 out of 20 remaining
     packageTotal: 20
   };
@@ -169,8 +170,8 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
               
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">Total Cost This Period</div>
-                <div className="text-3xl font-semibold">${currentUsage.totalCostThisPeriod}</div>
-                <div className="text-xs text-muted-foreground">USD</div>
+                <div className="text-3xl font-semibold">{formatRmb(currentUsage.totalCostThisPeriod)}</div>
+                <div className="text-xs text-muted-foreground">RMB</div>
               </div>
               
               <div className="space-y-1">
@@ -187,7 +188,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
         {/* C) Pay per Application Card */}
         <Card className={chargingMethod === 'per-app' ? 'border-[#4F46E5] border-2' : ''}>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Pay per application</CardTitle>
                 <CardDescription className="mt-1">
@@ -204,7 +205,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="p-6 bg-accent/50 rounded-lg text-center">
-              <div className="text-4xl font-semibold mb-1">${perAppPrice}</div>
+              <div className="text-4xl font-semibold mb-1">{formatRmb(perAppPrice)}</div>
               <div className="text-sm text-muted-foreground">per application</div>
             </div>
             
@@ -272,15 +273,15 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
                       <div className="text-2xl font-semibold mb-1">
                         {pkg.applications} Applications
                       </div>
-                      <div className="text-3xl font-bold text-[#4F46E5]">${pkg.price}</div>
+                      <div className="text-3xl font-bold text-[#4F46E5]">{formatRmb(pkg.price)}</div>
                       <div className="text-xs text-muted-foreground mt-2">
-                        ≈ ${pkg.pricePerApp} / application
+                        ≈ {formatRmb(pkg.pricePerApp)} / application
                       </div>
                     </div>
 
                     {pkg.savings > 0 && (
                       <div className="p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700 font-medium">
-                        Save ${pkg.savings}
+                        Save {formatRmb(pkg.savings)}
                       </div>
                     )}
 
@@ -311,19 +312,46 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
         {/* E) Invoices / Payments Section */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Invoices & Payments</CardTitle>
                 <CardDescription>View and download your billing history</CardDescription>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Download className="h-4 w-4 mr-2" />
                 Export All
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="space-y-3 md:hidden">
+              {invoices.map((invoice) => (
+                <div key={invoice.id} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{invoice.description}</div>
+                      <div className="text-sm text-muted-foreground">{invoice.date}</div>
+                    </div>
+                    {getStatusBadge(invoice.status)}
+                  </div>
+                  <div className="grid gap-2 text-sm sm:grid-cols-2">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Type</div>
+                      <div>{invoice.type}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Amount</div>
+                      <div className="font-semibold">{formatRmb(invoice.amount)}</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Receipt
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
@@ -343,7 +371,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
                         <Badge variant="outline">{invoice.type}</Badge>
                       </td>
                       <td className="py-4 px-4 text-sm">{invoice.description}</td>
-                      <td className="py-4 px-4 text-sm text-right font-semibold">${invoice.amount}</td>
+                      <td className="py-4 px-4 text-sm text-right font-semibold">{formatRmb(invoice.amount)}</td>
                       <td className="py-4 px-4 text-center">
                         {getStatusBadge(invoice.status)}
                       </td>
@@ -367,7 +395,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
             <CardDescription>Manage your payment information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4 p-4 border rounded-lg">
+            <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <CreditCard className="w-6 h-6 text-white" />
               </div>
@@ -386,7 +414,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
 
       {/* Purchase Modal */}
       {showPurchaseModal && selectedPackageData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="max-w-lg w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -400,7 +428,7 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
               {/* Step 1: Package Selection */}
               <div>
                 <label className="text-sm font-medium mb-3 block">Select Package</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {packages.map((pkg) => (
                     <button
                       key={pkg.id}
@@ -424,25 +452,25 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
                 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Package ({selectedPackageData.applications} applications)</span>
-                  <span className="font-medium">${selectedPackageData.price}</span>
+                  <span className="font-medium">{formatRmb(selectedPackageData.price)}</span>
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Effective price per application</span>
-                  <span className="font-medium">${selectedPackageData.pricePerApp}</span>
+                  <span className="font-medium">{formatRmb(selectedPackageData.pricePerApp)}</span>
                 </div>
 
                 {selectedPackageData.savings > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-green-600">You save</span>
-                    <span className="font-medium text-green-600">${selectedPackageData.savings}</span>
+                    <span className="font-medium text-green-600">{formatRmb(selectedPackageData.savings)}</span>
                   </div>
                 )}
                 
                 <div className="pt-3 border-t">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-[#4F46E5]">${selectedPackageData.price}</span>
+                    <span className="text-2xl font-bold text-[#4F46E5]">{formatRmb(selectedPackageData.price)}</span>
                   </div>
                 </div>
               </div>
@@ -460,12 +488,12 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col gap-3 pt-4 sm:flex-row">
                 <Button variant="outline" onClick={() => setShowPurchaseModal(false)} className="flex-1">
                   Cancel
                 </Button>
                 <Button onClick={handleConfirmPurchase} className="flex-1 bg-[#4F46E5] hover:bg-[#4338CA]">
-                  Purchase ${selectedPackageData.price}
+                  Purchase {formatRmb(selectedPackageData.price)}
                 </Button>
               </div>
             </CardContent>
@@ -495,4 +523,5 @@ export function UniversityBilling({ onNavigate, context }: UniversityBillingProp
     </div>
   );
 }
+
 

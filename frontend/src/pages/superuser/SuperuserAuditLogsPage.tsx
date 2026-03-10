@@ -36,5 +36,5 @@ export function SuperuserAuditLogsPage() {
     metadata: log.metadata ?? undefined,
   }));
 
-  return <SuperuserAuditLogs logsData={mapped.length > 0 ? (mapped as any) : undefined} />;
+  return <SuperuserAuditLogs logsData={mapped as any} />;
 }

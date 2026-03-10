@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { University } from "../../types/domain";
 import { addCompareItem, fetchCompareList, removeCompareItem } from "../../services/client/compareService";
+import { addBasketItem, fetchBasketState, removeBasketItem } from "../../services/client/basketService";
 import { fetchUniversityById } from "../../services/client/universitiesService";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -18,11 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
 import { routes } from "../../routes/routeConfig";
+import { formatRmb } from "../../utils/currency";
 
 export function UniversityDetailPage() {
   const { id = "" } = useParams();
   const [university, setUniversity] = useState<University | null>(null);
   const [isInCompare, setIsInCompare] = useState(false);
+  const [isInBasket, setIsInBasket] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,12 +34,14 @@ export function UniversityDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const [universityData, compareList] = await Promise.all([
+        const [universityData, compareList, basketState] = await Promise.all([
           fetchUniversityById(id),
           fetchCompareList().catch(() => []),
+          fetchBasketState().catch(() => null),
         ]);
         setUniversity(universityData);
         setIsInCompare(compareList.some((item) => item.id === id));
+        setIsInBasket(basketState?.items.some((item) => item.id === id) ?? false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load university");
       } finally {
@@ -61,6 +66,21 @@ export function UniversityDetailPage() {
     }
   };
 
+  const toggleBasket = async () => {
+    if (!university) return;
+    try {
+      if (isInBasket) {
+        await removeBasketItem(university.id);
+        setIsInBasket(false);
+      } else {
+        await addBasketItem(university.id);
+        setIsInBasket(true);
+      }
+    } catch {
+      // Keep the view stable if basket update fails.
+    }
+  };
+
   if (loading) return <LoadingState label="Loading university..." />;
   if (error) return <ErrorState message={error} />;
   if (!university) {
@@ -75,25 +95,25 @@ export function UniversityDetailPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <Link to={routes.student.universities}>
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to results
         </Button>
       </Link>
 
       <section className="space-y-4">
-        <div className="flex items-start gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
           <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-xl font-semibold text-white">
             {university.name.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1">
-            <div className="mb-2 flex items-center gap-3">
-              <h1 className="text-3xl font-semibold">{university.name}</h1>
+            <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+              <h1 className="text-2xl font-semibold sm:text-3xl">{university.name}</h1>
               <Badge variant="secondary" className="bg-[#4F46E5]/10 text-[#4F46E5]">
                 {university.ranking ? `${Math.max(60, 300 - university.ranking)}% Match` : "N/A Match"}
               </Badge>
             </div>
-            <div className="mb-3 flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:gap-4">
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4" />
                 {[university.city, university.country, university.province].filter(Boolean).join(", ") || "Location unavailable"}
@@ -112,14 +132,24 @@ export function UniversityDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Link to={routes.student.applicationCreate(university.id)}>
-            <Button className="bg-[#4F46E5] hover:bg-[#4338CA]">
+            <Button className="w-full bg-[#4F46E5] hover:bg-[#4338CA] sm:w-auto">
               <Send className="mr-2 h-4 w-4" />
               Apply Now
             </Button>
           </Link>
-          <Button variant={isInCompare ? "default" : "outline"} onClick={() => void toggleCompare()}>
+          <Button className="w-full sm:w-auto" variant={isInBasket ? "default" : "outline"} onClick={() => void toggleBasket()}>
+            {isInBasket ? (
+              <>
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Added to Basket
+              </>
+            ) : (
+              "Add to Basket"
+            )}
+          </Button>
+          <Button className="w-full sm:w-auto" variant={isInCompare ? "default" : "outline"} onClick={() => void toggleCompare()}>
             {isInCompare ? (
               <>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -143,7 +173,7 @@ export function UniversityDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <DollarSign className="mb-2 h-5 w-5 text-muted-foreground" />
-            <div className="text-2xl font-semibold">{university.tuitionFee ?? university.applicationFee ?? "N/A"}</div>
+            <div className="text-2xl font-semibold">{formatRmb(university.tuitionFee ?? university.applicationFee, { fallback: "N/A" })}</div>
             <p className="text-xs text-muted-foreground">Tuition / Fee</p>
           </CardContent>
         </Card>
@@ -164,7 +194,7 @@ export function UniversityDetailPage() {
       </section>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="w-full flex-wrap justify-start">
+        <TabsList className="flex w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="admissions">Admissions</TabsTrigger>
           <TabsTrigger value="costs">Costs</TabsTrigger>
@@ -200,8 +230,10 @@ export function UniversityDetailPage() {
               <CardTitle>Costs</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Application fee: {university.applicationFee ?? "N/A"}</p>
-              <p>Tuition: {university.tuitionFee ?? "N/A"} | Living cost: {university.livingCost ?? "N/A"} | Total: {university.totalCost ?? "N/A"}</p>
+              <p>Application fee: {formatRmb(university.applicationFee, { fallback: "N/A" })}</p>
+              <p>
+                Tuition: {formatRmb(university.tuitionFee, { fallback: "N/A" })}
+              </p>
             </CardContent>
           </Card>
         </TabsContent>

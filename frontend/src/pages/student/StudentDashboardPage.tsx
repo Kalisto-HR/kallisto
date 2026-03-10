@@ -15,16 +15,15 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/common/Pa
 import { useStudentDashboardData } from "../../hooks/useStudentDashboardData";
 import { routes } from "../../routes/routeConfig";
 
-function calculateReadiness(firstName: string, lastName: string, applicationsCount: number): number {
-  let score = 25;
-  if (firstName) score += 25;
-  if (lastName) score += 25;
-  if (applicationsCount > 0) score += 25;
-  return Math.min(score, 100);
+function calculateReadiness(completedSteps: number): number {
+  if (completedSteps >= 3) {
+    return 100;
+  }
+  return Math.round((completedSteps / 3) * 100);
 }
 
 export function StudentDashboardPage() {
-  const { profile, applications, favoritesCount, loading, error, reload } = useStudentDashboardData();
+  const { profile, applications, favoritesCount, testScoresCount, loading, error, reload } = useStudentDashboardData();
 
   if (loading) {
     return <LoadingState label="Loading student dashboard..." />;
@@ -43,12 +42,16 @@ export function StudentDashboardPage() {
 
   const draftCount = applications.filter((item) => item.status === "draft").length;
   const submittedCount = applications.filter((item) => item.status === "submitted").length;
-  const readiness = calculateReadiness(profile.firstName, profile.lastName, applications.length);
+  const basicInfoComplete = Boolean(profile.firstName && profile.lastName);
+  const applicationProfileComplete = applications.length > 0;
+  const testScoresComplete = testScoresCount > 0;
+  const completedSteps = [basicInfoComplete, applicationProfileComplete, testScoresComplete].filter(Boolean).length;
+  const readiness = calculateReadiness(completedSteps);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <section>
-        <h1 className="text-4xl font-semibold">Dashboard</h1>
+        <h1 className="text-3xl font-semibold sm:text-4xl">Dashboard</h1>
         <p className="mt-1 text-muted-foreground">
           Welcome back! Here&apos;s your application overview
         </p>
@@ -102,7 +105,7 @@ export function StudentDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle>Profile Readiness</CardTitle>
                 <p className="text-sm text-muted-foreground">
@@ -116,29 +119,54 @@ export function StudentDashboardPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Progress value={readiness} className="h-2" />
+            {readiness < 100 ? (
+              <Progress value={readiness} className="h-2" />
+            ) : (
+              <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Profile complete</span>
+              </div>
+            )}
             <div className="space-y-2">
-              <div className="flex items-center gap-3 rounded-lg bg-accent/50 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div className={`flex flex-wrap items-center gap-3 rounded-lg p-3 ${basicInfoComplete ? "bg-accent/50" : "border-2 border-dashed"}`}>
+                {basicInfoComplete ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                )}
                 <div className="flex-1 text-sm font-medium">Basic Information</div>
-                <Badge variant="secondary">Complete</Badge>
+                <Badge variant="secondary">{basicInfoComplete ? "Complete" : "Pending"}</Badge>
               </div>
-              <div className="flex items-center gap-3 rounded-lg bg-accent/50 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              <div className={`flex flex-wrap items-center gap-3 rounded-lg p-3 ${applicationProfileComplete ? "bg-accent/50" : "border-2 border-dashed"}`}>
+                {applicationProfileComplete ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                )}
                 <div className="flex-1 text-sm font-medium">Application Profile</div>
-                <Badge variant="secondary">{applications.length > 0 ? "Complete" : "Pending"}</Badge>
+                <Badge variant="secondary">{applicationProfileComplete ? "Complete" : "Pending"}</Badge>
               </div>
-              <div className="flex items-center gap-3 rounded-lg border-2 border-dashed p-3">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
+              <div className={`flex flex-wrap items-center gap-3 rounded-lg p-3 ${testScoresComplete ? "bg-accent/50" : "border-2 border-dashed"}`}>
+                {testScoresComplete ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                )}
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">Test Scores</p>
-                  <p className="text-xs text-muted-foreground">Add IELTS, TOEFL, or GRE scores</p>
+                  {!testScoresComplete ? (
+                    <p className="text-xs text-muted-foreground">Add IELTS, TOEFL, or GRE scores</p>
+                  ) : null}
                 </div>
-                <Link to={routes.student.settings}>
-                  <Button size="sm" variant="ghost">
-                    Add <ArrowRight className="ml-1 h-4 w-4" />
-                  </Button>
-                </Link>
+                {testScoresComplete ? (
+                  <Badge variant="secondary">Complete</Badge>
+                ) : (
+                  <Link to={routes.student.settings}>
+                    <Button size="sm" variant="ghost">
+                      Add <ArrowRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </CardContent>
@@ -197,7 +225,7 @@ export function StudentDashboardPage() {
               return (
               <div
                 key={`${item.universityId}-${item.applicationCycle}`}
-                className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
                   <div className="font-medium">{item.universityName}</div>
@@ -205,12 +233,12 @@ export function StudentDashboardPage() {
                     Cycle {item.applicationCycle}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                   <Badge variant="secondary" className="capitalize">
                     {item.status}
                   </Badge>
                   <Link to={openHref}>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto">
                       {item.status === "draft" ? "Open draft" : "Open"}
                     </Button>
                   </Link>

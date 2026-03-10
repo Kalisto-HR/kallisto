@@ -16,17 +16,12 @@ function normalizeFavoritesArray(items: unknown[]): UniversityListItem[] {
           applicationFee: null,
           acceptanceRate: null,
           tuitionFee: null,
-          livingCost: null,
-          totalCost: null,
           applicationDeadline: null,
           ieltsMin: null,
           toeflMin: null,
           scholarshipAvailable: null,
-          competitiveness: null,
           cityType: null,
-          safetyLevel: null,
           campusVibe: null,
-          visaRequired: null,
         } satisfies UniversityListItem;
       }
       return normalizeUniversityListItem(item);

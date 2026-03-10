@@ -31,7 +31,7 @@ export function SuperuserSettingsPage() {
 
   return (
     <SuperuserSettings
-      settings={Object.keys(settingsMap).length > 0 ? settingsMap : undefined}
+      settings={settingsMap}
       onSave={async (payload) => {
         await updateGlobalSettings(payload);
         const latest = await fetchGlobalSettings();

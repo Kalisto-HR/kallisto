@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	auth "kallisto/infra/auth/jwt"
 	"kallisto/infra/utils"
 	"kallisto/infra/validation"
 	"kallisto/services/client/internal/models"
@@ -40,11 +41,9 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessToken, err := usecases_impl.NewSignUpUseCase(&signUpRequest).SignUp(r.Context())
-
 	if err != nil {
 		handleFuncErr, ok := err.(utils.HandlerFuncErr)
 		status := http.StatusInternalServerError
-
 		if ok {
 			status = handleFuncErr.Status()
 		}
@@ -54,14 +53,18 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    accessToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false, // false for local dev, true in production
-		SameSite: http.SameSiteLaxMode,
-	})
+	jwtFromToken, jwtErr := auth.NewJWTFromToken(&accessToken)
+	if jwtErr != nil {
+		log.Error(jwtErr.Error())
+		utils.WriteJSONResponseWithMsg(w, "failed to issue auth cookie", http.StatusInternalServerError)
+		return
+	}
+
+	if cookieErr := utils.SetAuthCookies(w, accessToken, &jwtFromToken.TokenClaims, nil, signUpRequest.Email); cookieErr != nil {
+		log.Error(cookieErr.Error())
+		utils.WriteJSONResponseWithMsg(w, "failed to issue auth cookie", http.StatusInternalServerError)
+		return
+	}
 
 	utils.WriteJSONResponseWithMsg(w, "ok", http.StatusOK)
 }

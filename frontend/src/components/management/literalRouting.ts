@@ -52,9 +52,12 @@ export function sourcePageToRoutePath(
       "university-dashboard": routes.management.university.dashboard(universityId),
       "management-university-profile": routes.management.university.profile(universityId),
       "university-profile": routes.management.university.profile(universityId),
+      "university-settings": routes.management.university.applicationStructure(universityId),
       "management-application-structure": routes.management.university.applicationStructure(universityId),
       "management-applications": routes.management.university.applications(universityId),
       "university-applicants": routes.management.university.applications(universityId),
+      "university-notifications": routes.management.university.applications(universityId),
+      "university-applicant-detail": routes.management.university.applications(universityId),
       "management-users": routes.management.university.users(universityId),
       "management-billing": routes.management.university.billing(universityId),
     };

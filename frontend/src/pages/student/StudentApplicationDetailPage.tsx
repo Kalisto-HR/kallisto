@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar, CheckCircle2 } from "lucide-react";
 import { fetchStudentApplication } from "../../services/client/applicationsService";
@@ -8,83 +8,33 @@ import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
+import { SubmittedApplicationDataView } from "../../components/student/SubmittedApplicationDataView";
 import { routes } from "../../routes/routeConfig";
 
-function prettyLabel(key: string): string {
-  return key
-    .replace(/[_-]+/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function renderValue(value: unknown): ReactNode {
-  if (value === null || value === undefined || value === "") {
-    return <span className="text-muted-foreground">Not provided</span>;
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return "N/A";
   }
 
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    return <span>{String(value)}</span>;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
   }
 
-  if (Array.isArray(value)) {
-    if (value.length === 0) {
-      return <span className="text-muted-foreground">No items</span>;
-    }
-
-    const isPrimitive = value.every(
-      (item) => item === null || ["string", "number", "boolean"].includes(typeof item),
-    );
-
-    if (isPrimitive) {
-      return (
-        <div className="flex flex-wrap gap-2">
-          {value.map((item, index) => (
-            <Badge key={`item-${index}`} variant="secondary">
-              {String(item)}
-            </Badge>
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-2">
-        {value.map((item, index) => (
-          <div key={`obj-${index}`} className="rounded-md border p-3">
-            {renderValue(item)}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (!entries.length) {
-      return <span className="text-muted-foreground">No data</span>;
-    }
-
-    return (
-      <div className="space-y-3 rounded-md border p-3 bg-muted/10">
-        {entries.map(([key, nested]) => (
-          <div key={key}>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{prettyLabel(key)}</div>
-            <div className="text-sm">{renderValue(nested)}</div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return <span>{String(value)}</span>;
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
 }
 
 export function StudentApplicationDetailPage() {
   const { universityId = "", cycle = "" } = useParams();
   const [application, setApplication] = useState<StudentApplication | null>(null);
   const [universityName, setUniversityName] = useState<string>("University");
+  const [applicationSchema, setApplicationSchema] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +51,7 @@ export function StudentApplicationDetailPage() {
         if (university?.name) {
           setUniversityName(university.name);
         }
+        setApplicationSchema(university?.applicationSchema ?? null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load application");
       } finally {
@@ -109,8 +60,6 @@ export function StudentApplicationDetailPage() {
     };
     void load();
   }, [universityId, cycle]);
-
-  const entries = useMemo(() => Object.entries(application?.data ?? {}), [application?.data]);
 
   if (loading) return <LoadingState label="Loading application..." />;
   if (error) return <ErrorState message={error} />;
@@ -121,7 +70,7 @@ export function StudentApplicationDetailPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <Link to={routes.student.applications}>
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to applications
         </Button>
@@ -129,7 +78,7 @@ export function StudentApplicationDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-3">
+          <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>{universityName}</span>
             <Badge variant="secondary" className="capitalize">
               {application.status}
@@ -137,25 +86,21 @@ export function StudentApplicationDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Application Cycle</div>
               <div className="font-medium">{application.applicationCycle}</div>
             </div>
             <div className="rounded-lg border p-3">
-              <div className="text-xs text-muted-foreground">University ID</div>
-              <div className="font-medium break-all">{application.universityId}</div>
-            </div>
-            <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Created</div>
               <div className="flex items-center gap-1.5 font-medium">
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                {application.createdAt || "N/A"}
+                {formatDateTime(application.createdAt)}
               </div>
             </div>
             <div className="rounded-lg border p-3">
               <div className="text-xs text-muted-foreground">Submitted</div>
-              <div className="font-medium">{application.submittedAt || "Not submitted"}</div>
+              <div className="font-medium">{application.submittedAt ? formatDateTime(application.submittedAt) : "Not submitted"}</div>
             </div>
           </div>
         </CardContent>
@@ -163,21 +108,10 @@ export function StudentApplicationDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Submitted Information</CardTitle>
+          <CardTitle className="text-base">Application Details</CardTitle>
         </CardHeader>
         <CardContent>
-          {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No submitted information available.</p>
-          ) : (
-            <div className="space-y-4">
-              {entries.map(([key, value]) => (
-                <div key={key} className="rounded-lg border p-4">
-                  <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">{prettyLabel(key)}</div>
-                  <div className="text-sm">{renderValue(value)}</div>
-                </div>
-              ))}
-            </div>
-          )}
+          <SubmittedApplicationDataView data={application.data} applicationSchema={applicationSchema} />
         </CardContent>
       </Card>
 

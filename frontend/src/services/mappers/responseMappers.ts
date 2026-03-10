@@ -2,8 +2,11 @@ import type {
   AdminSubmittedApplication,
   ApiEnvelope,
   ApplicationTestScoreImportResult,
+  BasketCheckoutPreview,
+  BasketPlan,
   Pagination,
   Profile,
+  StudentBasketState,
   StudentApplication,
   StudentApplicationListItem,
   StudentTestScore,
@@ -11,12 +14,15 @@ import type {
   UniversityListItem,
 } from "../../types/domain";
 
-export function toPortalRole(role: string): "student" | "partner" | "staff" {
+export function toPortalRole(role: string): "student" | "partner" | "staff" | "superuser-ui" {
   if (role === "applicant" || role === "student") {
     return "student";
   }
   if (role === "partner") {
     return "partner";
+  }
+  if (role === "superuser-ui") {
+    return "superuser-ui";
   }
   if (role === "staff") {
     return "staff";
@@ -71,17 +77,12 @@ export function normalizeUniversityListItem(value: unknown): UniversityListItem 
     applicationFee: toNullableNumber(source.application_fee ?? source.applicationFee),
     acceptanceRate: toNullableNumber(source.acceptance_rate ?? source.acceptanceRate),
     tuitionFee: toNullableNumber(source.tuition_fee ?? source.tuitionFee),
-    livingCost: toNullableNumber(source.living_cost ?? source.livingCost),
-    totalCost: toNullableNumber(source.total_cost ?? source.totalCost),
     applicationDeadline: toNullableString(source.application_deadline ?? source.applicationDeadline),
     ieltsMin: toNullableNumber(source.ielts_min ?? source.ieltsMin),
     toeflMin: toNullableNumber(source.toefl_min ?? source.toeflMin),
     scholarshipAvailable: toNullableBool(source.scholarship_available ?? source.scholarshipAvailable),
-    competitiveness: toNullableString(source.competitiveness),
     cityType: toNullableString(source.city_type ?? source.cityType),
-    safetyLevel: toNullableString(source.safety_level ?? source.safetyLevel),
     campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
-    visaRequired: toNullableBool(source.visa_required ?? source.visaRequired),
   };
 }
 
@@ -99,21 +100,59 @@ export function normalizeUniversity(value: unknown): University {
     applicationFee: toNullableNumber(source.application_fee ?? source.applicationFee),
     acceptanceRate: toNullableNumber(source.acceptance_rate ?? source.acceptanceRate),
     tuitionFee: toNullableNumber(source.tuition_fee ?? source.tuitionFee),
-    livingCost: toNullableNumber(source.living_cost ?? source.livingCost),
-    totalCost: toNullableNumber(source.total_cost ?? source.totalCost),
     applicationDeadline: toNullableString(source.application_deadline ?? source.applicationDeadline),
     ieltsMin: toNullableNumber(source.ielts_min ?? source.ieltsMin),
     toeflMin: toNullableNumber(source.toefl_min ?? source.toeflMin),
     scholarshipAvailable: toNullableBool(source.scholarship_available ?? source.scholarshipAvailable),
-    competitiveness: toNullableString(source.competitiveness),
     cityType: toNullableString(source.city_type ?? source.cityType),
-    safetyLevel: toNullableString(source.safety_level ?? source.safetyLevel),
     campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
-    visaRequired: toNullableBool(source.visa_required ?? source.visaRequired),
     applicationSchema: toRecord(source.application_schema ?? source.applicationSchema),
     managementProfile: toRecord(source.management_profile ?? source.managementProfile),
     metadata: toRecord(source.metadata),
     createdAt: toString(source.created_at ?? source.createdAt),
+  };
+}
+
+export function normalizeBasketPlan(value: unknown): BasketPlan {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    name: toString(source.name),
+    capacity: toNumber(source.capacity),
+    price: toNumber(source.price),
+    perApp: toNumber(source.per_app ?? source.perApp),
+    savings: toNumber(source.savings),
+    featured: Boolean(source.featured),
+    description: toString(source.description),
+    priceCaption: toString(source.price_caption ?? source.priceCaption),
+  };
+}
+
+export function normalizeStudentBasketState(value: unknown): StudentBasketState {
+  const source = (value ?? {}) as Record<string, unknown>;
+  const rawItems = Array.isArray(source.items) ? source.items : [];
+  return {
+    items: rawItems.map(normalizeUniversityListItem).filter((item) => item.id.length > 0),
+    selectedPlanId: toNullableString(source.selected_plan_id ?? source.selectedPlanId),
+    recommendedPlanId: toNullableString(source.recommended_plan_id ?? source.recommendedPlanId),
+    totalUniversities: toNumber(source.total_universities ?? source.totalUniversities),
+    maxPlanCapacity: toNumber(source.max_plan_capacity ?? source.maxPlanCapacity),
+  };
+}
+
+export function normalizeBasketCheckoutPreview(value: unknown): BasketCheckoutPreview {
+  const source = (value ?? {}) as Record<string, unknown>;
+  const rawUniversities = Array.isArray(source.universities) ? source.universities : [];
+  const rawWarnings = Array.isArray(source.warnings) ? source.warnings : [];
+
+  return {
+    plan: normalizeBasketPlan(source.plan),
+    universities: rawUniversities.map(normalizeUniversityListItem).filter((item) => item.id.length > 0),
+    applicationCount: toNumber(source.application_count ?? source.applicationCount),
+    estimatedTotal: toNumber(source.estimated_total ?? source.estimatedTotal),
+    status: toString(source.status),
+    readyForPaymentApi: Boolean(source.ready_for_payment_api ?? source.readyForPaymentApi),
+    warnings: rawWarnings.filter((warning): warning is string => typeof warning === "string"),
   };
 }
 

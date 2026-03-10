@@ -33,5 +33,5 @@ export function SuperuserServiceLogsPage() {
     metadata: log.metadata ?? undefined,
   }));
 
-  return <ServiceLogs logsData={mapped.length > 0 ? (mapped as any) : undefined} />;
+  return <ServiceLogs logsData={mapped as any} />;
 }

@@ -27,10 +27,10 @@ export function SuperuserUsersPage() {
     const activeCount = users.filter((u) => u.status === "active").length;
     const bannedCount = users.filter((u) => u.status === "banned").length;
     return {
-      totalUsers: total > 0 ? total.toLocaleString() : undefined,
-      activeUsers: activeCount > 0 ? activeCount.toLocaleString() : undefined,
-      bannedUsers: bannedCount > 0 ? bannedCount.toLocaleString() : undefined,
-      newToday: undefined,
+      totalUsers: total.toLocaleString(),
+      activeUsers: activeCount.toLocaleString(),
+      bannedUsers: bannedCount.toLocaleString(),
+      newToday: "0",
     };
   }, [users, total]);
 

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Settings, Bell, Shield, Database, Mail, Globe } from 'lucide-react';
 
 interface SuperuserSettingsProps {
@@ -16,7 +16,19 @@ export default function SuperuserSettings({ settings, onSave }: SuperuserSetting
   const [notifyDrafts, setNotifyDrafts] = useState(Boolean(settings?.notify_drafts?.enabled ?? true));
   const [notifySecurity, setNotifySecurity] = useState(Boolean(settings?.notify_security?.enabled ?? true));
   const [notifyDailySummary, setNotifyDailySummary] = useState(Boolean(settings?.notify_daily_summary?.enabled ?? true));
-  const [notificationEmail, setNotificationEmail] = useState(String(settings?.notification_email?.value ?? "superadmin@damen.com"));
+  const [notificationEmail, setNotificationEmail] = useState(String(settings?.notification_email?.value ?? "superadmin@kallisto.uz"));
+
+  useEffect(() => {
+    setMaintenanceMode(Boolean(settings?.maintenance_mode?.enabled ?? false));
+    setNewUserRegistration(Boolean(settings?.new_user_registration?.enabled ?? true));
+    setApplicationSubmissions(Boolean(settings?.application_submissions?.enabled ?? true));
+    setSessionTimeout(String(settings?.session_timeout_minutes?.value ?? 60));
+    setRequire2FA(Boolean(settings?.require_2fa_superuser?.enabled ?? true));
+    setNotifyDrafts(Boolean(settings?.notify_drafts?.enabled ?? true));
+    setNotifySecurity(Boolean(settings?.notify_security?.enabled ?? true));
+    setNotifyDailySummary(Boolean(settings?.notify_daily_summary?.enabled ?? true));
+    setNotificationEmail(String(settings?.notification_email?.value ?? "superadmin@kallisto.uz"));
+  }, [settings]);
 
   const handleSave = async () => {
     const payload = {

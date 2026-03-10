@@ -18,11 +18,11 @@ import { UniversityDetailPage } from "./pages/student/UniversityDetailPage";
 import { StudentApplicationsPage } from "./pages/student/StudentApplicationsPage";
 import { StudentApplicationDetailPage } from "./pages/student/StudentApplicationDetailPage";
 import { StudentApplicationCreatePage } from "./pages/student/StudentApplicationCreatePage";
+import { StudentBasketPage } from "./pages/student/StudentBasketPage";
 import { StudentComparePage } from "./pages/student/StudentComparePage";
 import { StudentSettingsPage } from "./pages/student/StudentSettingsPage";
 import { StudentHelpPage } from "./pages/student/StudentHelpPage";
 import { StudentBillingPage } from "./pages/student/StudentBillingPage";
-import { StudentPricingPage } from "./pages/student/StudentPricingPage";
 import { StudentCheckoutPage } from "./pages/student/StudentCheckoutPage";
 import { ManagementDashboardPage } from "./pages/management/ManagementDashboardPage";
 import { ManagementUniversityProfilePage } from "./pages/management/ManagementUniversityProfilePage";
@@ -99,6 +99,7 @@ export default function App() {
             <Route path="dashboard" element={<StudentDashboardPage />} />
             <Route path="universities" element={<UniversitySearchPage />} />
             <Route path="universities/:id" element={<UniversityDetailPage />} />
+            <Route path="basket" element={<StudentBasketPage />} />
             <Route path="applications" element={<StudentApplicationsPage />} />
             <Route path="applications/new/:universityId" element={<StudentApplicationCreatePage />} />
             <Route path="applications/:universityId/:cycle" element={<StudentApplicationDetailPage />} />
@@ -106,7 +107,7 @@ export default function App() {
             <Route path="settings" element={<StudentSettingsPage />} />
             <Route path="help" element={<StudentHelpPage />} />
             <Route path="billing" element={<StudentBillingPage />} />
-            <Route path="pricing" element={<StudentPricingPage />} />
+            <Route path="pricing" element={<Navigate to={routes.student.billing} replace />} />
             <Route path="checkout" element={<StudentCheckoutPage />} />
           </Route>
         </Route>

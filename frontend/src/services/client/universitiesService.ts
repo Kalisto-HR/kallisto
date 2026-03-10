@@ -16,18 +16,13 @@ export interface UniversitySearchParams {
   maxRanking?: number;
   maxFee?: number;
   maxTuition?: number;
-  maxLivingCost?: number;
-  maxTotalCost?: number;
   minAcceptanceRate?: number;
   maxAcceptanceRate?: number;
   minIelts?: number;
   minToefl?: number;
   scholarshipAvailable?: boolean;
-  competitiveness?: string;
   cityType?: string;
-  safetyLevel?: string;
   campusVibe?: string;
-  visaRequired?: boolean;
   page?: number;
   limit?: number;
 }
@@ -59,18 +54,13 @@ export async function searchUniversities(params: UniversitySearchParams): Promis
   if (typeof params.maxRanking === "number") search.set("max_ranking", String(params.maxRanking));
   if (typeof params.maxFee === "number") search.set("max_fee", String(params.maxFee));
   if (typeof params.maxTuition === "number") search.set("max_tuition", String(params.maxTuition));
-  if (typeof params.maxLivingCost === "number") search.set("max_living_cost", String(params.maxLivingCost));
-  if (typeof params.maxTotalCost === "number") search.set("max_total_cost", String(params.maxTotalCost));
   if (typeof params.minAcceptanceRate === "number") search.set("min_acceptance_rate", String(params.minAcceptanceRate));
   if (typeof params.maxAcceptanceRate === "number") search.set("max_acceptance_rate", String(params.maxAcceptanceRate));
   if (typeof params.minIelts === "number") search.set("min_ielts", String(params.minIelts));
   if (typeof params.minToefl === "number") search.set("min_toefl", String(params.minToefl));
   if (typeof params.scholarshipAvailable === "boolean") search.set("scholarship_available", String(params.scholarshipAvailable));
-  if (params.competitiveness) search.set("competitiveness", params.competitiveness);
   if (params.cityType) search.set("city_type", params.cityType);
-  if (params.safetyLevel) search.set("safety_level", params.safetyLevel);
   if (params.campusVibe) search.set("campus_vibe", params.campusVibe);
-  if (typeof params.visaRequired === "boolean") search.set("visa_required", String(params.visaRequired));
   search.set("page", String(params.page ?? 1));
   search.set("limit", String(params.limit ?? 10));
 

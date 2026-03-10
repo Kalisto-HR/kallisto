@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
+import { useEffect, useMemo, useRef, useState, type InputHTMLAttributes } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -25,6 +25,7 @@ import { useApplicationFlowData } from "../../hooks/useApplicationFlowData";
 import { routes } from "../../routes/routeConfig";
 import {
   fetchStudentApplication,
+  fetchStudentApplications,
   importStudentProfileTestScoresToApplication,
 } from "../../services/client/applicationsService";
 import { fetchStudentTestScores } from "../../services/client/profileService";
@@ -136,6 +137,10 @@ function formatTestScoreLabel(item: StudentTestScore): string {
   return item.takenOn ? `${title} - ${score} (${item.takenOn})` : `${title} - ${score}`;
 }
 
+function buildDraftSignature(cycle: string, data: Record<string, unknown>): string {
+  return JSON.stringify({ cycle: cycle.trim(), data });
+}
+
 export function StudentApplicationCreatePage() {
   const { universityId = "" } = useParams();
   const [searchParams] = useSearchParams();
@@ -158,6 +163,10 @@ export function StudentApplicationCreatePage() {
   const [testScoresError, setTestScoresError] = useState<string | null>(null);
   const [importingScores, setImportingScores] = useState(false);
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const lastSavedSignatureRef = useRef(buildDraftSignature(flow.cycle, flow.formData));
+  const hasUnsavedChangesRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -220,14 +229,38 @@ export function StudentApplicationCreatePage() {
   useEffect(() => {
     let mounted = true;
     const loadDraft = async () => {
-      if (!universityId || !shouldLoadDraft) {
+      setDraftHydrated(false);
+      if (!universityId) {
+        if (mounted) {
+          setDraftHydrated(true);
+        }
         return;
       }
 
       setDraftLoading(true);
       setDraftError(null);
       try {
-        const application = await fetchStudentApplication(universityId, draftCycle);
+        let cycleToLoad = shouldLoadDraft ? draftCycle : "";
+        if (!cycleToLoad) {
+          const applications = await fetchStudentApplications();
+          const latestDraft = applications.find(
+            (item) => item.status === "draft" && item.universityId === universityId,
+          );
+          cycleToLoad = latestDraft?.applicationCycle ?? "";
+        }
+        if (!cycleToLoad) {
+          if (!mounted) {
+            return;
+          }
+          flow.setCycle("2026-Fall");
+          flow.setFormData({});
+          lastSavedSignatureRef.current = buildDraftSignature("2026-Fall", {});
+          hasUnsavedChangesRef.current = false;
+          setDraftSaveState("idle");
+          return;
+        }
+
+        const application = await fetchStudentApplication(universityId, cycleToLoad);
         if (!mounted) {
           return;
         }
@@ -239,18 +272,32 @@ export function StudentApplicationCreatePage() {
               ? (application.data as Record<string, unknown>)
               : {};
           flow.setFormData(existingData);
+          flow.markDraftLoaded(application.applicationCycle);
+          lastSavedSignatureRef.current = buildDraftSignature(application.applicationCycle, existingData);
+          hasUnsavedChangesRef.current = false;
+          setDraftSaveState("saved");
+          if (!shouldLoadDraft) {
+            setCurrentStep(3);
+          }
           return;
         }
 
-        setDraftError("This application is no longer a draft and cannot be edited here.");
+        if (shouldLoadDraft) {
+          setDraftError("This application is no longer a draft and cannot be edited here.");
+        }
       } catch (err) {
         if (!mounted) {
           return;
         }
-        setDraftError(err instanceof Error ? err.message : "Failed to load existing draft");
+        if (shouldLoadDraft) {
+          setDraftError(err instanceof Error ? err.message : "Failed to load existing draft");
+        } else {
+          setDraftError(null);
+        }
       } finally {
         if (mounted) {
           setDraftLoading(false);
+          setDraftHydrated(true);
         }
       }
     };
@@ -259,7 +306,14 @@ export function StudentApplicationCreatePage() {
     return () => {
       mounted = false;
     };
-  }, [draftCycle, shouldLoadDraft, universityId, flow.setCycle, flow.setFormData]);
+  }, [
+    draftCycle,
+    shouldLoadDraft,
+    universityId,
+    flow.markDraftLoaded,
+    flow.setCycle,
+    flow.setFormData,
+  ]);
 
   useEffect(() => {
     let mounted = true;
@@ -302,6 +356,84 @@ export function StudentApplicationCreatePage() {
   }, [schemaSections, flow.formData]);
 
   const canSubmit = requiredMissing.length === 0 && Object.keys(flow.formData).length > 0;
+  const hasFormContent = Object.keys(flow.formData).length > 0;
+  const draftSignature = useMemo(
+    () => buildDraftSignature(flow.cycle, flow.formData),
+    [flow.cycle, flow.formData],
+  );
+
+  useEffect(() => {
+    if (!draftHydrated || !hasFormContent || flow.loading) {
+      return;
+    }
+    if (draftSignature === lastSavedSignatureRef.current) {
+      hasUnsavedChangesRef.current = false;
+      return;
+    }
+
+    hasUnsavedChangesRef.current = true;
+    if (draftSaveState !== "idle" && draftSaveState !== "saving") {
+      setDraftSaveState("idle");
+    }
+    const handle = window.setTimeout(() => {
+      void (async () => {
+        setDraftSaveState("saving");
+        const saved = await flow.saveDraft({ advanceStep: false, silent: true });
+        if (saved) {
+          lastSavedSignatureRef.current = draftSignature;
+          hasUnsavedChangesRef.current = false;
+          setDraftSaveState("saved");
+        } else {
+          hasUnsavedChangesRef.current = true;
+          setDraftSaveState("error");
+        }
+      })();
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(handle);
+    };
+  }, [draftHydrated, draftSaveState, draftSignature, hasFormContent, flow.loading, flow.saveDraft]);
+
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChangesRef.current || !hasFormContent) {
+        return;
+      }
+      event.preventDefault();
+      event.returnValue = "";
+      void flow.saveDraft({ advanceStep: false, silent: true });
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [flow.saveDraft, hasFormContent]);
+
+  const draftStatusMessage = useMemo(() => {
+    if (!hasFormContent || !draftHydrated) {
+      return null;
+    }
+    if (draftSaveState === "saving") {
+      return "Saving draft...";
+    }
+    if (draftSaveState === "saved") {
+      return "Draft saved";
+    }
+    if (draftSaveState === "error") {
+      return "Save failed. Changes will retry on next edit.";
+    }
+    return "Draft changes pending...";
+  }, [draftHydrated, draftSaveState, hasFormContent]);
+
+  useEffect(() => {
+    return () => {
+      if (!hasUnsavedChangesRef.current || !hasFormContent) {
+        return;
+      }
+      void flow.saveDraft({ advanceStep: false, silent: true });
+    };
+  }, [flow.saveDraft, hasFormContent]);
 
   const setFieldValue = (field: SchemaField, value: unknown) => {
     const key = fieldKey(field);
@@ -344,10 +476,13 @@ export function StudentApplicationCreatePage() {
     setImportingScores(true);
     setImportFeedback(null);
     try {
-      const saved = await flow.saveDraft();
+      const saved = await flow.saveDraft({ advanceStep: false });
       if (!saved) {
         return;
       }
+      lastSavedSignatureRef.current = draftSignature;
+      hasUnsavedChangesRef.current = false;
+      setDraftSaveState("saved");
 
       const result = await importStudentProfileTestScoresToApplication(universityId, flow.cycle, selectedTestScoreIds);
       const scoreRows = result.testScores.map((score) => ({
@@ -477,7 +612,7 @@ export function StudentApplicationCreatePage() {
               <Info className="h-4 w-4 text-[#4F46E5]" />
               <AlertDescription>You can track status updates from your applications dashboard.</AlertDescription>
             </Alert>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Link to={routes.student.applications} className="flex-1">
                 <Button variant="outline" className="w-full">
                   View Applications
@@ -495,10 +630,15 @@ export function StudentApplicationCreatePage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold">Application Process</h1>
         <Badge variant="secondary">{universityName}</Badge>
       </div>
+      {draftStatusMessage ? (
+        <p className={`text-sm ${draftSaveState === "error" ? "text-red-600" : "text-muted-foreground"}`}>
+          {draftStatusMessage}
+        </p>
+      ) : null}
 
       {shouldLoadDraft && draftLoading ? (
         <Alert>
@@ -519,7 +659,7 @@ export function StudentApplicationCreatePage() {
           <div className="mb-6">
             <Progress value={progress} className="h-2" />
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {steps.map((step) => (
               <div key={step.number} className="text-center">
                 <div
@@ -533,7 +673,7 @@ export function StudentApplicationCreatePage() {
                 >
                   {currentStep > step.number ? <CheckCircle2 className="h-5 w-5" /> : step.number}
                 </div>
-                <div className="text-xs font-medium">{step.label}</div>
+                <div className="text-xs font-medium leading-tight">{step.label}</div>
               </div>
             ))}
           </div>
@@ -555,7 +695,7 @@ export function StudentApplicationCreatePage() {
               <Info className="h-4 w-4" />
               <AlertDescription>This flow uses personal-information-only fields.</AlertDescription>
             </Alert>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Link to={routes.student.universities} className="flex-1">
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -585,7 +725,7 @@ export function StudentApplicationCreatePage() {
               {schemaSections.reduce((acc, section) => acc + section.fields.filter((field) => field.required).length, 0)}
               {" "}required field(s).
             </p>
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(1)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
@@ -673,7 +813,7 @@ export function StudentApplicationCreatePage() {
               ))}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(2)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
@@ -720,7 +860,7 @@ export function StudentApplicationCreatePage() {
               </Alert>
             )}
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(3)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
@@ -730,10 +870,13 @@ export function StudentApplicationCreatePage() {
                 disabled={flow.loading || !canSubmit}
                 onClick={() =>
                   void (async () => {
-                    const saved = await flow.saveDraft();
+                    const saved = await flow.saveDraft({ advanceStep: false });
                     if (!saved) {
                       return;
                     }
+                    lastSavedSignatureRef.current = draftSignature;
+                    hasUnsavedChangesRef.current = false;
+                    setDraftSaveState("saved");
                     await flow.submit();
                   })()
                 }

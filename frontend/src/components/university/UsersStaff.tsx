@@ -302,7 +302,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-5 h-5 text-muted-foreground" />
@@ -313,12 +313,12 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
               Manage staff access for this university.
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => void handleRequestChange('Create staff account')} disabled={actionBusy}>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button className="w-full sm:w-auto" variant="outline" onClick={() => void handleRequestChange('Create staff account')} disabled={actionBusy}>
               <UserPlus className="h-4 w-4 mr-2" />
               {actionBusy ? 'Working...' : 'Create Staff Account'}
             </Button>
-            <Button variant="outline" onClick={() => void handleRequestChange('Disable account')} disabled={actionBusy}>
+            <Button className="w-full sm:w-auto" variant="outline" onClick={() => void handleRequestChange('Disable account')} disabled={actionBusy}>
               <UserX className="h-4 w-4 mr-2" />
               Disable Account
             </Button>
@@ -328,7 +328,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
 
         {/* Tabs */}
         <div className="border-b">
-          <div className="flex gap-6">
+          <div className="flex gap-6 overflow-x-auto">
             <button
               onClick={() => setCurrentTab('staff-accounts')}
               className={cn(
@@ -427,7 +427,47 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
             {filteredStaff.length > 0 ? (
               <Card>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                  <>
+                    <div className="space-y-3 p-4 md:hidden">
+                    {filteredStaff.map((staff) => (
+                      <div
+                        key={staff.id}
+                        className="rounded-lg border p-4 space-y-3"
+                        onClick={() => handleViewStaff(staff)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                              {staff.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-medium">{staff.name}</div>
+                              <div className="text-sm text-muted-foreground break-all">{staff.email}</div>
+                            </div>
+                          </div>
+                          {getStatusBadge(staff.status)}
+                        </div>
+                        <div className="grid gap-2 text-sm sm:grid-cols-2">
+                          <div>
+                            <div className="text-xs text-muted-foreground">Role</div>
+                            <div className="mt-1">{getRoleBadge(staff.role)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Last Active</div>
+                            <div>{staff.lastActive}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Created</div>
+                            <div>{staff.createdDate}</div>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm" className="w-full">
+                          View profile
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                    <div className="hidden overflow-x-auto md:block">
                     <table className="w-full">
                       <thead className="bg-accent/50 border-b">
                         <tr>
@@ -541,7 +581,8 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                    </div>
+                  </>
                 </CardContent>
               </Card>
             ) : (
@@ -579,7 +620,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                 {roles.map((role) => (
                   <Card key={role.id}>
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <CardTitle className="text-lg">{role.name}</CardTitle>
@@ -588,7 +629,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                           <CardDescription>{role.description}</CardDescription>
                         </div>
                         {isSuperuser && (
-                          <Button variant="outline" size="sm" onClick={() => void handleRequestChange('Edit role', role.id)}>
+                          <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => void handleRequestChange('Edit role', role.id)}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit Role
                           </Button>
@@ -620,12 +661,12 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle>Pending Invitations</CardTitle>
                     <CardDescription>Manage staff invitations</CardDescription>
                   </div>
-                  <Button onClick={() => void handleRequestChange('Send invitation')} disabled={actionBusy}>
+                  <Button className="w-full sm:w-auto" onClick={() => void handleRequestChange('Send invitation')} disabled={actionBusy}>
                     <Mail className="h-4 w-4 mr-2" />
                     Send Invitation
                   </Button>
@@ -633,7 +674,38 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
               </CardHeader>
               <CardContent>
                 {invitations.length > 0 ? (
-                  <div className="overflow-x-auto">
+                  <>
+                    <div className="space-y-3 md:hidden">
+                    {invitations.map((invitation) => (
+                      <div key={invitation.id} className="rounded-lg border p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="font-medium break-all">{invitation.email}</div>
+                          <Badge variant="outline" className={
+                            invitation.status === 'pending' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                            invitation.status === 'expired' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-green-50 text-green-700 border-green-200'
+                          }>
+                            {invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <div className="grid gap-2 text-sm sm:grid-cols-2">
+                          <div>
+                            <div className="text-xs text-muted-foreground">Role</div>
+                            <div className="mt-1">{getRoleBadge(invitation.role)}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Sent</div>
+                            <div>{invitation.sentDate}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Expires</div>
+                            <div>{invitation.expiresDate}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                    <div className="hidden overflow-x-auto md:block">
                     <table className="w-full">
                       <thead className="border-b">
                         <tr>
@@ -690,7 +762,8 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-12">
                     <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -714,7 +787,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
       {showStaffDrawer && selectedStaff && (
         <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={() => setShowStaffDrawer(false)}>
           <div
-            className="w-full max-w-2xl bg-white h-full overflow-y-auto shadow-xl"
+            className="h-full w-full max-w-2xl overflow-y-auto bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between z-10">
@@ -741,7 +814,7 @@ export function UsersStaff({ onNavigate, context, userRole = 'university-manager
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-2">
                     <div>
                       <div className="text-sm text-muted-foreground mb-1">Role</div>
                       {getRoleBadge(selectedStaff.role)}

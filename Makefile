@@ -1,6 +1,6 @@
 FRONTEND := frontend
 
-.PHONY: build-client build-admin build-frontend seed-universities migrate-db seed-db-dev bootstrap-db smoke-migrations clean
+.PHONY: build-client build-admin build-frontend seed-universities migrate-db seed-db-dev bootstrap-db clean
 
 build-client:
 	cd services/client && go build -o ../../bin/client ./cmd
@@ -15,16 +15,13 @@ seed-universities:
 	go run scripts/seeds/cmd/import_universities/main.go
 
 migrate-db:
-	powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+	bash scripts/db/apply_migrations.sh --client-db client_db --admin-db admin_db --db-user postgres --db-host localhost --db-port 5432
 
 seed-db-dev:
-	powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+	bash scripts/db/apply_seeds.sh --seed-profile dev --client-db client_db --admin-db admin_db --db-user postgres --db-host localhost --db-port 5432
 
 bootstrap-db:
-	powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -DbUser postgres -DbHost localhost -DbPort 5432
-
-smoke-migrations:
-	powershell -ExecutionPolicy Bypass -File scripts/db/smoke_test_migrations.ps1 -DbUser postgres -DbHost localhost -DbPort 5432
+	bash scripts/db/bootstrap.sh --create-databases --seed-profile dev --db-user postgres --db-host localhost --db-port 5432
 
 clean:
 	rm -rf bin/* frontend/dist

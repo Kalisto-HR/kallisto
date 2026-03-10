@@ -1,391 +1,122 @@
-# Kallisto - System Architecture
+# Kallisto Architecture
 
 ## Overview
 
-Kallisto is a university application management platform built as a microservices architecture with a React frontend.
+Kallisto is a monorepo with one React SPA and two Go backend services.
 
-## System Diagram
+- `services/client` is applicant-facing.
+- `services/admin` is management/superuser-facing.
+- Both services use PostgreSQL databases with explicit ownership boundaries.
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                              FRONTEND                                    │
-│                         React SPA (Vite)                                │
-│                       http://localhost:5173                             │
-│                                                                         │
-│  Routes:                                                                │
-│  - / (Home)           - /signin, /signup                               │
-│  - /dashboard         - /search                                         │
-│  - /applications      - /university/:id                                │
-└─────────────────────────────────┬───────────────────────────────────────┘
-                                  │
-                          (Vite dev proxy)
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          CLIENT SERVICE                                  │
-│                         Go (Gorilla Mux)                                │
-│                        http://localhost:8080                            │
-│                                                                         │
-│  Responsibilities:                                                      │
-│  - Applicant authentication                                             │
-│  - Profile management                                                   │
-│  - University browsing                                                  │
-│  - Application creation & submission                                    │
-│  - Favorites management                                                 │
-│                                                                         │
-│  Database: client_db                                                    │
-└─────────────────────────────────┬───────────────────────────────────────┘
-                                  │
-                    (HTTP POST on application submit)
-                                  │
-                                  ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          ADMIN SERVICE                                   │
-│                         Go (Gorilla Mux)                                │
-│                        http://localhost:8082                            │
-│                                                                         │
-│  Responsibilities:                                                      │
-│  - Staff/partner authentication                                         │
-│  - Application review workflow                                          │
-│  - University management (source of truth)                              │
-│  - Blacklist management                                                 │
-│                                                                         │
-│  Database: admin_db                                                     │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+## Runtime Topology
 
-## Service Details
+- Frontend: `http://localhost:5173`
+- Client API: `http://localhost:8080/v1.0`
+- Admin API: `http://localhost:8082/v1.0`
 
-### Client Service (Port 8080)
+The frontend uses API proxy routes (`/api` and `/adminapi`) to reach the two services.
 
-| Layer | Location | Purpose |
-|-------|----------|---------|
-| Handlers | `services/client/internal/handlers/` | HTTP request handling |
-| Usecases | `services/client/internal/usecases/` | Business logic |
-| Models | `services/client/internal/models/` | Data structures |
+## Frontend Composition
 
-**Endpoints:**
-- Auth: `/v1.0/signup`, `/v1.0/signin`, `/v1.0/signout`
-- Profile: `/v1.0/me`, `/v1.0/profile`
-- Applications: `/v1.0/applications/*`
-- Universities: `/v1.0/universities/*`
-- Favorites: `/v1.0/favorites`
+- Routed UI lives under:
+  - `frontend/src/pages/auth`
+  - `frontend/src/pages/student`
+  - `frontend/src/pages/management`
+  - `frontend/src/pages/superuser`
+- Frontend data access is standardized through:
+  - `frontend/src/services/*`
+  - `frontend/src/services/api/httpClient.ts`
+- Legacy root-level page modules and the old `frontend/src/api` client layer are not part of the supported runtime architecture.
 
-### Admin Service (Port 8082)
+## Service Responsibilities
 
-| Layer | Location | Purpose |
-|-------|----------|---------|
-| Handlers | `services/admin/internal/handlers/` | HTTP request handling |
-| Usecases | `services/admin/internal/usecases/` | Business logic |
-| Models | `services/admin/internal/models/` | Data structures |
+### Client Service (`services/client`)
 
-**Endpoints:**
-- Auth: `/v1.0/signin`, `/v1.0/signout`, `/v1.0/signup`
-- Applications: `/v1.0/applications/*`, `/v1.0/applications/receive`
-- Universities: `/v1.0/universities/*`
+- Student authentication and session handling
+- Student profile management
+- University browse/search/favorites/compare/basket interactions
+- Application drafts, autosave, and submission
+- File upload for application assets before submit
 
-### Shared Infrastructure
+### Admin Service (`services/admin`)
 
-| Module | Location | Purpose |
-|--------|----------|---------|
-| JWT | `infra/auth/jwt/` | Token creation & validation |
-| Middlewares | `infra/middlewares/` | Request logging, DB injection, auth |
-| Validation | `infra/validation/` | Input validation helpers |
-| Utils | `infra/utils/` | JSON responses, HTTP client, errors |
-| Logger | `infra/logger/` | Zap logger setup |
-| Env | `infra/env/` | Environment loading |
+- Staff/partner/superuser authentication
+- University manager dashboard and workflows
+- Submitted application intake/review lifecycle
+- University source-of-truth management
+- Global/superuser administration surfaces
 
-## Authentication
+### Shared Infra (`infra`)
 
-### JWT Token Structure
+- JWT and cookie helpers
+- Auth/CORS/logging middlewares
+- Validation and response helpers
+- Env and logger bootstrap
 
-```
-Header: { "alg": "hs256", "typ": "jwt" }
-Claims: { "uid", "first_name", "last_name", "role", "iat" }
-```
+## Data Boundaries
 
-| Property | Value |
-|----------|-------|
-| Algorithm | HS256 |
-| TTL | 15 minutes |
-| Auto-extend | At 75% of TTL |
-| Storage | HttpOnly cookie (`access_token`) |
+### `client_db`
 
-### Auth Flow
+Core tables include:
 
-```
-┌──────────┐         ┌──────────┐         ┌──────────┐
-│  Client  │         │  Server  │         │    DB    │
-└────┬─────┘         └────┬─────┘         └────┬─────┘
-     │                    │                    │
-     │ POST /signin       │                    │
-     │ {email, password}  │                    │
-     │───────────────────▶│                    │
-     │                    │ Query user         │
-     │                    │───────────────────▶│
-     │                    │◀───────────────────│
-     │                    │                    │
-     │                    │ Verify bcrypt      │
-     │                    │ Generate JWT       │
-     │                    │                    │
-     │ Set-Cookie:        │                    │
-     │ access_token=...   │                    │
-     │◀───────────────────│                    │
-     │                    │                    │
-     │ GET /profile       │                    │
-     │ Cookie: access_... │                    │
-     │───────────────────▶│                    │
-     │                    │ Validate JWT       │
-     │                    │ Extract claims     │
-     │                    │───────────────────▶│
-     │                    │◀───────────────────│
-     │ 200 OK + data      │                    │
-     │◀───────────────────│                    │
+- `users`
+- `universities` (read-side copy)
+- `applications`
+- `favorites`
+- `application_files`
+- `profile_test_scores`
+- `application_test_scores`
+- `password_reset_tokens`
+
+### `admin_db`
+
+Core tables include:
+
+- `users`
+- `universities` (source of truth)
+- `submitted_applications`
+- `submitted_application_files`
+- `drafts`
+- `blacklist`
+- `password_reset_tokens`
+
+## Main Application Data Flow
+
+1. Student creates/updates a draft in `client_db.applications`.
+2. Student submits application from client service.
+3. Client service forwards payload to admin service (`/v1.0/applications/receive`).
+4. Admin service persists into `admin_db.submitted_applications`.
+5. Manager/superuser reviews and updates review status.
+
+## Authentication Model
+
+- Auth token is in `HttpOnly` cookie `access_token`.
+- Session metadata is also provided via signed cookie for frontend role-aware routing.
+- JWT algorithm: HS256.
+- Token TTL: 15 minutes with renewal behavior in active sessions.
+
+## Routing and Access Model
+
+- Student routes are under `/student/*`.
+- Management routes are under `/management/*`.
+- Partner users are restricted to university-scoped management routes.
+- Superusers can access global management routes and university-context routes.
+
+## Project Layout
+
+```text
+frontend/
+services/client/
+services/admin/
+infra/
+scripts/migrations/
+scripts/seeds/
+docs/
 ```
 
-## Data Flow
+## Design Constraints
 
-### Application Submission
-
-```
-1. User creates draft (client_db.applications, status='draft')
-         │
-         ▼
-2. User edits and saves draft (updates applications.data)
-         │
-         ▼
-3. User submits (status='submitted', submitted_at=NOW())
-         │
-         ▼
-4. Client service POSTs to Admin service /applications/receive
-         │
-         ▼
-5. Admin service stores in submitted_applications (status='pending')
-         │
-         ▼
-6. Admin reviews and updates status (accepted/rejected)
-```
-
-### University Data Sync
-
-Universities table exists in both databases:
-- **admin_db.universities** → Source of truth (admins can edit)
-- **client_db.universities** → Read replica (applicants can view)
-
-Sync strategy (to be implemented):
-- Admin updates university → Triggers sync to client_db
-- Options: Event-driven (message queue) or scheduled job
-
-## Database Schema
-
-### Client Database (client_db)
-
-```
-┌─────────────────┐     ┌──────────────────┐
-│     users       │     │   universities   │
-├─────────────────┤     ├──────────────────┤
-│ id (PK, UUID)   │     │ id (PK, UUID)    │
-│ email (UNIQUE)  │     │ name             │
-│ password        │     │ description      │
-│ first_name      │     │ province         │
-│ last_name       │     │ ranking          │
-│ data (JSONB)    │     │ application_fee  │
-└────────┬────────┘     └────────┬─────────┘
-         │                       │
-         │    ┌──────────────────┘
-         │    │
-         ▼    ▼
-┌─────────────────────────────────────┐
-│           applications              │
-├─────────────────────────────────────┤
-│ user_id (PK, FK)                    │
-│ university_id (PK, FK)              │
-│ application_cycle (PK)              │
-│ status (draft/submitted/...)        │
-│ data (JSONB)                        │
-│ submitted_at                        │
-│ created_at                          │
-└─────────────────────────────────────┘
-```
-
-### Admin Database (admin_db)
-
-```
-┌─────────────────┐     ┌──────────────────┐
-│     users       │     │   universities   │
-├─────────────────┤     ├──────────────────┤
-│ id (PK, UUID)   │     │ id (PK, UUID)    │
-│ email (UNIQUE)  │     │ manager_id (FK)  │
-│ password        │     │ name             │
-│ first_name      │     │ description      │
-│ last_name       │     │ province         │
-│ role (staff/    │     │ ranking          │
-│       partner)  │     │ application_fee  │
-│ university_     │     └────────┬─────────┘
-│   linked (FK)   │              │
-└─────────────────┘              │
-                                 │
-┌────────────────────────────────┼────────────────────────────────┐
-│                                ▼                                │
-│              submitted_applications                             │
-├─────────────────────────────────────────────────────────────────┤
-│ id (PK, UUID)                                                   │
-│ user_id (applicant from client service)                         │
-│ university_id (FK)                                              │
-│ application_cycle                                               │
-│ applicant_info (JSONB)                                          │
-│ application_data (JSONB)                                        │
-│ status (pending/reviewing/accepted/rejected)                    │
-│ reviewed_by (FK → users)                                        │
-│ reviewed_at                                                     │
-│ notes                                                           │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                          blacklist                               │
-├─────────────────────────────────────────────────────────────────┤
-│ id (PK, UUID)                                                   │
-│ passport_no                                                      │
-│ email                                                           │
-│ reason                                                          │
-│ expires_at                                                      │
-│ created_by (FK → users)                                         │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## API Versioning
-
-All endpoints use `/v1.0/` prefix for versioning.
-
-## Response Formats
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "ok",
-  "timestamp": 1234567890
-}
-```
-
-### Error Response
-
-```json
-{
-  "success": false,
-  "message": "error description"
-}
-```
-
-### Validation Errors
-
-```json
-{
-  "success": false,
-  "message": "validation failed",
-  "errors": [
-    { "field": "email", "message": "must be a valid email address" },
-    { "field": "password", "message": "is required" }
-  ]
-}
-```
-
-### Paginated Response
-
-```json
-{
-  "items": [ ... ],
-  "total": 100,
-  "page": 1,
-  "limit": 20,
-  "total_pages": 5
-}
-```
-
-## Security Measures
-
-| Measure | Implementation |
-|---------|----------------|
-| Password hashing | bcrypt (DefaultCost) |
-| JWT signing | HMAC-SHA256 with SECRET_KEY |
-| Cookie security | HttpOnly, Secure, SameSite=Lax |
-| SQL injection | Parameterized queries (pgx) |
-| Input validation | Server-side validation on all inputs |
-| XSS prevention | React auto-escapes, no dangerouslySetInnerHTML |
-| CSRF protection | SameSite cookies |
-
-## File Structure
-
-```
-kallisto/
-├── frontend/                 # React SPA
-│   ├── src/
-│   │   ├── api/             # API client functions
-│   │   ├── components/      # Reusable components
-│   │   ├── context/         # React contexts (Auth)
-│   │   ├── pages/           # Page components
-│   │   └── utils/           # Utilities (validation)
-│   └── ...
-│
-├── services/
-│   ├── client/              # Client-facing service
-│   │   ├── cmd/             # Entry point
-│   │   └── internal/
-│   │       ├── handlers/    # HTTP handlers
-│   │       ├── models/      # Data models
-│   │       └── usecases/    # Business logic
-│   │
-│   └── admin/               # Admin service
-│       └── (same structure)
-│
-├── infra/                   # Shared infrastructure
-│   ├── auth/jwt/           # JWT utilities
-│   ├── middlewares/        # HTTP middlewares
-│   ├── validation/         # Input validation
-│   ├── utils/              # Helpers (responses, errors)
-│   ├── logger/             # Logging setup
-│   └── env/                # Environment loading
-│
-├── scripts/
-│   ├── migrations/         # Database schemas
-│   └── seeds/              # Seed data
-│
-└── docs/                   # Documentation
-    ├── SETUP.md
-    ├── ARCHITECTURE.md
-    └── TESTING_CHECKLIST.md
-```
-
-## Middleware Chain
-
-```
-Request
-   │
-   ▼
-LogRequestEvent (logs method, URI)
-   │
-   ▼
-PassPgPoolConn (injects DB pool into context)
-   │
-   ▼
-[RequireAuth] (validates JWT, injects claims - protected routes only)
-   │
-   ▼
-Handler
-   │
-   ▼
-Response
-```
-
-## Future Considerations
-
-1. **University Data Sync** - Implement event-driven sync from admin_db to client_db
-2. **Admin Frontend** - Build React admin dashboard
-3. **File Uploads** - University logos, application documents
-4. **Email Notifications** - Application status updates
-5. **Rate Limiting** - Protect auth endpoints
-6. **Caching** - Redis for university listings
-7. **Monitoring** - Prometheus metrics, structured logging
-
+- Keep cross-service contracts explicit and versioned (`/v1.0`).
+- Maintain canonical DB schema files in `scripts/migrations/client_db.sql` and `scripts/migrations/admin_db.sql`.
+- Keep route guards strict with default-deny behavior for unauthorized contexts.
+- Preserve source-of-truth ownership in `admin_db.universities`.

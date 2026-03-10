@@ -42,17 +42,12 @@ CREATE TABLE IF NOT EXISTS universities (
     ranking INT,
     acceptance_rate NUMERIC(5,2),
     tuition_fee NUMERIC(12,2),
-    living_cost NUMERIC(12,2),
-    total_cost NUMERIC(12,2),
     application_deadline DATE,
     ielts_min NUMERIC(3,1),
     toefl_min INT,
     scholarship_available BOOLEAN DEFAULT FALSE,
-    competitiveness TEXT CHECK (competitiveness in ('reach', 'match', 'safety')),
     city_type TEXT CHECK (city_type in ('urban', 'suburban', 'rural')),
-    safety_level TEXT CHECK (safety_level in ('high', 'medium', 'low')),
     campus_vibe TEXT,
-    visa_required BOOLEAN,
     created_at TIMESTAMP DEFAULT NOW(),
     metadata JSONB,
     application_fee FLOAT
@@ -63,13 +58,10 @@ CREATE INDEX IF NOT EXISTS idx_universities_country ON universities(country);
 CREATE INDEX IF NOT EXISTS idx_universities_city ON universities(city);
 CREATE INDEX IF NOT EXISTS idx_universities_acceptance_rate ON universities(acceptance_rate);
 CREATE INDEX IF NOT EXISTS idx_universities_tuition_fee ON universities(tuition_fee);
-CREATE INDEX IF NOT EXISTS idx_universities_total_cost ON universities(total_cost);
 CREATE INDEX IF NOT EXISTS idx_universities_application_deadline ON universities(application_deadline);
 CREATE INDEX IF NOT EXISTS idx_universities_ielts_min ON universities(ielts_min);
 CREATE INDEX IF NOT EXISTS idx_universities_toefl_min ON universities(toefl_min);
 CREATE INDEX IF NOT EXISTS idx_universities_scholarship_available ON universities(scholarship_available);
-CREATE INDEX IF NOT EXISTS idx_universities_competitiveness ON universities(competitiveness);
-CREATE INDEX IF NOT EXISTS idx_universities_safety_level ON universities(safety_level);
 
 -- Add foreign key constraint for university_linked after universities table exists
 DO $$
@@ -89,17 +81,21 @@ ALTER TABLE universities ADD COLUMN IF NOT EXISTS city TEXT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS country TEXT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS acceptance_rate NUMERIC(5,2);
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS tuition_fee NUMERIC(12,2);
-ALTER TABLE universities ADD COLUMN IF NOT EXISTS living_cost NUMERIC(12,2);
-ALTER TABLE universities ADD COLUMN IF NOT EXISTS total_cost NUMERIC(12,2);
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS application_deadline DATE;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS ielts_min NUMERIC(3,1);
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS toefl_min INT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS scholarship_available BOOLEAN DEFAULT FALSE;
-ALTER TABLE universities ADD COLUMN IF NOT EXISTS competitiveness TEXT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS city_type TEXT;
-ALTER TABLE universities ADD COLUMN IF NOT EXISTS safety_level TEXT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS campus_vibe TEXT;
-ALTER TABLE universities ADD COLUMN IF NOT EXISTS visa_required BOOLEAN;
+
+DROP INDEX IF EXISTS idx_universities_total_cost;
+DROP INDEX IF EXISTS idx_universities_competitiveness;
+DROP INDEX IF EXISTS idx_universities_safety_level;
+ALTER TABLE universities DROP COLUMN IF EXISTS living_cost;
+ALTER TABLE universities DROP COLUMN IF EXISTS total_cost;
+ALTER TABLE universities DROP COLUMN IF EXISTS competitiveness;
+ALTER TABLE universities DROP COLUMN IF EXISTS safety_level;
+ALTER TABLE universities DROP COLUMN IF EXISTS visa_required;
 
 -- =============================================================================
 -- SUBMITTED APPLICATIONS TABLE
@@ -275,3 +271,92 @@ CREATE TABLE IF NOT EXISTS user_moderation_states (
 
 CREATE INDEX IF NOT EXISTS idx_user_moderation_status ON user_moderation_states(status);
 CREATE INDEX IF NOT EXISTS idx_user_moderation_email ON user_moderation_states(email);
+
+-- =============================================================================
+-- MANAGER PORTAL TABLES
+-- =============================================================================
+
+ALTER TABLE universities
+    ADD COLUMN IF NOT EXISTS management_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+CREATE TABLE IF NOT EXISTS university_staff_profiles (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    staff_role TEXT NOT NULL CHECK (staff_role IN ('University Manager', 'Admissions Officer', 'Reviewer', 'Read-only')),
+    status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'pending', 'deactivated')) DEFAULT 'active',
+    invited_by UUID REFERENCES users(id),
+    invited_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_active_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_staff_profiles_university_id ON university_staff_profiles(university_id);
+CREATE INDEX IF NOT EXISTS idx_staff_profiles_status ON university_staff_profiles(status);
+CREATE INDEX IF NOT EXISTS idx_staff_profiles_role ON university_staff_profiles(staff_role);
+
+CREATE TABLE IF NOT EXISTS university_staff_invitations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    staff_role TEXT NOT NULL CHECK (staff_role IN ('University Manager', 'Admissions Officer', 'Reviewer', 'Read-only')),
+    status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'expired', 'cancelled')) DEFAULT 'pending',
+    invite_token_hash TEXT,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    invited_by UUID REFERENCES users(id),
+    accepted_user_id UUID REFERENCES users(id),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_staff_invitations_university_id ON university_staff_invitations(university_id);
+CREATE INDEX IF NOT EXISTS idx_staff_invitations_status ON university_staff_invitations(status);
+CREATE INDEX IF NOT EXISTS idx_staff_invitations_email ON university_staff_invitations(email);
+
+CREATE TABLE IF NOT EXISTS university_staff_status_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    previous_status TEXT,
+    next_status TEXT NOT NULL,
+    reason TEXT,
+    changed_by UUID REFERENCES users(id),
+    changed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_staff_status_events_university_id ON university_staff_status_events(university_id);
+CREATE INDEX IF NOT EXISTS idx_staff_status_events_user_id ON university_staff_status_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_staff_status_events_changed_at ON university_staff_status_events(changed_at DESC);
+
+CREATE TABLE IF NOT EXISTS university_application_structure_versions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    version_no INT NOT NULL,
+    schema JSONB NOT NULL DEFAULT '{}'::jsonb,
+    published BOOLEAN NOT NULL DEFAULT FALSE,
+    changed_by UUID REFERENCES users(id),
+    change_note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(university_id, version_no)
+);
+
+CREATE INDEX IF NOT EXISTS idx_structure_versions_university_id ON university_application_structure_versions(university_id);
+CREATE INDEX IF NOT EXISTS idx_structure_versions_created_at ON university_application_structure_versions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_structure_versions_published ON university_application_structure_versions(published);
+
+-- =============================================================================
+-- PASSWORD RESET TOKENS
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);

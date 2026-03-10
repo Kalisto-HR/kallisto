@@ -135,7 +135,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
   };
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#171717] mb-2">Users</h1>
@@ -145,7 +145,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
       </div>
 
       {/* Search Card */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-8 mb-6">
+      <div className="mb-6 rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -157,7 +157,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#A3A3A3]" />
               <input
@@ -188,7 +188,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
       </div>
 
       {/* Platform Stats */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Total Users</div>
           <div className="text-2xl font-semibold text-[#171717]">{summary?.totalUsers ?? '45,892'}</div>
@@ -217,7 +217,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
       {/* User Profile Result */}
       {selectedUser && (
         <div className="bg-white rounded-xl border border-[#E5E5E5]">
-          <div className="p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+          <div className="flex flex-col gap-3 border-b border-[#E5E5E5] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-semibold">
                 {selectedUser.name.charAt(0)}
@@ -245,7 +245,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
             {/* Personal Information */}
             <div>
               <h3 className="font-medium text-[#171717] mb-4">Personal Information</h3>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
                   <label className="text-sm text-[#737373]">Email</label>
                   <div className="flex items-center gap-2 mt-1">
@@ -267,7 +267,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
             {/* Account Activity */}
             <div>
               <h3 className="font-medium text-[#171717] mb-4">Account Activity</h3>
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                 <div>
                   <label className="text-sm text-[#737373]">Joined Date</label>
                   <div className="flex items-center gap-2 mt-1">
@@ -289,7 +289,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
             {/* Application Statistics */}
             <div>
               <h3 className="font-medium text-[#171717] mb-4">Application Statistics</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="bg-[#FAFAFA] rounded-lg p-4">
                   <div className="text-sm text-[#737373] mb-1">Total Applications</div>
                   <div className="text-2xl font-semibold text-[#171717]">{selectedUser.totalApplications}</div>
@@ -312,7 +312,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-4 border-t border-[#E5E5E5]">
+            <div className="flex flex-col gap-3 border-t border-[#E5E5E5] pt-4 md:flex-row">
               <button className="flex-1 px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm font-medium text-[#171717] hover:bg-[#FAFAFA] transition-colors flex items-center justify-center gap-2">
                 <Eye className="w-4 h-4" />
                 View Full Profile
@@ -365,7 +365,7 @@ export default function SuperuserUsers({ searchUserById, onCreateBanDraft, summa
 
       {/* Ban User Modal */}
       {showBanModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6">
           <div className="bg-white rounded-xl max-w-md w-full">
             <div className="p-6 border-b border-[#E5E5E5]">
               <h2 className="text-xl font-semibold text-[#171717]">Ban User</h2>

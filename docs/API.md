@@ -74,24 +74,37 @@ Sign out and clear session.
 
 **Response:** `200 OK`
 
-Clears `access_token` cookie.
+Clears `access_token` and `session_meta` cookies.
 
----
 
-#### GET /v1.0/me 🔒
-Get current user info from JWT.
+#### POST /v1.0/password/forgot
+Request password reset token email.
 
-**Response:** `200 OK`
+**Request:**
 ```json
-{
-  "id": "uuid",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "applicant"
-}
+{ "email": "student@example.com" }
 ```
 
+**Response:** `200 OK`
+
+Notes:
+- Always returns a generic success response (enumeration-safe).
+- Non-existing accounts return the same response without enqueue.
+
 ---
+
+#### POST /v1.0/password/reset
+Reset password by token.
+
+**Request:**
+```json
+{ "token": "...", "new_password": "newStrongPass123" }
+```
+
+**Response:** `200 OK`
+
+---
+
 
 ### Profile
 
@@ -518,6 +531,33 @@ Admin sign out.
 
 **Response:** `200 OK`
 
+
+#### POST /v1.0/password/forgot
+Request admin password reset.
+
+**Request:**
+```json
+{ "email": "admin@kallisto.uz" }
+```
+
+**Response:** `200 OK`
+
+Notes:
+- Always returns a generic success response (enumeration-safe).
+- Non-existing accounts return the same response without enqueue.
+
+---
+
+#### POST /v1.0/password/reset
+Reset admin password by token.
+
+**Request:**
+```json
+{ "token": "...", "new_password": "newStrongPass123" }
+```
+
+**Response:** `200 OK`
+
 ---
 
 #### POST /v1.0/signup 🔒
@@ -549,20 +589,6 @@ Create admin account (requires existing admin).
 
 ---
 
-#### GET /v1.0/me 🔒
-Get current admin info.
-
-**Response:** `200 OK`
-```json
-{
-  "id": "uuid",
-  "first_name": "Admin",
-  "last_name": "User",
-  "role": "staff"
-}
-```
-
----
 
 ### Applications
 

@@ -82,7 +82,7 @@ export function UniversityContextSwitcher({
   if (isLocked) {
     // University manager - show locked context
     return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-accent/50 border border-border rounded-lg">
+      <div className="flex max-w-[220px] items-center gap-2 rounded-lg border border-border bg-accent/50 px-3 py-2 sm:max-w-[280px]">
         <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         <span className="text-sm font-medium truncate">
           {currentContext.type === 'university' ? currentContext.universityName : 'Global'}
@@ -97,7 +97,7 @@ export function UniversityContextSwitcher({
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="min-w-[220px] justify-between gap-2"
+          className="w-[132px] justify-between gap-2 px-2 sm:w-[220px] sm:px-3"
         >
           {isGlobalMode ? (
             <>
@@ -120,7 +120,7 @@ export function UniversityContextSwitcher({
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[320px] p-0">
+      <DropdownMenuContent align="start" className="w-[280px] sm:w-[320px] p-0">
         <div className="p-2">
           {/* Search */}
           <div className="relative mb-2">
@@ -178,4 +178,3 @@ export function UniversityContextSwitcher({
     </DropdownMenu>
   );
 }
-

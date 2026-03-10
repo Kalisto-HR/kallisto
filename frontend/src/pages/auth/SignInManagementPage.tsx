@@ -8,6 +8,7 @@ import { Label } from "../../components/ui/label";
 import { useSession } from "../../hooks/useSession";
 import { routes } from "../../routes/routeConfig";
 import { getManagementSessionUser, signInManagement } from "../../services/admin/authService";
+import { SESSION_EXPIRED_REASON } from "../../services/sessionEvents";
 import { isValidUUID } from "../../utils/validation";
 
 export function SignInManagementPage() {
@@ -19,6 +20,10 @@ export function SignInManagementPage() {
   const { user, initialized, isAuthenticated } = useSession();
 
   const superuserIntent = useMemo(() => searchParams.get("intent") === "superuser", [searchParams]);
+  const showSessionExpiredBanner = useMemo(
+    () => searchParams.get("reason") === SESSION_EXPIRED_REASON,
+    [searchParams],
+  );
 
   useEffect(() => {
     if (!initialized || !isAuthenticated || !user) {
@@ -89,6 +94,12 @@ export function SignInManagementPage() {
       subtitle={superuserIntent ? "Use your staff account to access global controls" : "Access management and partner tools"}
     >
       <form className="space-y-4" onSubmit={onSubmit}>
+        {showSessionExpiredBanner ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+            Your session expired due to inactivity. Please sign in again.
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
@@ -103,6 +114,9 @@ export function SignInManagementPage() {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : superuserIntent ? "Sign in as Superuser" : "Sign in as Manager"}
         </Button>
+        <div className="text-sm text-muted-foreground">
+          Forgot password? <Link to={`${routes.auth.forgotPassword}?portal=management`} className="text-primary underline">Reset it</Link>
+        </div>
         <div className="text-sm text-muted-foreground">
           Need another portal? <Link to={routes.auth.signIn} className="text-primary underline">Back to portal selection</Link>
         </div>

@@ -29,8 +29,8 @@ export function ManagementHeader({
   onLogout,
 }: ManagementHeaderProps) {
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-6 sticky top-0 z-10">
-      <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-2 border-b bg-card px-3 sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         {/* Mobile menu button */}
         <Button
           variant="ghost"
@@ -49,7 +49,7 @@ export function ManagementHeader({
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {/* Notifications */}
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
@@ -58,7 +58,7 @@ export function ManagementHeader({
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2">
+            <Button variant="ghost" className="gap-2 px-2 sm:px-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
@@ -83,4 +83,3 @@ export function ManagementHeader({
     </header>
   );
 }
-

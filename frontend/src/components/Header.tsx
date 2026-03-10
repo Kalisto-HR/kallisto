@@ -1,4 +1,4 @@
-import { CreditCard, HelpCircle, LogOut, Menu, Search, Settings } from "lucide-react";
+import { CreditCard, HelpCircle, LogOut, Menu, Search, Settings, ShoppingBasket } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
@@ -13,6 +13,7 @@ import { Input } from "./ui/input";
 interface HeaderProps {
   userName: string;
   applicationsCount?: number | null;
+  basketCount?: number | null;
   onNavigate?: (page: string) => void;
   onLogout?: () => void;
   onMenuClick?: () => void;
@@ -28,25 +29,27 @@ function getInitials(name: string): string {
 export function Header({
   userName,
   applicationsCount,
+  basketCount,
   onNavigate,
   onLogout,
   onMenuClick,
 }: HeaderProps) {
   const initials = getInitials(userName);
   const count = typeof applicationsCount === "number" ? applicationsCount : 0;
+  const basketItems = typeof basketCount === "number" ? basketCount : 0;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-card">
-      <div className="flex h-16 items-center gap-4 px-4 md:px-6">
+      <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-4 md:px-6">
         <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
 
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
-            <span className="text-sm font-semibold text-white">D</span>
+            <span className="text-sm font-semibold text-white">K</span>
           </div>
-          <span className="hidden text-xl font-semibold tracking-tight sm:inline">DaMen</span>
+          <span className="hidden text-xl font-semibold tracking-tight sm:inline">Kallisto</span>
         </div>
 
         <div className="hidden flex-1 items-center gap-4 px-4 md:flex">
@@ -60,14 +63,27 @@ export function Header({
           </div>
         </div>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 md:gap-3">
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 border-[#4F46E5]/20 hover:border-[#4F46E5]/40"
+            className="min-w-0 gap-1 border-[#4F46E5]/20 px-2 hover:border-[#4F46E5]/40 sm:gap-2 sm:px-3"
+            onClick={() => onNavigate?.("basket")}
+          >
+            <ShoppingBasket className="h-4 w-4 shrink-0 text-[#4F46E5]" />
+            <span className="hidden font-semibold sm:inline">
+              {basketItems} {basketItems === 1 ? "Basket Item" : "Basket Items"}
+            </span>
+            <span className="font-semibold sm:hidden">{basketItems}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-w-0 gap-1 border-[#4F46E5]/20 px-2 hover:border-[#4F46E5]/40 sm:gap-2 sm:px-3"
             onClick={() => onNavigate?.("applications")}
           >
-            <CreditCard className="h-4 w-4 text-[#4F46E5]" />
+            <CreditCard className="h-4 w-4 shrink-0 text-[#4F46E5]" />
             <span className="hidden font-semibold sm:inline">
               {count} {count === 1 ? "Application" : "Applications"}
             </span>

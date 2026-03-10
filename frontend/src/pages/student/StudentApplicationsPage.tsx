@@ -87,17 +87,17 @@ export function StudentApplicationsPage() {
               ? draftHref
               : routes.student.applicationDetail(item.universityId, item.applicationCycle);
           return (
-          <Card key={`${item.universityId}-${item.applicationCycle}`}>
+            <Card key={`${item.universityId}-${item.applicationCycle}`}>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-3">
+              <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <span>{item.universityName}</span>
                 <Badge variant="secondary" className="capitalize">
                   {item.status}
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
                   Cycle {item.applicationCycle}
@@ -108,7 +108,7 @@ export function StudentApplicationsPage() {
                 </span>
               </div>
               <Link to={openHref}>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="w-full sm:w-auto">
                   {item.status === "draft" ? "Open draft" : "Open"}
                 </Button>
               </Link>

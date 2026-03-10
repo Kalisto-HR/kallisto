@@ -284,7 +284,7 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
   });
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#171717] mb-2">Audit Logs</h1>
@@ -294,7 +294,7 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <div className="bg-white rounded-xl border border-[#E5E5E5] p-6">
           <div className="text-sm text-[#737373] mb-2">Total Logs</div>
           <div className="text-2xl font-semibold text-[#171717]">2,341,892</div>
@@ -317,12 +317,11 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
           <div className="text-sm text-[#737373] mb-2">Failed Actions</div>
           <div className="text-2xl font-semibold text-[#171717]">127</div>
           <div className="text-xs text-[#A3A3A3] mt-2">Requires review</div>
-        </div>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] p-6 mb-6">
-        <div className="flex items-center gap-4">
+      <div className="mb-6 rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A3A3A3]" />
@@ -339,7 +338,7 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
           <select
             value={selectedAction}
             onChange={(e) => setSelectedAction(e.target.value as ActionType | 'all')}
-            className="px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#171717] focus:border-transparent bg-white min-w-[180px]"
+            className="w-full min-w-0 rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#171717] lg:min-w-[180px]"
           >
             <option value="all">All Actions</option>
             <option value="user-banned">User Banned</option>
@@ -355,7 +354,7 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
           <select
             value={selectedOutcome}
             onChange={(e) => setSelectedOutcome(e.target.value as 'success' | 'failed' | 'pending' | 'all')}
-            className="px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#171717] focus:border-transparent bg-white"
+            className="w-full rounded-lg border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#171717] lg:w-auto"
           >
             <option value="all">All Outcomes</option>
             <option value="success">Success</option>
@@ -364,7 +363,7 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
           </select>
 
           {/* Export */}
-          <button className="px-4 py-2.5 border border-[#E5E5E5] rounded-lg text-sm font-medium text-[#171717] hover:bg-[#FAFAFA] transition-colors flex items-center gap-2">
+          <button className="flex items-center justify-center gap-2 rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm font-medium text-[#171717] transition-colors hover:bg-[#FAFAFA] lg:w-auto">
             <Download className="w-4 h-4" />
             Export
           </button>
@@ -376,8 +375,36 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
       </div>
 
       {/* Audit Logs Table */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5] overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-white">
+        <div className="space-y-3 p-4 md:hidden">
+          {filteredLogs.map((log) => (
+            <div key={log.id} className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="font-medium text-[#171717]">{log.actionDescription}</div>
+                  <div className="text-xs text-[#A3A3A3] font-mono">{log.id}</div>
+                </div>
+                {getOutcomeBadge(log.outcome)}
+              </div>
+              <div className="space-y-1 text-sm">
+                <div className="text-[#737373]">{log.timestamp}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {getActorTypeBadge(log.actorType)}
+                  {getActionBadge(log.action)}
+                </div>
+                <div className="text-[#171717]">{log.targetEntity}</div>
+              </div>
+              <button
+                onClick={() => setSelectedLog(log)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#E5E5E5] px-3 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#FAFAFA]"
+              >
+                <Eye className="w-4 h-4" />
+                View details
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#E5E5E5] bg-[#FAFAFA]">
@@ -441,6 +468,7 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 

@@ -21,7 +21,7 @@ export function SuperuserShell({ children }: { children: ReactNode }) {
   const linkedUniversity = user?.universityLinked ?? null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -52,7 +52,7 @@ export function SuperuserShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 flex-1 overflow-y-auto w-full">{children}</main>
     </div>
   );
 }

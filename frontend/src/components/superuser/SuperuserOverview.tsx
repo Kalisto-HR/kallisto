@@ -128,7 +128,7 @@ export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
   ];
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#171717] mb-2">Overview</h1>
@@ -136,7 +136,7 @@ export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           const colorClasses = {
@@ -168,10 +168,10 @@ export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
         })}
       </div>
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Pending Drafts */}
-        <div className="col-span-2 bg-white rounded-xl border border-[#E5E5E5]">
-          <div className="p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-[#E5E5E5] xl:col-span-2">
+          <div className="flex flex-col gap-3 border-b border-[#E5E5E5] p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-semibold text-[#171717]">Pending Drafts</h2>
               <p className="text-sm text-[#737373] mt-1">Requires your review and approval</p>
@@ -227,7 +227,7 @@ export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
 
       {/* Recent Activity */}
       <div className="bg-white rounded-xl border border-[#E5E5E5]">
-        <div className="p-6 border-b border-[#E5E5E5] flex items-center justify-between">
+          <div className="flex flex-col gap-3 border-b border-[#E5E5E5] p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-semibold text-[#171717]">Recent Activity</h2>
             <p className="text-sm text-[#737373] mt-1">Latest platform actions and events</p>
@@ -239,7 +239,7 @@ export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
         </div>
         <div className="divide-y divide-[#F5F5F5]">
           {recentActivity.map((activity) => (
-            <div key={activity.id} className="p-6 flex items-start gap-4">
+            <div key={activity.id} className="flex items-start gap-4 p-6">
               <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
                 <CheckCircle className="w-4 h-4 text-green-600" />
               </div>

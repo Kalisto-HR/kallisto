@@ -47,9 +47,8 @@ export async function uploadStudentPhoto(photo: File): Promise<void> {
   const formData = new FormData();
   formData.append("photo", photo);
 
-  const response = await fetch("/api/v1.0/profile/photo", {
+  const response = await clientApi.raw("/v1.0/profile/photo", {
     method: "PUT",
-    credentials: "include",
     body: formData,
   });
 
@@ -59,9 +58,8 @@ export async function uploadStudentPhoto(photo: File): Promise<void> {
 }
 
 export async function fetchStudentPhotoUrl(): Promise<string | null> {
-  const response = await fetch("/api/v1.0/profile/photo", {
+  const response = await clientApi.raw("/v1.0/profile/photo", {
     method: "GET",
-    credentials: "include",
   });
 
   if (response.status === 404) {

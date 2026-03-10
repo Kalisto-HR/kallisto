@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"kallisto/infra/env"
@@ -17,7 +20,7 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
+	baseCtx := context.Background()
 	router := mux.NewRouter()
 
 	logger.Init()
@@ -27,54 +30,49 @@ func main() {
 		zap.L().Warn("could not load .env file", zap.Error(err))
 	}
 
-	pool, err := pgxpool.New(ctx, os.Getenv("ADMIN_DB_CONNECTION_URL"))
+	pool, err := pgxpool.New(baseCtx, os.Getenv("ADMIN_DB_CONNECTION_URL"))
 	if err != nil {
 		zap.L().Fatal("failed to connect to database", zap.Error(err))
 	}
 	defer pool.Close()
 
-	clientDbURL := os.Getenv("CLIENT_DB_CONNECTION_URL")
-	if clientDbURL == "" {
-		clientDbURL = os.Getenv("DB_CONNECTION_URL")
+	clientDBURL := os.Getenv("CLIENT_DB_CONNECTION_URL")
+	if clientDBURL == "" {
+		clientDBURL = os.Getenv("DB_CONNECTION_URL")
 	}
-	if clientDbURL == "" {
+	if clientDBURL == "" {
 		zap.L().Fatal("failed to resolve client database connection URL")
 	}
 
-	clientPool, err := pgxpool.New(ctx, clientDbURL)
+	clientPool, err := pgxpool.New(baseCtx, clientDBURL)
 	if err != nil {
 		zap.L().Fatal("failed to connect to client database", zap.Error(err))
 	}
 	defer clientPool.Close()
 
-	// Apply global middlewares
+	router.Use(middlewares.CORS())
 	router.Use(middlewares.LogRequestEvent(zap.L()))
 	router.Use(middlewares.PassPgPoolConn(pool))
 	router.Use(middlewares.PassClientPgPoolConn(clientPool))
 
-	// Auth routes (public)
 	router.HandleFunc("/v1.0/signin", handlers.AdminSignInHandler).Methods("POST")
 	router.HandleFunc("/v1.0/signout", handlers.AdminSignOutHandler).Methods("GET")
+	router.HandleFunc("/v1.0/password/forgot", handlers.AdminForgotPasswordHandler).Methods("POST")
+	router.HandleFunc("/v1.0/password/reset", handlers.AdminResetPasswordHandler).Methods("POST")
 
-	// Receive application from client service (service-to-service, no auth required)
 	router.HandleFunc("/v1.0/applications/receive", handlers.ReceiveApplicationHandler).Methods("POST")
 
-	// Protected routes subrouter
 	protected := router.PathPrefix("/v1.0").Subrouter()
 	protected.Use(middlewares.RequireAuth(zap.L()))
 
-	// Auth - protected (only existing admins can create new admin accounts)
 	protected.HandleFunc("/signup", handlers.AdminSignUpHandler).Methods("POST")
-	protected.HandleFunc("/me", handlers.GetAdminMeHandler).Methods("GET")
 
-	// Applications
 	protected.HandleFunc("/applications", handlers.GetApplicationsHandler).Methods("GET")
 	protected.HandleFunc("/applications/{id}", handlers.GetApplicationHandler).Methods("GET")
 	protected.HandleFunc("/applications/{id}/files", handlers.ListSubmittedApplicationFilesHandler).Methods("GET")
 	protected.HandleFunc("/applications/{id}/files/{fileId}/download", handlers.DownloadSubmittedApplicationFileHandler).Methods("GET")
 	protected.HandleFunc("/applications/{id}/review", handlers.ReviewApplicationHandler).Methods("PUT")
 
-	// Universities
 	protected.HandleFunc("/universities", handlers.GetUniversitiesHandler).Methods("GET")
 	protected.HandleFunc("/universities", handlers.CreateUniversityHandler).Methods("POST")
 	protected.HandleFunc("/universities/import", handlers.ImportUniversitiesHandler).Methods("POST")
@@ -95,7 +93,6 @@ func main() {
 	protected.HandleFunc("/universities/{id}/staff/{staffId}/resend-invite", handlers.ResendUniversityStaffInviteHandler).Methods("POST")
 	protected.HandleFunc("/universities/{id}/manager", handlers.AssignManagerHandler).Methods("PUT")
 
-	// Superuser global
 	protected.HandleFunc("/global/overview", handlers.GetGlobalOverviewHandler).Methods("GET")
 	protected.HandleFunc("/global/universities", handlers.GetGlobalUniversitiesHandler).Methods("GET")
 	protected.HandleFunc("/global/drafts", handlers.GetGlobalDraftsHandler).Methods("GET")
@@ -116,6 +113,21 @@ func main() {
 		ReadTimeout:  15 * time.Second,
 	}
 
+	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		<-runCtx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			zap.L().Error("admin service graceful shutdown failed", zap.Error(err))
+		}
+	}()
+
 	zap.L().Info("Admin service starting on port 8082")
-	zap.L().Fatal(srv.ListenAndServe().Error())
+	err = srv.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		zap.L().Fatal("admin service failed", zap.Error(err))
+	}
 }
