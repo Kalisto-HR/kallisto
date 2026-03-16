@@ -60,7 +60,7 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		`SELECT id, manager_id, name, logo, description, province, city, country,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
-		        city_type, campus_vibe, application_schema, ranking,
+		        city_type, campus_vibe, application_schema, management_profile, ranking,
 		        created_at, metadata, application_fee
 		 FROM universities
 		 WHERE id=$1`,

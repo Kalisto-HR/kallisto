@@ -53,6 +53,7 @@
 - Admin: admin@kallisto.uz / admin123 (from seed)
 - Manager: manager@kallisto.uz / admin123
 - KBTU Manager: kbtu.manager@kallisto.uz / admin123
+- Bukhara Manager: bukhara.manager@kallisto.uz / admin123
 
 ## Known Gaps / Future Work
 - University sync from admin_db to client_db (event-driven or cron).

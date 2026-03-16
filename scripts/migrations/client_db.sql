@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS universities (
     city TEXT,
     country TEXT,
     application_schema JSONB,
+    management_profile JSONB NOT NULL DEFAULT '{}'::jsonb,
     ranking INT,
     acceptance_rate NUMERIC(5,2),
     tuition_fee NUMERIC(12,2),
@@ -158,6 +159,7 @@ ALTER TABLE universities ADD COLUMN IF NOT EXISTS toefl_min INT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS scholarship_available BOOLEAN DEFAULT FALSE;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS city_type TEXT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS campus_vibe TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS management_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 DROP INDEX IF EXISTS idx_universities_total_cost;
 DROP INDEX IF EXISTS idx_universities_competitiveness;

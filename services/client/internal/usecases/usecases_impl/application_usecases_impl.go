@@ -20,6 +20,26 @@ import (
 	"go.uber.org/zap"
 )
 
+type essayValidationSchema struct {
+	Sections []essayValidationSection `json:"sections"`
+}
+
+type essayValidationSection struct {
+	Fields []essayValidationField `json:"fields"`
+}
+
+type essayValidationField struct {
+	Id         string                       `json:"id"`
+	Type       string                       `json:"type"`
+	Label      string                       `json:"label"`
+	DataKey    string                       `json:"dataKey"`
+	Validation *essayValidationFieldDetails `json:"validation"`
+}
+
+type essayValidationFieldDetails struct {
+	WordLimit *float64 `json:"wordLimit"`
+}
+
 func GetApplicationsByUser(ctx context.Context, userId string) ([]models.ApplicationListItem, error) {
 	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
 	if !ok {
@@ -169,6 +189,18 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		return utils.NewHandlerFuncErr(http.StatusBadRequest, "application already submitted")
 	}
 
+	var applicationData json.RawMessage
+	err = conn.QueryRow(ctx,
+		"SELECT data FROM applications WHERE user_id=$1 AND university_id=$2 AND application_cycle=$3",
+		userId, universityId, cycle).Scan(&applicationData)
+	if err != nil {
+		return fmt.Errorf("failed to fetch application data: %s", err.Error())
+	}
+
+	if err := validateApplicationEssayLimits(ctx, conn, universityId, applicationData); err != nil {
+		return err
+	}
+
 	// Update application status to submitted
 	submittedAt := time.Now()
 	result, err := conn.Exec(ctx,
@@ -180,16 +212,6 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 
 	if result.RowsAffected() == 0 {
 		return utils.NewHandlerFuncErr(http.StatusNotFound, "application not found")
-	}
-
-	// Fetch application data and user info To forward to admin service
-	var applicationData json.RawMessage
-	err = conn.QueryRow(ctx,
-		"SELECT data FROM applications WHERE user_id=$1 AND university_id=$2 AND application_cycle=$3",
-		userId, universityId, cycle).Scan(&applicationData)
-	if err != nil {
-		log.Error("failed to fetch application data for forwarding", zap.Error(err))
-		// Don't fail the submission, just log the error
 	}
 
 	var (
@@ -333,13 +355,81 @@ func extractProfileGender(raw json.RawMessage) string {
 		return "male"
 	case "female":
 		return "female"
-	case "other":
-		return "other"
-	case "prefer_not_to_say":
-		return "prefer_not_to_say"
 	default:
 		return ""
 	}
+}
+
+func validateApplicationEssayLimits(
+	ctx context.Context,
+	conn *pgxpool.Pool,
+	universityId string,
+	applicationData json.RawMessage,
+) error {
+	trimmedData := strings.TrimSpace(string(applicationData))
+	if trimmedData == "" || trimmedData == "null" {
+		return nil
+	}
+
+	var schemaRaw json.RawMessage
+	if err := conn.QueryRow(ctx, "SELECT application_schema FROM universities WHERE id = $1", universityId).Scan(&schemaRaw); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
+		}
+		return fmt.Errorf("failed to load application schema: %s", err.Error())
+	}
+
+	trimmedSchema := strings.TrimSpace(string(schemaRaw))
+	if trimmedSchema == "" || trimmedSchema == "null" {
+		return nil
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(applicationData, &payload); err != nil {
+		return utils.NewHandlerFuncErr(http.StatusBadRequest, "application data must be valid json")
+	}
+
+	var schema essayValidationSchema
+	if err := json.Unmarshal(schemaRaw, &schema); err != nil {
+		return nil
+	}
+
+	for _, section := range schema.Sections {
+		for _, field := range section.Fields {
+			if field.Type != "essay" || field.Validation == nil || field.Validation.WordLimit == nil {
+				continue
+			}
+
+			limit := int(*field.Validation.WordLimit)
+			if limit <= 0 {
+				continue
+			}
+
+			dataKey := strings.TrimSpace(field.DataKey)
+			if dataKey == "" {
+				dataKey = strings.TrimSpace(field.Id)
+			}
+			if dataKey == "" {
+				continue
+			}
+
+			value, ok := payload[dataKey].(string)
+			if !ok {
+				continue
+			}
+
+			wordCount := len(strings.Fields(strings.TrimSpace(value)))
+			if wordCount > limit {
+				label := strings.TrimSpace(field.Label)
+				if label == "" {
+					label = dataKey
+				}
+				return utils.NewHandlerFuncErr(http.StatusBadRequest, fmt.Sprintf("%s exceeds the %d-word limit", label, limit))
+			}
+		}
+	}
+
+	return nil
 }
 
 func extractApplicationFileIDs(applicationData json.RawMessage) []string {

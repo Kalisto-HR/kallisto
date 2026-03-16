@@ -42,7 +42,7 @@ import {
 } from "../../services/client/applicationsService";
 import { fetchStudentTestScores } from "../../services/client/profileService";
 import { fetchUniversityById } from "../../services/client/universitiesService";
-import type { StudentTestScore } from "../../types/domain";
+import type { StudentApplicationListItem, StudentTestScore } from "../../types/domain";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -168,6 +168,14 @@ function formatTestScoreLabel(item: StudentTestScore): string {
 
 function buildDraftSignature(cycle: string, data: Record<string, unknown>): string {
   return JSON.stringify({ cycle: cycle.trim(), data });
+}
+
+function countWords(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return 0;
+  }
+  return trimmed.split(/\s+/).length;
 }
 
 function normalizedFieldDescriptor(field: SchemaField): string {
@@ -368,6 +376,7 @@ export function StudentApplicationCreatePage() {
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const [uploadingFieldKey, setUploadingFieldKey] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [existingApplications, setExistingApplications] = useState<StudentApplicationListItem[]>([]);
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const lastSavedSignatureRef = useRef(buildDraftSignature(flow.cycle, flow.formData));
@@ -450,6 +459,7 @@ export function StudentApplicationCreatePage() {
       setDraftHydrated(false);
       if (!universityId) {
         if (mounted) {
+          setExistingApplications([]);
           setDraftHydrated(true);
         }
         return;
@@ -458,11 +468,17 @@ export function StudentApplicationCreatePage() {
       setDraftLoading(true);
       setDraftError(null);
       try {
+        const applications = await fetchStudentApplications();
+        const matchingApplications = applications.filter((item) => item.universityId === universityId);
+        if (!mounted) {
+          return;
+        }
+        setExistingApplications(matchingApplications);
+
         let cycleToLoad = shouldLoadDraft ? draftCycle : "";
         if (!cycleToLoad) {
-          const applications = await fetchStudentApplications();
-          const latestDraft = applications.find(
-            (item) => item.status === "draft" && item.universityId === universityId,
+          const latestDraft = matchingApplications.find(
+            (item) => item.status === "draft",
           );
           cycleToLoad = latestDraft?.applicationCycle ?? "";
         }
@@ -573,15 +589,47 @@ export function StudentApplicationCreatePage() {
     );
   }, [schemaSections, flow.formData]);
 
-  const canSubmit = requiredMissing.length === 0 && Object.keys(flow.formData).length > 0;
+  const essayLimitErrors = useMemo(() => {
+    return schemaSections.flatMap((section) =>
+      section.fields.flatMap((field) => {
+        if (field.type !== "essay" || typeof field.validation?.wordLimit !== "number") {
+          return [];
+        }
+        const wordLimit = field.validation.wordLimit;
+        const wordCount = countWords(coerceString(flow.formData[fieldKey(field)]));
+        if (wordCount <= wordLimit) {
+          return [];
+        }
+        return [`${section.title ?? section.name ?? "Section"}: ${field.label} exceeds ${wordLimit} words (${wordCount})`];
+      }),
+    );
+  }, [schemaSections, flow.formData]);
+
+  const currentCycle = flow.cycle.trim();
+  const duplicateApplication = useMemo(
+    () =>
+      existingApplications.find(
+        (item) => item.applicationCycle === currentCycle && item.status !== "draft",
+      ) ?? null,
+    [currentCycle, existingApplications],
+  );
+
+  const canSubmit =
+    requiredMissing.length === 0 &&
+    essayLimitErrors.length === 0 &&
+    Object.keys(flow.formData).length > 0 &&
+    !duplicateApplication;
   const hasFormContent = Object.keys(flow.formData).length > 0;
   const draftSignature = useMemo(
     () => buildDraftSignature(flow.cycle, flow.formData),
     [flow.cycle, flow.formData],
   );
+  const duplicateApplicationHref = duplicateApplication
+    ? routes.student.applicationDetail(duplicateApplication.universityId, duplicateApplication.applicationCycle)
+    : null;
 
   useEffect(() => {
-    if (!draftHydrated || !hasFormContent || flow.loading) {
+    if (!draftHydrated || !hasFormContent || flow.loading || duplicateApplication) {
       return;
     }
     if (draftSignature === lastSavedSignatureRef.current) {
@@ -611,11 +659,11 @@ export function StudentApplicationCreatePage() {
     return () => {
       window.clearTimeout(handle);
     };
-  }, [draftHydrated, draftSaveState, draftSignature, hasFormContent, flow.loading, flow.saveDraft]);
+  }, [draftHydrated, draftSaveState, draftSignature, duplicateApplication, hasFormContent, flow.loading, flow.saveDraft]);
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedChangesRef.current || !hasFormContent) {
+      if (!hasUnsavedChangesRef.current || !hasFormContent || duplicateApplication) {
         return;
       }
       event.preventDefault();
@@ -626,7 +674,7 @@ export function StudentApplicationCreatePage() {
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
-  }, [flow.saveDraft, hasFormContent]);
+  }, [duplicateApplication, flow.saveDraft, hasFormContent]);
 
   const draftStatusMessage = useMemo(() => {
     if (!hasFormContent || !draftHydrated) {
@@ -646,12 +694,12 @@ export function StudentApplicationCreatePage() {
 
   useEffect(() => {
     return () => {
-      if (!hasUnsavedChangesRef.current || !hasFormContent) {
+      if (!hasUnsavedChangesRef.current || !hasFormContent || duplicateApplication) {
         return;
       }
       void flow.saveDraft({ advanceStep: false, silent: true });
     };
-  }, [flow.saveDraft, hasFormContent]);
+  }, [duplicateApplication, flow.saveDraft, hasFormContent]);
 
   const setFieldValue = (field: SchemaField, value: unknown) => {
     const key = fieldKey(field);
@@ -1375,6 +1423,9 @@ export function StudentApplicationCreatePage() {
     }
 
     if (field.type === "long-text" || field.type === "essay") {
+      const wordLimit = typeof field.validation?.wordLimit === "number" ? field.validation.wordLimit : null;
+      const wordCount = field.type === "essay" ? countWords(coerceString(value)) : 0;
+      const exceedsWordLimit = wordLimit !== null && wordCount > wordLimit;
       return (
         <div key={field.id} className="space-y-2">
           {commonLabel}
@@ -1383,12 +1434,20 @@ export function StudentApplicationCreatePage() {
             rows={field.type === "essay" ? 8 : 5}
             placeholder={field.placeholder ?? ""}
             value={coerceString(value)}
+            className={exceedsWordLimit ? "border-red-500 focus-visible:ring-red-500" : undefined}
             onChange={(event) => setFieldValue(field, event.target.value)}
           />
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             {helpText}
-            {typeof field.validation?.wordLimit === "number" ? <span>Word limit: {field.validation.wordLimit}</span> : null}
+            {wordLimit !== null ? (
+              <span className={exceedsWordLimit ? "font-medium text-red-600" : undefined}>
+                {wordCount}/{wordLimit} words
+              </span>
+            ) : null}
           </div>
+          {exceedsWordLimit ? (
+            <p className="text-xs text-red-600">Reduce this essay to {wordLimit} words or fewer before submitting.</p>
+          ) : null}
         </div>
       );
     }
@@ -1473,6 +1532,22 @@ export function StudentApplicationCreatePage() {
         </p>
       ) : null}
 
+      {duplicateApplication ? (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="space-y-2">
+            <p>
+              You've already applied to this university for <strong>{duplicateApplication.applicationCycle}</strong>.
+            </p>
+            {duplicateApplicationHref ? (
+              <Link className="font-medium text-[#4F46E5] underline-offset-4 hover:underline" to={duplicateApplicationHref}>
+                Open existing application
+              </Link>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {shouldLoadDraft && draftLoading ? (
         <Alert>
           <Info className="h-4 w-4" />
@@ -1535,7 +1610,7 @@ export function StudentApplicationCreatePage() {
                   Back to search
                 </Button>
               </Link>
-              <Button className="flex-1" onClick={() => setCurrentStep(2)}>
+              <Button className="flex-1" disabled={Boolean(duplicateApplication)} onClick={() => setCurrentStep(2)}>
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -1563,7 +1638,7 @@ export function StudentApplicationCreatePage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button className="flex-1" onClick={() => setCurrentStep(3)}>
+              <Button className="flex-1" disabled={Boolean(duplicateApplication)} onClick={() => setCurrentStep(3)}>
                 Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -1594,7 +1669,7 @@ export function StudentApplicationCreatePage() {
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={importingScores || testScoresLoading || profileTestScores.length === 0}
+                  disabled={Boolean(duplicateApplication) || importingScores || testScoresLoading || profileTestScores.length === 0}
                   onClick={() => void importSelectedTestScores()}
                 >
                   <Download className="mr-2 h-4 w-4" />
@@ -1652,7 +1727,7 @@ export function StudentApplicationCreatePage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button className="flex-1" onClick={() => setCurrentStep(4)}>
+              <Button className="flex-1" disabled={Boolean(duplicateApplication)} onClick={() => setCurrentStep(4)}>
                 Review
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -1681,6 +1756,16 @@ export function StudentApplicationCreatePage() {
                 <AlertDescription>
                   Missing required fields: {requiredMissing.slice(0, 5).join(", ")}
                   {requiredMissing.length > 5 ? "..." : ""}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {essayLimitErrors.length > 0 ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Essay limit issues: {essayLimitErrors.slice(0, 3).join(", ")}
+                  {essayLimitErrors.length > 3 ? "..." : ""}
                 </AlertDescription>
               </Alert>
             ) : null}

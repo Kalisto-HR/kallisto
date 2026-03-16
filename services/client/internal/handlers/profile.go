@@ -103,7 +103,7 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 			if !ok || !isSupportedStudentGender(gender) {
 				validationErrors = append(validationErrors, &validation.ValidationError{
 					Field:   "data.gender",
-					Message: "must be one of: male, female, other, prefer_not_to_say",
+					Message: "must be one of: male, female",
 				})
 			}
 		}
@@ -283,6 +283,7 @@ func GetProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error(err.Error())
 	}
 }
+
 
 func DeleteProfileHandler(w http.ResponseWriter, r *http.Request) {
 	log := zap.L()

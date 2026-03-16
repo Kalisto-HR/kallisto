@@ -94,6 +94,7 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 	if !ok {
 		return "", errors.New("could not establish connection with the database")
 	}
+	clientConn, _ := ctx.Value(middlewares.CtxClientPostgresKey).(*pgxpool.Pool)
 
 	if req.Name == "" {
 		return "", utils.NewHandlerFuncErr(http.StatusBadRequest, "university name is required")
@@ -135,6 +136,12 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 		return "", fmt.Errorf("failed to create university: %s", err.Error())
 	}
 
+	if clientConn != nil {
+		if err := syncUniversityToClient(ctx, conn, clientConn, universityId); err != nil {
+			return "", err
+		}
+	}
+
 	return universityId, nil
 }
 
@@ -144,6 +151,7 @@ func UpdateUniversity(ctx context.Context, id string, req *models.UpdateUniversi
 	if !ok {
 		return errors.New("could not establish connection with the database")
 	}
+	clientConn, _ := ctx.Value(middlewares.CtxClientPostgresKey).(*pgxpool.Pool)
 
 	// Build dynamic update query
 	query := "UPDATE universities SET "
@@ -261,6 +269,12 @@ func UpdateUniversity(ctx context.Context, id string, req *models.UpdateUniversi
 		return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
 	}
 
+	if clientConn != nil {
+		if err := syncUniversityToClient(ctx, conn, clientConn, id); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -310,12 +324,14 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 	if !ok {
 		return 0, errors.New("could not establish connection with the database")
 	}
+	clientConn, _ := ctx.Value(middlewares.CtxClientPostgresKey).(*pgxpool.Pool)
 
 	if len(reqs) == 0 {
 		return 0, utils.NewHandlerFuncErr(http.StatusBadRequest, "universities payload is empty")
 	}
 
 	imported := 0
+	syncedIds := make([]string, 0, len(reqs))
 	err := pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
 		for _, req := range reqs {
 			if req.Name == "" {
@@ -376,8 +392,10 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 				if err != nil {
 					return fmt.Errorf("failed to upsert university %s: %s", *req.Id, err.Error())
 				}
+				syncedIds = append(syncedIds, *req.Id)
 			} else {
-				_, err := tx.Exec(ctx, `
+				var universityId string
+				err := tx.QueryRow(ctx, `
 					INSERT INTO universities (
 						name, description, province, city, country, acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, city_type,
@@ -387,6 +405,7 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 					VALUES (
 						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 					)
+					RETURNING id
 				`,
 					req.Name,
 					req.Description,
@@ -406,10 +425,11 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 					req.Ranking,
 					req.Metadata,
 					req.ApplicationFee,
-				)
+				).Scan(&universityId)
 				if err != nil {
 					return fmt.Errorf("failed to insert university: %s", err.Error())
 				}
+				syncedIds = append(syncedIds, universityId)
 			}
 
 			imported++
@@ -419,6 +439,19 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 	})
 	if err != nil {
 		return 0, err
+	}
+
+	if clientConn != nil {
+		syncedSet := make(map[string]struct{}, len(syncedIds))
+		for _, universityId := range syncedIds {
+			if _, exists := syncedSet[universityId]; exists {
+				continue
+			}
+			syncedSet[universityId] = struct{}{}
+			if err := syncUniversityToClient(ctx, conn, clientConn, universityId); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return imported, nil
@@ -472,4 +505,92 @@ func joinStrings(strs []string, sep string) string {
 		result += sep + strs[i]
 	}
 	return result
+}
+
+func syncUniversityToClient(ctx context.Context, adminConn, clientConn *pgxpool.Pool, id string) error {
+	rows, err := adminConn.Query(ctx,
+		`SELECT id, manager_id, name, logo, description, province, city, country,
+		        acceptance_rate, tuition_fee, application_deadline,
+		        ielts_min, toefl_min, scholarship_available, city_type,
+		        campus_vibe, application_schema, management_profile,
+		        ranking, created_at, metadata, application_fee
+		 FROM universities WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to fetch university for client sync: %s", err.Error())
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
+	}
+
+	university, err := pgx.RowToStructByName[models.University](rows)
+	if err != nil {
+		return fmt.Errorf("failed to scan university for client sync: %s", err.Error())
+	}
+
+	_, err = clientConn.Exec(ctx, `
+		INSERT INTO universities (
+			id, manager_id, name, logo, description, province, city, country,
+			acceptance_rate, tuition_fee, application_deadline,
+			ielts_min, toefl_min, scholarship_available, city_type,
+			campus_vibe, application_schema, management_profile,
+			ranking, created_at, metadata, application_fee
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, $7, $8,
+			$9, $10, $11, $12, $13, $14, $15,
+			$16, $17, $18, $19, $20, $21, $22
+		)
+		ON CONFLICT (id) DO UPDATE SET
+			manager_id = EXCLUDED.manager_id,
+			name = EXCLUDED.name,
+			logo = EXCLUDED.logo,
+			description = EXCLUDED.description,
+			province = EXCLUDED.province,
+			city = EXCLUDED.city,
+			country = EXCLUDED.country,
+			acceptance_rate = EXCLUDED.acceptance_rate,
+			tuition_fee = EXCLUDED.tuition_fee,
+			application_deadline = EXCLUDED.application_deadline,
+			ielts_min = EXCLUDED.ielts_min,
+			toefl_min = EXCLUDED.toefl_min,
+			scholarship_available = EXCLUDED.scholarship_available,
+			city_type = EXCLUDED.city_type,
+			campus_vibe = EXCLUDED.campus_vibe,
+			application_schema = EXCLUDED.application_schema,
+			management_profile = EXCLUDED.management_profile,
+			ranking = EXCLUDED.ranking,
+			metadata = EXCLUDED.metadata,
+			application_fee = EXCLUDED.application_fee
+	`,
+		university.Id,
+		university.ManagerId,
+		university.Name,
+		university.Logo,
+		university.Description,
+		university.Province,
+		university.City,
+		university.Country,
+		university.AcceptanceRate,
+		university.TuitionFee,
+		university.ApplicationDeadline,
+		university.IeltsMin,
+		university.ToeflMin,
+		university.ScholarshipAvailable,
+		university.CityType,
+		university.CampusVibe,
+		university.ApplicationSchema,
+		university.ManagementProfile,
+		university.Ranking,
+		university.CreatedAt,
+		university.Metadata,
+		university.ApplicationFee,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to sync university to client database: %s", err.Error())
+	}
+
+	return nil
 }

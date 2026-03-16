@@ -595,9 +595,8 @@ func PublishApplicationStructure(
 
 	var out models.ApplicationStructureVersion
 	var schema []byte
-	var universityName string
 	err := pgx.BeginFunc(ctx, adminConn, func(tx pgx.Tx) error {
-		if err := tx.QueryRow(ctx, "SELECT application_schema, name FROM universities WHERE id = $1", universityId).Scan(&schema, &universityName); err != nil {
+		if err := tx.QueryRow(ctx, "SELECT application_schema FROM universities WHERE id = $1", universityId).Scan(&schema); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
 			}
@@ -648,14 +647,7 @@ func PublishApplicationStructure(
 		return nil, err
 	}
 
-	if _, err := clientConn.Exec(ctx, `
-		INSERT INTO universities (id, name, application_schema)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (id) DO UPDATE
-		SET
-			name = EXCLUDED.name,
-			application_schema = EXCLUDED.application_schema
-	`, universityId, universityName, schema); err != nil {
+	if err := syncUniversityToClient(ctx, adminConn, clientConn, universityId); err != nil {
 		return nil, fmt.Errorf("published in admin db but failed syncing to client db: %s", err.Error())
 	}
 

@@ -145,12 +145,20 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
     setPrograms([...programs, { id: Date.now().toString(), name: '', level: 'Undergraduate', duration: '4 years' }]);
   };
 
+  const updateProgram = (id: string, patch: Partial<{ name: string; level: string; duration: string }>) => {
+    setPrograms((current) => current.map((program) => (program.id === id ? { ...program, ...patch } : program)));
+  };
+
   const removeProgram = (id: string) => {
     setPrograms(programs.filter((p) => p.id !== id));
   };
 
   const addIntakeTerm = () => {
     setIntakeTerms([...intakeTerms, { id: Date.now().toString(), term: '', deadline: '' }]);
+  };
+
+  const updateIntakeTerm = (id: string, patch: Partial<{ term: string; deadline: string }>) => {
+    setIntakeTerms((current) => current.map((term) => (term.id === id ? { ...term, ...patch } : term)));
   };
 
   const removeIntakeTerm = (id: string) => {
@@ -287,13 +295,14 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                     <Label htmlFor={`program-name-${index}`}>Program Name</Label>
                     <Input
                       id={`program-name-${index}`}
-                      defaultValue={program.name}
+                      value={program.name}
+                      onChange={(event) => updateProgram(program.id, { name: event.target.value })}
                       placeholder="e.g., Computer Science"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor={`program-level-${index}`}>Level</Label>
-                    <Select defaultValue={program.level}>
+                    <Select value={program.level} onValueChange={(value) => updateProgram(program.id, { level: value })}>
                       <SelectTrigger id={`program-level-${index}`}>
                         <SelectValue />
                       </SelectTrigger>
@@ -308,7 +317,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                     <Label htmlFor={`program-duration-${index}`}>Duration</Label>
                     <Input
                       id={`program-duration-${index}`}
-                      defaultValue={program.duration}
+                      value={program.duration}
+                      onChange={(event) => updateProgram(program.id, { duration: event.target.value })}
                       placeholder="e.g., 4 years"
                     />
                   </div>
@@ -348,13 +358,19 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                     <Label htmlFor={`term-name-${index}`}>Term Name</Label>
                     <Input
                       id={`term-name-${index}`}
-                      defaultValue={term.term}
+                      value={term.term}
+                      onChange={(event) => updateIntakeTerm(term.id, { term: event.target.value })}
                       placeholder="e.g., Fall 2025"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor={`term-deadline-${index}`}>Application Deadline</Label>
-                    <Input id={`term-deadline-${index}`} type="date" defaultValue={term.deadline} />
+                    <Input
+                      id={`term-deadline-${index}`}
+                      type="date"
+                      value={term.deadline}
+                      onChange={(event) => updateIntakeTerm(term.id, { deadline: event.target.value })}
+                    />
                   </div>
                 </div>
                 <Button

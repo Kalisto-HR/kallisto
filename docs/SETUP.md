@@ -109,6 +109,7 @@ npm run dev
 - `admin@kallisto.uz` / `admin123`
 - `manager@kallisto.uz` / `admin123`
 - `kbtu.manager@kallisto.uz` / `admin123`
+- `bukhara.manager@kallisto.uz` / `admin123`
 
 ## Common Commands
 

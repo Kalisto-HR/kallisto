@@ -24,6 +24,7 @@ type University struct {
 	CityType             *string         `json:"city_type,omitempty" db:"city_type"`
 	CampusVibe           *string         `json:"campus_vibe,omitempty" db:"campus_vibe"`
 	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty" db:"application_schema"`
+	ManagementProfile    json.RawMessage `json:"management_profile,omitempty" db:"management_profile"`
 	Ranking              *int            `json:"ranking,omitempty" db:"ranking"`
 	CreatedAt            time.Time       `json:"created_at" db:"created_at"`
 	Metadata             json.RawMessage `json:"metadata,omitempty" db:"metadata"`

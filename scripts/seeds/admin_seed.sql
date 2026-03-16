@@ -128,6 +128,61 @@ SET
     status = EXCLUDED.status,
     updated_at = NOW();
 
+-- Insert dedicated manager account for Bukhara State University.
+-- Email: bukhara.manager@kallisto.uz
+-- Password: admin123 (bcrypt hashed)
+WITH bukhara_university AS (
+    SELECT COALESCE(
+        (SELECT id FROM universities WHERE id = 'e5f6a7b8-c9d0-1234-ef01-345678901234'),
+        (SELECT id FROM universities WHERE name ILIKE 'Bukhara State University' LIMIT 1)
+    ) AS id
+), upsert_bukhara_manager AS (
+    INSERT INTO users (email, password, first_name, last_name, role, university_linked, created_at)
+    SELECT
+        'bukhara.manager@kallisto.uz',
+        '$2a$10$izwy57AAb.X.R4K09No64.QqDJt2LJx6Qe/InDHzriICaDjs8urtq',
+        'Bukhara State',
+        'Manager',
+        'partner',
+        bu.id,
+        NOW()
+    FROM bukhara_university bu
+    WHERE bu.id IS NOT NULL
+    ON CONFLICT (email) DO UPDATE
+    SET
+        password = EXCLUDED.password,
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        role = 'partner',
+        university_linked = EXCLUDED.university_linked
+    RETURNING id, university_linked
+)
+INSERT INTO university_staff_profiles (
+    user_id,
+    university_id,
+    staff_role,
+    status,
+    invited_at,
+    created_at,
+    updated_at
+)
+SELECT
+    ubm.id,
+    ubm.university_linked,
+    'University Manager',
+    'active',
+    NOW(),
+    NOW(),
+    NOW()
+FROM upsert_bukhara_manager ubm
+WHERE ubm.university_linked IS NOT NULL
+ON CONFLICT (user_id) DO UPDATE
+SET
+    university_id = EXCLUDED.university_id,
+    staff_role = EXCLUDED.staff_role,
+    status = EXCLUDED.status,
+    updated_at = NOW();
+
 -- Global settings seed
 WITH staff_user AS (
     SELECT id

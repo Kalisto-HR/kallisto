@@ -8,6 +8,20 @@ interface SaveDraftOptions {
   silent?: boolean;
 }
 
+function normalizeApplicationFlowError(error: unknown, cycle: string): string {
+  const fallback = error instanceof Error ? error.message : "Failed to save application";
+  const message = fallback.toLowerCase();
+  const cycleLabel = cycle.trim() || "this cycle";
+
+  if (message.includes("already exists for this cycle")) {
+    return `You've already applied to this university for ${cycleLabel}.`;
+  }
+  if (message.includes("application already submitted")) {
+    return "This application has already been submitted.";
+  }
+  return fallback;
+}
+
 export function useApplicationFlowData(universityId: string) {
   const [cycle, setCycle] = useState("2026-Fall");
   const [formData, setFormData] = useState<Record<string, unknown>>({});
@@ -64,7 +78,7 @@ export function useApplicationFlowData(universityId: string) {
       return true;
     } catch (err) {
       if (!silent) {
-        setError(err instanceof Error ? err.message : "Failed to save draft");
+        setError(normalizeApplicationFlowError(err, cycle));
       }
       return false;
     } finally {
@@ -79,7 +93,7 @@ export function useApplicationFlowData(universityId: string) {
       await submitStudentApplication(universityId, cycle);
       setStep("success");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit application");
+      setError(normalizeApplicationFlowError(err, cycle));
     } finally {
       setLoading(false);
     }

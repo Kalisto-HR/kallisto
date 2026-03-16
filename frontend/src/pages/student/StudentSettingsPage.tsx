@@ -56,7 +56,7 @@ interface EditableTestScore {
   deleting: boolean;
 }
 
-type StudentGender = "male" | "female" | "other" | "prefer_not_to_say";
+type StudentGender = "male" | "female";
 
 const TEST_SCORE_TYPES: Array<{ value: StudentTestScoreType; label: string }> = [
   { value: "IELTS", label: "IELTS" },
@@ -69,19 +69,15 @@ const TEST_SCORE_TYPES: Array<{ value: StudentTestScoreType; label: string }> = 
 const STUDENT_GENDER_OPTIONS: Array<{ value: StudentGender; label: string }> = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
-  { value: "other", label: "Other" },
-  { value: "prefer_not_to_say", label: "Prefer not to say" },
 ];
 
-function normalizeStudentGender(value: unknown): StudentGender {
+function normalizeStudentGender(value: unknown): StudentGender | "" {
   switch (value) {
     case "male":
     case "female":
-    case "other":
-    case "prefer_not_to_say":
       return value;
     default:
-      return "prefer_not_to_say";
+      return "";
   }
 }
 
@@ -118,7 +114,7 @@ export function StudentSettingsPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [bio, setBio] = useState("");
-  const [gender, setGender] = useState<StudentGender>("prefer_not_to_say");
+  const [gender, setGender] = useState<StudentGender | "">("");
   const [profileVisibility, setProfileVisibility] = useState("partners");
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -200,6 +196,12 @@ export function StudentSettingsPage() {
   }, [photoUrl]);
 
   const saveProfile = async () => {
+    if (!gender) {
+      setError("Select either Male or Female before saving your profile.");
+      setSuccess(null);
+      return;
+    }
+
     setSavingProfile(true);
     setError(null);
     setSuccess(null);
@@ -620,7 +622,7 @@ export function StudentSettingsPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Used for application analytics and partner reporting. You can change this later.
+                    Required for application analytics and partner reporting.
                   </p>
                 </div>
               </div>

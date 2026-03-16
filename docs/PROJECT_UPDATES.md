@@ -78,6 +78,31 @@
 
 ## 2026-03-07
 
+## 2026-03-16
+
+### Student application and university detail fixes
+
+- Added fast duplicate-application feedback in the student apply flow for the same `university + cycle` combination.
+- Added live essay word counting and over-limit blocking in the student application form.
+- Kept backend essay word-limit validation on final submit, while allowing over-limit drafts to continue autosaving so student work is not lost mid-edit.
+- Restricted student gender selection to `male` or `female` and made it required when saving profile settings.
+- Restricted forwarded application analytics gender to `male` or `female` only.
+
+### University profile and student detail sync
+
+- Added `management_profile` to `client_db.universities`.
+- Synced admin university updates and application-structure publish actions into client DB with `management_profile`.
+- Exposed `management_profile` from the client university API.
+- Replaced placeholder student university detail tabs with:
+  - published programs offered
+  - intake terms
+  - admission requirements
+  - minimum test score requirements
+  - required supporting documents
+- Added backward-compatible student detail parsing so seeded/imported universities still render programs from `metadata.programs` and requirement fields from flat `applicationSchema.fields` while newer management-profile/section-based shapes remain supported.
+- Fixed manager university profile program/intake editors to use controlled state so changes persist correctly on save.
+- Extended university replication so admin create/import paths now sync into `client_db.universities`, not just later update/publish flows.
+
 ### Auth/session and endpoint cleanup
 
 - Added signed `session_meta` cookie alongside `access_token` for frontend role/identity resolution.
