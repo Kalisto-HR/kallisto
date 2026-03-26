@@ -578,6 +578,9 @@ func enforceUniversityRouteAccess(ctx context.Context, universityId string) erro
 	}
 
 	if claims.Role != "partner" {
+		if claims.Role != "staff" {
+			return utils.NewHandlerFuncErr(http.StatusForbidden, "forbidden")
+		}
 		return nil
 	}
 

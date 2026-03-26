@@ -348,5 +348,307 @@
       "website": "https://ncc.metu.edu.tr",
       "programs": ["Architecture", "Electrical Engineering", "Computer Engineering"]
     }
+  },
+  {
+    "id": "1011a2b3-c4d5-46e7-8f01-111111111111",
+    "name": "Tsinghua University",
+    "description": "A public research university in Beijing known for engineering, computer science, architecture, and public policy.",
+    "province": "Beijing",
+    "city": "Beijing",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "english_test_score", "type": "number", "required": false },
+        { "name": "personal_statement", "type": "text", "required": true },
+        { "name": "recommendation_letters", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@tsinghua.edu.cn", "phone": "+86-10-62783100" },
+      "website": "https://www.tsinghua.edu.cn/en/",
+      "programs": ["Computer Science and Technology", "Architecture", "Public Administration"]
+    }
+  },
+  {
+    "id": "2022b3c4-d5e6-47f8-9a02-222222222222",
+    "name": "Peking University",
+    "description": "A public research university in Beijing with strengths in humanities, sciences, economics, and international studies.",
+    "province": "Beijing",
+    "city": "Beijing",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "english_test_score", "type": "number", "required": false },
+        { "name": "study_plan", "type": "text", "required": true },
+        { "name": "recommendation_letters", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "study@pku.edu.cn", "phone": "+86-10-62751230" },
+      "website": "https://english.pku.edu.cn/",
+      "programs": ["Economics", "Computer Science", "International Relations"]
+    }
+  },
+  {
+    "id": "3033c4d5-e6f7-48a9-ab03-333333333333",
+    "name": "Fudan University",
+    "description": "A comprehensive public research university in Shanghai with strong programs in medicine, humanities, economics, and data science.",
+    "province": "Shanghai",
+    "city": "Shanghai",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "personal_statement", "type": "text", "required": true },
+        { "name": "research_interest", "type": "text", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "isoadmission@fudan.edu.cn", "phone": "+86-21-65642250" },
+      "website": "https://www.fudan.edu.cn/en/",
+      "programs": ["Clinical Medicine", "Journalism", "Data Science"]
+    }
+  },
+  {
+    "id": "4044d5e6-f7a8-49ba-8c04-444444444444",
+    "name": "Shanghai Jiao Tong University",
+    "description": "A public research university in Shanghai known for engineering, business, medicine, and maritime studies.",
+    "province": "Shanghai",
+    "city": "Shanghai",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "math_foundation_score", "type": "number", "required": false },
+        { "name": "personal_statement", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "isc.d@sjtu.edu.cn", "phone": "+86-21-54743244" },
+      "website": "https://en.sjtu.edu.cn/",
+      "programs": ["Mechanical Engineering", "Business Administration", "Naval Architecture and Ocean Engineering"]
+    }
+  },
+  {
+    "id": "5055e6f7-a8b9-4acb-9d05-555555555555",
+    "name": "Zhejiang University",
+    "description": "A public research university in Hangzhou with strong programs in engineering, agriculture, medicine, and computer science.",
+    "province": "Zhejiang",
+    "city": "Hangzhou",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "english_test_score", "type": "number", "required": false },
+        { "name": "personal_statement", "type": "text", "required": true }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admission5@zju.edu.cn", "phone": "+86-571-87951718" },
+      "website": "https://www.zju.edu.cn/english/",
+      "programs": ["Computer Science and Technology", "Agricultural Science", "Clinical Medicine"]
+    }
+  },
+  {
+    "id": "6066f7a8-b9c0-4bdc-ae06-666666666666",
+    "name": "Nanjing University",
+    "description": "A public research university in Nanjing with strengths in physics, chemistry, history, and international studies.",
+    "province": "Jiangsu",
+    "city": "Nanjing",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "personal_statement", "type": "text", "required": true },
+        { "name": "recommendation_letters", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "qianyue@nju.edu.cn", "phone": "+86-25-83595068" },
+      "website": "https://hwxy.nju.edu.cn/English/StudyatNJU/index.html",
+      "programs": ["Physics", "Chemistry", "Chinese Language and Literature"]
+    }
+  },
+  {
+    "id": "7077a8b9-c0d1-4ced-8f07-777777777777",
+    "name": "University of Science and Technology of China",
+    "description": "A public research university in Hefei under the Chinese Academy of Sciences, known for physics, chemistry, computer science, and space science.",
+    "province": "Anhui",
+    "city": "Hefei",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "research_proposal", "type": "text", "required": true },
+        { "name": "english_test_score", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "isa@ustc.edu.cn", "phone": "+86-551-63603531" },
+      "website": "https://en.ustc.edu.cn/",
+      "programs": ["Physics", "Chemistry", "Artificial Intelligence"]
+    }
+  },
+  {
+    "id": "8088b9c0-d1e2-4dfe-9a08-888888888888",
+    "name": "Wuhan University",
+    "description": "A public research university in Wuhan with strengths in law, remote sensing, medicine, and public administration.",
+    "province": "Hubei",
+    "city": "Wuhan",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "personal_statement", "type": "text", "required": true },
+        { "name": "recommendation_letters", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@whu.edu.cn", "phone": "+86-27-68753912" },
+      "website": "https://en.whu.edu.cn/",
+      "programs": ["Law", "Remote Sensing Science and Technology", "Clinical Medicine"]
+    }
+  },
+  {
+    "id": "9099c0d1-e2f3-4e0f-ab09-999999999999",
+    "name": "Sun Yat-sen University",
+    "description": "A public research university in Guangzhou with major strengths in medicine, marine science, business, and public policy.",
+    "province": "Guangdong",
+    "city": "Guangzhou",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "study_plan", "type": "text", "required": true },
+        { "name": "recommendation_letters", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "admissions@mail.sysu.edu.cn", "phone": "+86-20-84110819" },
+      "website": "https://english.sysu.edu.cn/",
+      "programs": ["Clinical Medicine", "Marine Science", "Business Administration"]
+    }
+  },
+  {
+    "id": "a0aac1d2-f3a4-4f10-8b0a-aaaaaaaaaaaa",
+    "name": "Xi'an Jiaotong University",
+    "description": "A public research university in Xi'an known for electrical engineering, mechanical engineering, energy, and medicine.",
+    "province": "Shaanxi",
+    "city": "Xi'an",
+    "country": "China",
+    "ranking": null,
+    "applicationFee": null,
+    "acceptanceRate": null,
+    "tuitionFee": null,
+    "applicationDeadline": null,
+    "ieltsMin": null,
+    "toeflMin": null,
+    "scholarshipAvailable": null,
+    "cityType": "urban",
+    "campusVibe": null,
+    "applicationSchema": {
+      "fields": [
+        { "name": "gpa", "type": "number", "required": true },
+        { "name": "personal_statement", "type": "text", "required": true },
+        { "name": "english_test_score", "type": "number", "required": false }
+      ]
+    },
+    "metadata": {
+      "contact": { "email": "adm-sie@xjtu.edu.cn", "phone": "+86-29-82665924" },
+      "website": "https://en.xjtu.edu.cn/",
+      "programs": ["Electrical Engineering and Automation", "Energy and Power Engineering", "Clinical Medicine"]
+    }
   }
 ]

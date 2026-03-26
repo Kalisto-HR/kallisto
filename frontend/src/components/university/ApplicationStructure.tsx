@@ -887,7 +887,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                 className={cn(
                   'group rounded-lg border-2 p-3 cursor-pointer transition-all',
                   selectedSectionId === section.id
-                    ? 'border-[#4F46E5] bg-[#4F46E5]/5'
+                    ? 'border-primary bg-primary/6'
                     : 'border-transparent hover:border-border hover:bg-secondary/50'
                 )}
                 onClick={() => {
@@ -1090,8 +1090,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                     className={cn(
                       'cursor-pointer transition-all border-2',
                       isSelected
-                        ? 'border-[#4F46E5] shadow-md'
-                        : 'border-border hover:border-[#4F46E5]/50 hover:shadow-sm'
+                        ? 'border-primary shadow-md'
+                        : 'border-border hover:border-primary/30 hover:shadow-sm'
                     )}
                     onClick={() => {
                       setSelectedFieldId(field.id);
@@ -1222,7 +1222,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
         <div className="p-6 space-y-6 bg-secondary/20">
           {/* Field type indicator */}
           <div className="flex items-center gap-3 p-4 bg-background rounded-lg border">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
+            <div className="brand-icon-tile flex h-10 w-10 items-center justify-center rounded-xl">
               <FieldIcon className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -1625,7 +1625,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             <Card key={section.id}>
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#4F46E5] text-white text-sm font-medium">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white text-sm font-medium">
                     {sectionIndex + 1}
                   </div>
                   <CardTitle>{section.title}</CardTitle>
@@ -1794,7 +1794,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
+              <div className="brand-icon-tile flex h-10 w-10 items-center justify-center rounded-xl">
                 <FileText className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -1926,7 +1926,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             {selectedFieldId && (
               <button
                 onClick={() => setShowFieldSettingsDrawer(true)}
-                className="fixed bottom-4 right-4 z-10 flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] px-4 py-3 text-white shadow-lg transition-opacity hover:opacity-90 xl:hidden"
+                className="fixed bottom-4 right-4 z-10 flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-white shadow-[0_24px_44px_-24px_rgba(20,90,67,0.6)] transition-opacity hover:bg-brand-primary-hover xl:hidden"
               >
                 <Settings className="h-4 w-4" />
                 Field Settings
@@ -1953,7 +1953,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                 <button
                   key={type}
                   onClick={() => handleAddField(type as FieldType)}
-                  className="flex items-start gap-3 p-4 rounded-lg border-2 border-border hover:border-[#4F46E5] hover:bg-[#4F46E5]/5 transition-all text-left"
+                  className="flex items-start gap-3 rounded-lg border-2 border-border p-4 text-left transition-all hover:border-primary hover:bg-primary/6"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary flex-shrink-0">
                     <Icon className="h-5 w-5" />
@@ -1981,7 +1981,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
 
           <div className="space-y-4 mt-6">
             {APPLICATION_STRUCTURE_TEMPLATES.map((template) => (
-              <Card key={template.id} className="cursor-pointer hover:border-[#4F46E5] transition-colors">
+              <Card key={template.id} className="cursor-pointer transition-colors hover:border-primary">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>

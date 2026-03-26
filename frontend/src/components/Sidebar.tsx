@@ -13,8 +13,8 @@ interface SidebarProps {
   onNavigate?: (page: string) => void;
 }
 
-const studentNavItems = [
-  { id: "student-dashboard", icon: LayoutDashboard, label: "Dashboard" },
+const applicantNavItems = [
+  { id: "applicant-dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "university-search", icon: Search, label: "Find Universities" },
   { id: "university-compare", icon: GitCompare, label: "Compare" },
   { id: "billing", icon: CreditCard, label: "Billing" },
@@ -24,9 +24,9 @@ const studentNavItems = [
 
 export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   return (
-    <aside className="w-64 h-full border-r bg-card">
+    <aside className="brand-sidebar w-64 h-full">
       <nav className="flex flex-col gap-1 p-4">
-        {studentNavItems.map((item) => {
+        {applicantNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
 
@@ -35,10 +35,10 @@ export function Sidebar({ currentPage, onNavigate }: SidebarProps) {
               key={item.id}
               onClick={() => onNavigate?.(item.id)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
                 isActive
-                  ? "bg-[#4F46E5] text-white"
-                  : "text-foreground hover:bg-secondary",
+                  ? "brand-active-nav"
+                  : "text-foreground hover:bg-secondary/80",
               )}
             >
               <Icon className="h-5 w-5" />

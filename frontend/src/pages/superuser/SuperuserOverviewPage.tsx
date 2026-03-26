@@ -1,36 +1,39 @@
+import { useCallback, useEffect, useState } from "react";
+import { ErrorState, LoadingState } from "../../components/common/PageState";
 import SuperuserOverview from "../../components/superuser/SuperuserOverview";
-import { useEffect, useState } from "react";
 import { fetchSuperuserOverview, type SuperuserOverviewPayload } from "../../services/admin/superuserService";
 
 export function SuperuserOverviewPage() {
-  const [data, setData] = useState<SuperuserOverviewPayload | undefined>(undefined);
-  const emptyOverview: SuperuserOverviewPayload = {
-    stats: {
-      total_universities: 0,
-      management_accounts: 0,
-      total_applications: 0,
-      pending_drafts: 0,
-    },
-    recent_activity: [],
-    pending_drafts: [],
-    system_health: [],
-  };
+  const [data, setData] = useState<SuperuserOverviewPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    void fetchSuperuserOverview()
-      .then((payload) => {
-        if (active) {
-          setData(payload);
-        }
-      })
-      .catch(() => {
-        // Keep literal fallback UI if request fails.
-      });
-    return () => {
-      active = false;
-    };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const payload = await fetchSuperuserOverview();
+      setData(payload);
+    } catch (err) {
+      setData(null);
+      setError(err instanceof Error ? err.message : "Failed to load staff overview");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  return <SuperuserOverview data={data ?? emptyOverview} />;
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading) {
+    return <LoadingState label="Loading overview..." />;
+  }
+
+  if (error || !data) {
+    return <ErrorState message={error ?? "Failed to load staff overview"} onRetry={() => void load()} />;
+  }
+
+  return <SuperuserOverview data={data} />;
 }

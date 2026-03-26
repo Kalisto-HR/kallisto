@@ -1,13 +1,12 @@
-export type PortalRole = "student" | "partner" | "staff" | "superuser-ui";
-
-export type PortalArea = "student" | "management" | "superuser";
+export type PortalRole = "applicant" | "partner" | "staff";
 
 export interface SessionUser {
   id: string;
   firstName: string;
   lastName: string;
+  email?: string;
   role: PortalRole;
-  area: PortalArea;
+  permissions: string[];
   universityLinked?: string | null;
 }
 
@@ -20,5 +19,4 @@ export interface SessionState {
 export interface SessionContextValue extends SessionState {
   refreshSession: () => Promise<void>;
   signOut: () => Promise<void>;
-  setSuperuserMode: (enabled: boolean) => void;
 }

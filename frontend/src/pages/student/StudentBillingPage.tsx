@@ -96,18 +96,18 @@ export function StudentBillingPage() {
             <div
               key={pkg.id}
               className={`relative rounded-lg border p-6 ${
-                pkg.featured ? "border-2 border-[#4F46E5] shadow-md" : "hover:border-[#4F46E5]/50"
+                pkg.featured ? "border-2 border-primary shadow-[0_24px_44px_-32px_rgba(20,90,67,0.42)]" : "hover:border-primary/30"
               }`}
             >
               {pkg.featured ? (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#4F46E5] text-white">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
                   <Zap className="mr-1 h-3 w-3" />
                   Best Value
                 </Badge>
               ) : null}
               <div className="text-center">
                 <div className="text-2xl font-semibold">{pkg.applications} Applications</div>
-                <div className="mt-1 text-3xl font-bold text-[#4F46E5]">{formatRmb(pkg.price)}</div>
+                <div className="mt-1 text-3xl font-bold text-primary">{formatRmb(pkg.price)}</div>
                 <div className="mt-1 text-xs text-muted-foreground">{formatRmb(pkg.perApp)} per application</div>
                 <div className="mt-2 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-700">
                   Save {formatRmb(pkg.savings)}
@@ -147,7 +147,7 @@ export function StudentBillingPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 rounded-lg border p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+            <div className="brand-icon-tile flex h-12 w-12 items-center justify-center rounded-xl">
               <CreditCard className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">

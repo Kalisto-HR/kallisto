@@ -30,7 +30,7 @@ function normalizeFavoritesArray(items: unknown[]): UniversityListItem[] {
 }
 
 export async function fetchFavorites(): Promise<UniversityListItem[]> {
-  const result = await clientApi.get<unknown>("/v1.0/favorites");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/favorites");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load favorites");
   }
@@ -46,14 +46,14 @@ export async function fetchFavorites(): Promise<UniversityListItem[]> {
 }
 
 export async function addFavorite(universityId: string): Promise<void> {
-  const result = await clientApi.post(`/v1.0/universities/${universityId}/favorite`);
+  const result = await clientApi.post(`/v1.0/applicant/universities/${universityId}/favorite`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to add favorite");
   }
 }
 
 export async function removeFavorite(universityId: string): Promise<void> {
-  const result = await clientApi.delete(`/v1.0/universities/${universityId}/favorite`);
+  const result = await clientApi.delete(`/v1.0/applicant/universities/${universityId}/favorite`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to remove favorite");
   }

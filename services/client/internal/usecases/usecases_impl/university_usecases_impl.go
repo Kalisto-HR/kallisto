@@ -3,7 +3,6 @@ package usecases_impl
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
@@ -12,17 +11,16 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func GetAllUniversities(ctx context.Context, page, limit int) ([]models.UniversityListItem, int, error) {
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return nil, 0, errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	var total int
-	err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM universities").Scan(&total)
+	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM universities").Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %s", err.Error())
 	}
@@ -51,9 +49,9 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 }
 
 func GetUniversityById(ctx context.Context, id string) (*models.University, error) {
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return nil, errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, err
 	}
 
 	rows, err := conn.Query(ctx,
@@ -79,13 +77,15 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		return nil, fmt.Errorf("failed to convert database results to struct: %s", err.Error())
 	}
 
+	university.ApplicationSchema = utils.NormalizeApplicationSchema(university.ApplicationSchema)
+
 	return &university, nil
 }
 
 func SearchUniversities(ctx context.Context, params *models.UniversitySearchParams) ([]models.UniversityListItem, int, error) {
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return nil, 0, errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	var whereClauses []string
@@ -175,7 +175,7 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 
 	var total int
 	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM universities %s", whereClause)
-	err := conn.QueryRow(ctx, countQuery, args...).Scan(&total)
+	err = conn.QueryRow(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %s", err.Error())
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	authsession "kallisto/infra/auth/session"
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
 	"kallisto/services/client/internal/models"
@@ -118,13 +119,17 @@ func ChangeUserPassword(ctx context.Context, userId, currentPassword, newPasswor
 		return utils.NewHandlerFuncErr(http.StatusNotFound, "user not found")
 	}
 
+	if err := revokeAllUserSessions(ctx, userId, authsession.ReasonPasswordChanged); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func UpdateUserPhoto(ctx context.Context, userId string, photo []byte) error {
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return err
 	}
 
 	result, err := conn.Exec(ctx, "UPDATE users SET photo=$1 WHERE id=$2", photo, userId)
@@ -373,4 +378,17 @@ func parseOptionalDateString(value *string) (*time.Time, error) {
 		return nil, err
 	}
 	return &parsed, nil
+}
+
+func revokeAllUserSessions(ctx context.Context, userId string, reason string) error {
+	adminConn, ok := ctx.Value(middlewares.CtxClientPostgresKey).(*pgxpool.Pool)
+	if !ok || adminConn == nil {
+		return errors.New("could not establish connection with the session database")
+	}
+
+	store := authsession.NewStore(adminConn)
+	if err := store.RevokeAllForUser(ctx, userId, reason); err != nil {
+		return fmt.Errorf("failed to revoke user sessions: %s", err.Error())
+	}
+	return nil
 }

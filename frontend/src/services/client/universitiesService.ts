@@ -28,7 +28,7 @@ export interface UniversitySearchParams {
 }
 
 export async function fetchUniversities(page = 1, limit = 10): Promise<Pagination<UniversityListItem>> {
-  const result = await clientApi.get<unknown>(`/v1.0/universities?page=${page}&limit=${limit}`);
+  const result = await clientApi.get<unknown>(`/v1.0/applicant/universities?page=${page}&limit=${limit}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load universities");
   }
@@ -64,7 +64,7 @@ export async function searchUniversities(params: UniversitySearchParams): Promis
   search.set("page", String(params.page ?? 1));
   search.set("limit", String(params.limit ?? 10));
 
-  const result = await clientApi.get<unknown>(`/v1.0/universities/search?${search.toString()}`);
+  const result = await clientApi.get<unknown>(`/v1.0/applicant/universities/search?${search.toString()}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to search universities");
   }
@@ -81,7 +81,7 @@ export async function searchUniversities(params: UniversitySearchParams): Promis
 }
 
 export async function fetchUniversityById(id: string): Promise<University> {
-  const result = await clientApi.get<unknown>(`/v1.0/universities/${id}`);
+  const result = await clientApi.get<unknown>(`/v1.0/applicant/universities/${id}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load university");
   }

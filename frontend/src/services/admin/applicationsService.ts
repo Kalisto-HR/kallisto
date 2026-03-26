@@ -1,15 +1,14 @@
 import { adminApi } from "../api/httpClient";
 import { normalizeAdminSubmittedApplication, normalizePagination } from "../mappers/responseMappers";
-import type { AdminSubmittedApplication, Pagination, ReviewStatus } from "../../types/domain";
+import type { AdminSubmittedApplication, Pagination } from "../../types/domain";
 
 export interface AdminApplicationsQuery {
   universityId?: string;
-  status?: ReviewStatus;
   search?: string;
   program?: string;
   citizenship?: string;
   intake?: string;
-  sortBy?: "received_at" | "submitted_at" | "status" | "gpa";
+  sortBy?: "received_at" | "submitted_at" | "gpa";
   sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
@@ -17,8 +16,6 @@ export interface AdminApplicationsQuery {
 
 export async function fetchAdminApplications(query: AdminApplicationsQuery = {}): Promise<Pagination<AdminSubmittedApplication>> {
   const params = new URLSearchParams();
-  if (query.universityId) params.set("university_id", query.universityId);
-  if (query.status) params.set("status", query.status);
   if (query.search) params.set("search", query.search);
   if (query.program) params.set("program", query.program);
   if (query.citizenship) params.set("citizenship", query.citizenship);
@@ -28,9 +25,9 @@ export async function fetchAdminApplications(query: AdminApplicationsQuery = {})
   params.set("page", String(query.page ?? 1));
   params.set("limit", String(query.limit ?? 20));
 
-  const result = await adminApi.get<unknown>(`/v1.0/applications?${params.toString()}`);
+  const result = await adminApi.get<unknown>(`/v1.0/partner/applications?${params.toString()}`);
   if (!result.ok || !result.data) {
-    throw new Error(result.error ?? "Failed to load applications");
+    throw new Error(result.error ?? "Failed to load submissions");
   }
 
   const pageData = normalizePagination<unknown>(result.data);
@@ -41,16 +38,13 @@ export async function fetchAdminApplications(query: AdminApplicationsQuery = {})
 }
 
 export async function fetchAdminApplication(id: string): Promise<AdminSubmittedApplication> {
-  const result = await adminApi.get<unknown>(`/v1.0/applications/${id}`);
+  const result = await adminApi.get<unknown>(`/v1.0/partner/applications/${id}`);
   if (!result.ok || !result.data) {
-    throw new Error(result.error ?? "Failed to load application");
+    throw new Error(result.error ?? "Failed to load submission");
   }
   return normalizeAdminSubmittedApplication(result.data);
 }
 
-export async function reviewAdminApplication(id: string, status: ReviewStatus, notes?: string): Promise<void> {
-  const result = await adminApi.put<{ msg: string }>(`/v1.0/applications/${id}/review`, { status, notes });
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to update review");
-  }
+export async function reviewAdminApplication(): Promise<void> {
+  throw new Error("Submission review is no longer supported in Kallisto");
 }

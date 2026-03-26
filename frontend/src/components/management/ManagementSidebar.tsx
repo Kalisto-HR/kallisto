@@ -6,17 +6,15 @@ import {
   Users,
   Settings,
   Shield,
-  FileCheck,
   ScrollText,
   Terminal,
   Globe,
-  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '../ui/utils';
 import type { ManagementContext, ManagementPageView } from '../../types/managementLiteral';
 
 interface ManagementSidebarProps {
-  userRole: 'university-manager' | 'superuser';
+  userRole: 'partner' | 'staff';
   currentContext: ManagementContext;
   currentPage: ManagementPageView;
   onNavigate: (page: ManagementPageView) => void;
@@ -32,7 +30,7 @@ interface NavItem {
 interface NavSection {
   title: string;
   items: NavItem[];
-  visible: (role: 'university-manager' | 'superuser', context: ManagementContext) => boolean;
+  visible: (role: 'partner' | 'staff', context: ManagementContext) => boolean;
 }
 
 export function ManagementSidebar({
@@ -43,41 +41,32 @@ export function ManagementSidebar({
   onContextChange,
 }: ManagementSidebarProps) {
   const isGlobalMode = currentContext.type === 'global';
-  const isSuperuser = userRole === 'superuser';
+  const isStaff = userRole === 'staff';
 
   const navSections: NavSection[] = [
     {
       title: 'University',
       visible: (role, context) => {
-        // Show for university managers always
-        if (role === 'university-manager') return true;
-        // Show for superusers only in university context
-        if (role === 'superuser' && context.type === 'university') return true;
-        return false;
+        return role === 'partner' && context.type === 'university';
       },
       items: [
-        { id: 'management-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { id: 'management-university-profile', icon: Building2, label: 'University Profile' },
-        { id: 'management-application-structure', icon: FileText, label: 'Application Structure' },
-        { id: 'management-applications', icon: FileText, label: 'Applications' },
-        { id: 'management-users', icon: Users, label: 'Users & Staff' },
+        { id: 'partner-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+        { id: 'partner-university-profile', icon: Building2, label: 'University Profile' },
+        { id: 'partner-application-structure', icon: FileText, label: 'Application Structure' },
+        { id: 'partner-applications', icon: Users, label: 'Submissions' },
       ],
     },
     {
-      title: 'Global Administration',
+      title: 'Staff Workspace',
       visible: (role, context) => {
-        // Only show for superusers in global mode
-        return role === 'superuser' && context.type === 'global';
+        return role === 'staff' && context.type === 'global';
       },
       items: [
-        { id: 'management-global-overview', icon: Globe, label: 'Overview' },
-        { id: 'management-global-universities', icon: Building2, label: 'Universities' },
-        { id: 'management-global-drafts', icon: FileCheck, label: 'Drafts & Approvals' },
-        { id: 'management-global-applications', icon: FileText, label: 'Global Applications' },
-        { id: 'management-global-users', icon: Users, label: 'Global Users' },
-        { id: 'management-global-service-logs', icon: Terminal, label: 'Service Logs' },
-        { id: 'management-global-audit-logs', icon: ScrollText, label: 'Audit Logs' },
-        { id: 'management-global-settings', icon: Settings, label: 'Settings' },
+        { id: 'staff-dashboard', icon: Globe, label: 'Dashboard' },
+        { id: 'staff-universities', icon: Building2, label: 'Universities' },
+        { id: 'staff-service-logs', icon: Terminal, label: 'Service Logs' },
+        { id: 'staff-audit-logs', icon: ScrollText, label: 'Audit Logs' },
+        { id: 'staff-settings', icon: Settings, label: 'Settings' },
       ],
     },
   ];
@@ -87,10 +76,10 @@ export function ManagementSidebar({
   );
 
   return (
-    <aside className="w-64 border-r bg-card flex flex-col h-full">
+    <aside className="brand-sidebar w-64 flex h-full flex-col">
       <div className="p-4 border-b">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+          <div className="brand-logo-mark flex h-8 w-8 items-center justify-center rounded-2xl">
             <Shield className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -98,24 +87,11 @@ export function ManagementSidebar({
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          {isSuperuser ? 'Superuser Access' : 'University Manager'}
+          {isStaff ? 'Staff access' : 'Partner access'}
         </p>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Back to Global button for Superusers in University Context */}
-        {isSuperuser && !isGlobalMode && onContextChange && (
-          <div className="mb-2">
-            <button
-              onClick={() => onContextChange({ type: 'global' })}
-              className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors text-foreground hover:bg-accent border border-border"
-            >
-              <ArrowLeft className="h-5 w-5 flex-shrink-0" />
-              <span className="text-sm truncate">Back to Global</span>
-            </button>
-          </div>
-        )}
-
         {visibleSections.map((section) => (
           <div key={section.title}>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
@@ -131,10 +107,10 @@ export function ManagementSidebar({
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
                     className={cn(
-                      'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
+                      'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
                       isActive
-                        ? 'bg-[#4F46E5] text-white'
-                        : 'text-foreground hover:bg-accent'
+                        ? 'brand-active-nav'
+                        : 'text-foreground hover:bg-accent/80'
                     )}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
@@ -148,12 +124,12 @@ export function ManagementSidebar({
       </nav>
 
       {/* Context indicator */}
-      <div className="p-4 border-t bg-accent/30">
+      <div className="p-4 border-t bg-accent/40">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {isGlobalMode ? (
             <>
               <Globe className="w-3.5 h-3.5" />
-              <span className="truncate">Global Mode</span>
+              <span className="truncate">Staff workspace</span>
             </>
           ) : (
             <>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  AlertCircle,
   Award,
   BookOpen,
   CalendarDays,
@@ -14,9 +15,16 @@ import {
 } from "lucide-react";
 import type { StudentApplicationListItem, University } from "../../types/domain";
 import { fetchStudentApplications } from "../../services/client/applicationsService";
-import { addCompareItem, fetchCompareList, removeCompareItem } from "../../services/client/compareService";
+import {
+  addCompareItem,
+  COMPARE_LIMIT_MESSAGE,
+  fetchCompareList,
+  MAX_COMPARE_ITEMS,
+  removeCompareItem,
+} from "../../services/client/compareService";
 import { addBasketItem, fetchBasketState, removeBasketItem } from "../../services/client/basketService";
 import { fetchUniversityById } from "../../services/client/universitiesService";
+import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -219,6 +227,8 @@ export function UniversityDetailPage() {
   const [university, setUniversity] = useState<University | null>(null);
   const [existingApplications, setExistingApplications] = useState<StudentApplicationListItem[]>([]);
   const [isInCompare, setIsInCompare] = useState(false);
+  const [compareCount, setCompareCount] = useState(0);
+  const [compareFeedback, setCompareFeedback] = useState<string | null>(null);
   const [isInBasket, setIsInBasket] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -235,7 +245,9 @@ export function UniversityDetailPage() {
           fetchStudentApplications().catch(() => []),
         ]);
         setUniversity(universityData);
+        setCompareCount(compareList.length);
         setIsInCompare(compareList.some((item) => item.id === id));
+        setCompareFeedback(null);
         setIsInBasket(basketState?.items.some((item) => item.id === id) ?? false);
         setExistingApplications(applications.filter((item) => item.universityId === id));
       } catch (err) {
@@ -253,12 +265,20 @@ export function UniversityDetailPage() {
       if (isInCompare) {
         await removeCompareItem(university.id);
         setIsInCompare(false);
+        setCompareCount((prev) => Math.max(0, prev - 1));
+        setCompareFeedback(null);
       } else {
+        if (compareCount >= MAX_COMPARE_ITEMS) {
+          setCompareFeedback(COMPARE_LIMIT_MESSAGE);
+          return;
+        }
         await addCompareItem(university.id);
         setIsInCompare(true);
+        setCompareCount((prev) => prev + 1);
+        setCompareFeedback(null);
       }
-    } catch {
-      // Keep the view stable if favorite update fails.
+    } catch (error) {
+      setCompareFeedback(error instanceof Error ? error.message : "Failed to update compare list.");
     }
   };
 
@@ -330,13 +350,13 @@ export function UniversityDetailPage() {
 
       <section className="space-y-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-xl font-semibold text-white">
+          <div className="brand-logo-mark flex h-20 w-20 items-center justify-center rounded-[1.75rem] text-xl font-semibold text-white shadow-[0_26px_44px_-28px_rgba(20,90,67,0.7)]">
             {university.name.slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
               <h1 className="text-2xl font-semibold sm:text-3xl">{university.name}</h1>
-              <Badge variant="secondary" className="bg-[#4F46E5]/10 text-[#4F46E5]">
+              <Badge variant="secondary" className="brand-soft-badge">
                 {university.ranking ? `${Math.max(60, 300 - university.ranking)}% Match` : "N/A Match"}
               </Badge>
             </div>
@@ -361,7 +381,7 @@ export function UniversityDetailPage() {
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Link to={primaryAction.href}>
-            <Button className="w-full bg-[#4F46E5] hover:bg-[#4338CA] sm:w-auto">
+            <Button className="w-full sm:w-auto">
               <Send className="mr-2 h-4 w-4" />
               {primaryAction.label}
             </Button>
@@ -387,6 +407,13 @@ export function UniversityDetailPage() {
             )}
           </Button>
         </div>
+        {compareFeedback ? (
+          <Alert className="border-primary/20 bg-card/80">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <AlertTitle>Compare table full</AlertTitle>
+            <AlertDescription>{compareFeedback}</AlertDescription>
+          </Alert>
+        ) : null}
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -440,7 +467,7 @@ export function UniversityDetailPage() {
               {intakeTerms.length > 0 ? (
                 <div className="space-y-3 rounded-lg border border-slate-200 p-4 text-slate-700">
                   <div className="flex items-center gap-2 font-medium text-slate-900">
-                    <CalendarDays className="h-4 w-4 text-[#4F46E5]" />
+                    <CalendarDays className="h-4 w-4 text-primary" />
                     Upcoming intake terms
                   </div>
                   <div className="space-y-2">
@@ -469,7 +496,7 @@ export function UniversityDetailPage() {
                   {programs.map((program) => (
                     <div key={program.id} className="rounded-xl border border-slate-200 p-4">
                       <div className="flex items-start gap-3">
-                        <div className="mt-0.5 rounded-lg bg-[#4F46E5]/10 p-2 text-[#4F46E5]">
+                        <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
                           <GraduationCap className="h-4 w-4" />
                         </div>
                         <div className="space-y-1">
@@ -503,14 +530,14 @@ export function UniversityDetailPage() {
                 </div>
                 <div className="rounded-lg border border-slate-200 p-4">
                   <div className="mb-2 flex items-center gap-2 font-medium text-slate-900">
-                    <BookOpen className="h-4 w-4 text-[#4F46E5]" />
+                    <BookOpen className="h-4 w-4 text-primary" />
                     Required application items
                   </div>
                   {admissionRequirements.requiredFields.length > 0 ? (
                     <ul className="space-y-2 text-muted-foreground">
                       {admissionRequirements.requiredFields.map((field) => (
                         <li key={field} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-[#4F46E5]" />
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
                           <span>{field}</span>
                         </li>
                       ))}
@@ -547,7 +574,7 @@ export function UniversityDetailPage() {
                     <ul className="space-y-2 text-muted-foreground">
                       {admissionRequirements.requiredDocuments.map((field) => (
                         <li key={field} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-[#4F46E5]" />
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
                           <span>{field}</span>
                         </li>
                       ))}

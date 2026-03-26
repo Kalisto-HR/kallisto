@@ -2,8 +2,8 @@
 package usecases_impl
 
 import (
-	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +11,6 @@ import (
 	"kallisto/infra/utils"
 	"kallisto/services/client/internal/models"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -170,13 +169,13 @@ func UpdateApplication(ctx context.Context, userId, universityId, cycle string, 
 func SubmitApplication(ctx context.Context, userId, universityId, cycle string) error {
 	log := zap.L()
 
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return err
 	}
 
 	var status string
-	err := conn.QueryRow(ctx,
+	err = conn.QueryRow(ctx,
 		"SELECT status FROM applications WHERE user_id=$1 AND university_id=$2 AND application_cycle=$3",
 		userId, universityId, cycle).Scan(&status)
 	if err != nil {
@@ -201,19 +200,6 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		return err
 	}
 
-	// Update application status to submitted
-	submittedAt := time.Now()
-	result, err := conn.Exec(ctx,
-		"UPDATE applications SET status=$1, submitted_at=$2 WHERE user_id=$3 AND university_id=$4 AND application_cycle=$5 AND status=$6",
-		models.StatusSubmitted, submittedAt, userId, universityId, cycle, models.StatusDraft)
-	if err != nil {
-		return fmt.Errorf("failed to submit application: %s", err.Error())
-	}
-
-	if result.RowsAffected() == 0 {
-		return utils.NewHandlerFuncErr(http.StatusNotFound, "application not found")
-	}
-
 	var (
 		userEmail     string
 		userFirstName string
@@ -224,20 +210,11 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		"SELECT email, first_name, last_name, data FROM users WHERE id=$1",
 		userId).Scan(&userEmail, &userFirstName, &userLastName, &userData)
 	if err != nil {
-		log.Error("failed to fetch user info for forwarding", zap.Error(err))
-		// Don't fail the submission, just log the error
+		return fmt.Errorf("failed to fetch user info for forwarding: %s", err.Error())
 	}
 
-	applicantInfo := map[string]string{
-		"email":      userEmail,
-		"first_name": userFirstName,
-		"last_name":  userLastName,
-	}
-	if gender := extractProfileGender(userData); gender != "" {
-		applicantInfo["gender"] = gender
-	}
+	applicantInfo := buildApplicantInfo(userEmail, userFirstName, userLastName, userData, applicationData)
 
-	// Forward application to admin service
 	fileAssets := []models.ApplicationFileAsset{}
 	fileIDs := extractApplicationFileIDs(applicationData)
 	if len(fileIDs) > 0 {
@@ -253,7 +230,9 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		}
 	}
 
-	go forwardApplicationToAdmin(
+	submittedAt := time.Now().UTC()
+	if err := persistSubmittedApplication(
+		ctx,
 		userId,
 		universityId,
 		cycle,
@@ -261,77 +240,236 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		applicantInfo,
 		fileAssets,
 		submittedAt,
-	)
-
-	return nil
-}
-
-// forwardApplicationToAdmin sends the submitted application to the admin service
-func forwardApplicationToAdmin(
-	userId, universityId, cycle string,
-	applicationData json.RawMessage,
-	applicantInfo map[string]string,
-	fileAssets []models.ApplicationFileAsset,
-	submittedAt time.Time,
-) {
-	log := zap.L()
-
-	// Build the request payload
-	payload := map[string]interface{}{
-		"user_id":           userId,
-		"university_id":     universityId,
-		"application_cycle": cycle,
-		"applicant_info":    applicantInfo,
-		"application_data": applicationData,
-		"file_assets":      fileAssets,
-		"submitted_at":     submittedAt.Format(time.RFC3339),
-	}
-
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		log.Error("failed to marshal application payload for admin service", zap.Error(err))
-		return
-	}
-
-	// Get admin service URL from environment or use default
-	adminServiceURL := os.Getenv("ADMIN_SERVICE_URL")
-	if adminServiceURL == "" {
-		adminServiceURL = "http://localhost:8082"
-	}
-
-	// Create HTTP request
-	req, err := http.NewRequest("POST", adminServiceURL+"/v1.0/applications/receive", bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		log.Error("failed to create request to admin service", zap.Error(err))
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send request with timeout
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
+	); err != nil {
 		log.Error("failed to forward application to admin service",
 			zap.Error(err),
 			zap.String("user_id", userId),
 			zap.String("university_id", universityId),
 			zap.String("cycle", cycle))
-		return
+		return utils.NewHandlerFuncErr(http.StatusBadGateway, "failed to submit application")
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusCreated {
-		log.Info("successfully forwarded application to admin service",
-			zap.String("user_id", userId),
-			zap.String("university_id", universityId),
-			zap.String("cycle", cycle))
-	} else {
-		log.Warn("admin service returned non-success status",
-			zap.Int("status", resp.StatusCode),
-			zap.String("user_id", userId),
-			zap.String("university_id", universityId),
-			zap.String("cycle", cycle))
+	result, err := conn.Exec(ctx,
+		"UPDATE applications SET status=$1, submitted_at=$2 WHERE user_id=$3 AND university_id=$4 AND application_cycle=$5 AND status=$6",
+		models.StatusSubmitted, submittedAt, userId, universityId, cycle, models.StatusDraft)
+	if err != nil {
+		return fmt.Errorf("failed to submit application: %s", err.Error())
 	}
+
+	if result.RowsAffected() == 0 {
+		return utils.NewHandlerFuncErr(http.StatusNotFound, "application not found")
+	}
+
+	return nil
+}
+
+func persistSubmittedApplication(
+	ctx context.Context,
+	userId, universityId, cycle string,
+	applicationData json.RawMessage,
+	applicantInfo map[string]string,
+	fileAssets []models.ApplicationFileAsset,
+	submittedAt time.Time,
+) error {
+	adminConn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxClientPostgresKey)
+	if err != nil {
+		return err
+	}
+
+	var applicationID string
+	err = adminConn.QueryRow(
+		ctx,
+		`INSERT INTO submitted_applications
+		 (user_id, university_id, application_cycle, applicant_info, application_data, submitted_at, status)
+		 VALUES ($1, $2, $3, $4, $5, $6, 'submitted')
+		 ON CONFLICT (user_id, university_id, application_cycle)
+		 DO UPDATE SET applicant_info = $4, application_data = $5, submitted_at = $6, received_at = NOW(), status = 'submitted'
+		 RETURNING id`,
+		userId,
+		universityId,
+		cycle,
+		applicantInfo,
+		applicationData,
+		submittedAt,
+	).Scan(&applicationID)
+	if err != nil {
+		return fmt.Errorf("failed to store submitted application: %s", err.Error())
+	}
+
+	if err := syncSubmittedApplicationFiles(
+		ctx,
+		adminConn,
+		applicationID,
+		userId,
+		universityId,
+		cycle,
+		applicationData,
+		fileAssets,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func syncSubmittedApplicationFiles(
+	ctx context.Context,
+	adminConn middlewares.DB,
+	applicationID string,
+	userID string,
+	universityID string,
+	cycle string,
+	applicationData json.RawMessage,
+	fileAssets []models.ApplicationFileAsset,
+) error {
+	if _, err := adminConn.Exec(
+		ctx,
+		"DELETE FROM submitted_application_files WHERE application_id = $1",
+		applicationID,
+	); err != nil {
+		return fmt.Errorf("failed to reset submitted file assets: %s", err.Error())
+	}
+
+	for _, asset := range fileAssets {
+		fileID := strings.TrimSpace(asset.Id)
+		if fileID == "" {
+			continue
+		}
+
+		fileBytes, err := base64.StdEncoding.DecodeString(asset.ContentB64)
+		if err != nil {
+			return fmt.Errorf("failed to decode submitted file asset: %s", err.Error())
+		}
+
+		var fieldKey *string
+		if trimmed := strings.TrimSpace(asset.FieldKey); trimmed != "" {
+			fieldKey = &trimmed
+		}
+
+		_, err = adminConn.Exec(
+			ctx,
+			`INSERT INTO submitted_application_files (
+				id,
+				application_id,
+				user_id,
+				university_id,
+				application_cycle,
+				field_key,
+				file_name,
+				content_type,
+				file_size,
+				file_data,
+				created_at
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW())`,
+			fileID,
+			applicationID,
+			userID,
+			universityID,
+			cycle,
+			fieldKey,
+			asset.FileName,
+			asset.ContentType,
+			asset.FileSize,
+			fileBytes,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to store submitted file asset: %s", err.Error())
+		}
+	}
+
+	patchedApplicationData, err := patchApplicationDataWithPartnerFileURLs(applicationData, applicationID)
+	if err != nil {
+		return fmt.Errorf("failed to patch submitted application data file links: %s", err.Error())
+	}
+
+	if _, err := adminConn.Exec(
+		ctx,
+		"UPDATE submitted_applications SET application_data = $1 WHERE id = $2",
+		patchedApplicationData,
+		applicationID,
+	); err != nil {
+		return fmt.Errorf("failed to persist patched application data: %s", err.Error())
+	}
+
+	return nil
+}
+
+func patchApplicationDataWithPartnerFileURLs(raw json.RawMessage, applicationID string) (json.RawMessage, error) {
+	var payload any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return raw, nil
+	}
+
+	var walk func(node any)
+	walk = func(node any) {
+		switch typed := node.(type) {
+		case map[string]any:
+			storage := strings.TrimSpace(firstNonEmptyString(typed["storage"]))
+			fileID := strings.TrimSpace(firstNonEmptyString(typed["id"], typed["file_id"], typed["fileId"]))
+			if storage == "application_file" && fileID != "" {
+				downloadURL := fmt.Sprintf("/api/v1.0/partner/applications/%s/files/%s/download", applicationID, fileID)
+				typed["download_url"] = downloadURL
+				typed["url"] = downloadURL
+			}
+			for _, value := range typed {
+				walk(value)
+			}
+		case []any:
+			for _, value := range typed {
+				walk(value)
+			}
+		}
+	}
+
+	walk(payload)
+	updated, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(updated), nil
+}
+
+func buildApplicantInfo(
+	userEmail, userFirstName, userLastName string,
+	userData json.RawMessage,
+	applicationData json.RawMessage,
+) map[string]string {
+	applicantInfo := map[string]string{
+		"email":      userEmail,
+		"first_name": userFirstName,
+		"last_name":  userLastName,
+	}
+
+	if fullName := strings.TrimSpace(strings.Join([]string{strings.TrimSpace(userFirstName), strings.TrimSpace(userLastName)}, " ")); fullName != "" {
+		applicantInfo["name"] = fullName
+	}
+	if gender := extractProfileGender(userData); gender != "" {
+		applicantInfo["gender"] = gender
+	}
+	if citizenship := extractApplicationCitizenship(applicationData); citizenship != "" {
+		applicantInfo["citizenship"] = citizenship
+	}
+
+	return applicantInfo
+}
+
+func extractApplicationCitizenship(raw json.RawMessage) string {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" || trimmed == "null" {
+		return ""
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return ""
+	}
+
+	value, ok := payload["citizenship"].(string)
+	if !ok {
+		return ""
+	}
+
+	return strings.TrimSpace(value)
 }
 
 func extractProfileGender(raw json.RawMessage) string {
@@ -362,7 +500,7 @@ func extractProfileGender(raw json.RawMessage) string {
 
 func validateApplicationEssayLimits(
 	ctx context.Context,
-	conn *pgxpool.Pool,
+	conn middlewares.DB,
 	universityId string,
 	applicationData json.RawMessage,
 ) error {
@@ -941,9 +1079,9 @@ func normalizeFileNames(value any) []string {
 }
 
 func DeleteApplication(ctx context.Context, userId, universityId, cycle string) error {
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return err
 	}
 
 	result, err := conn.Exec(ctx,

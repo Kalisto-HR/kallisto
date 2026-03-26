@@ -1,9 +1,8 @@
-// Application handlers for reviewing submitted applications
+// Application handlers for submitted application access
 package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -188,141 +187,6 @@ func GetApplicationHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, application, http.StatusOK)
 }
 
-func ReceiveApplicationHandler(w http.ResponseWriter, r *http.Request) {
-	var (
-		req models.ReceiveApplicationRequest
-		log = zap.L()
-	)
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSONResponseWithMsg(w, "malformed json request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// Validate input
-	errors := validation.Validate(
-		validation.ValidateRequired(req.UserId, "user_id"),
-		validation.ValidateUUID(req.UserId, "user_id"),
-		validation.ValidateRequired(req.UniversityId, "university_id"),
-		validation.ValidateUUID(req.UniversityId, "university_id"),
-		validation.ValidateRequired(req.ApplicationCycle, "application_cycle"),
-		validation.ValidateRequired(req.SubmittedAt, "submitted_at"),
-	)
-	if len(errors) > 0 {
-		validation.WriteValidationErrors(w, errors)
-		return
-	}
-
-	err := usecases_impl.ReceiveApplication(r.Context(), &req)
-	if err != nil {
-		handleFuncErr, ok := err.(utils.HandlerFuncErr)
-		status := http.StatusInternalServerError
-		if ok {
-			status = handleFuncErr.Status()
-		}
-		log.Error(err.Error())
-		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-		return
-	}
-
-	utils.WriteJSONResponseWithMsg(w, "application received", http.StatusCreated)
-}
-
-func ReviewApplicationHandler(w http.ResponseWriter, r *http.Request) {
-	var (
-		req models.ApplicationReviewRequest
-		log = zap.L()
-	)
-
-	// Get reviewer ID from claims
-	claims, err := middlewares.GetClaimsFromContext(r.Context())
-	if err != nil {
-		utils.WriteJSONResponseWithMsg(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	if id == "" {
-		utils.WriteJSONResponseWithMsg(w, "application id is required", http.StatusBadRequest)
-		return
-	}
-
-	// Validate UUID format
-	if err := validation.ValidateUUID(id, "id"); err != nil {
-		validation.WriteValidationErrors(w, []*validation.ValidationError{err})
-		return
-	}
-
-	if claims.Role == "partner" {
-		linkedUniversityId, err := getLinkedUniversityForUser(r.Context(), claims.UID)
-		if err != nil {
-			handleFuncErr, ok := err.(utils.HandlerFuncErr)
-			status := http.StatusInternalServerError
-			if ok {
-				status = handleFuncErr.Status()
-			}
-			log.Error(err.Error())
-			utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-			return
-		}
-
-		application, err := usecases_impl.GetSubmittedApplicationById(r.Context(), id)
-		if err != nil {
-			handleFuncErr, ok := err.(utils.HandlerFuncErr)
-			status := http.StatusInternalServerError
-			if ok {
-				status = handleFuncErr.Status()
-			}
-			log.Error(err.Error())
-			utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-			return
-		}
-		if err := enforcePartnerUniversityAccess(claims.Role, linkedUniversityId, application.UniversityId); err != nil {
-			handleFuncErr, ok := err.(utils.HandlerFuncErr)
-			status := http.StatusInternalServerError
-			if ok {
-				status = handleFuncErr.Status()
-			}
-			log.Error(err.Error())
-			utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-			return
-		}
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSONResponseWithMsg(w, "malformed json request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	// Validate status
-	errors := validation.Validate(
-		validation.ValidateRequired(req.Status, "status"),
-		validation.ValidateInList(req.Status, "status", []string{"pending", "reviewing", "accepted", "rejected"}),
-	)
-	if len(errors) > 0 {
-		validation.WriteValidationErrors(w, errors)
-		return
-	}
-
-	err = usecases_impl.ReviewApplication(r.Context(), id, claims.UID, &req)
-	if err != nil {
-		handleFuncErr, ok := err.(utils.HandlerFuncErr)
-		status := http.StatusInternalServerError
-		if ok {
-			status = handleFuncErr.Status()
-		}
-		log.Error(err.Error())
-		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
-		return
-	}
-
-	utils.WriteJSONResponseWithMsg(w, "application reviewed", http.StatusOK)
-}
-
 func DownloadSubmittedApplicationFileHandler(w http.ResponseWriter, r *http.Request) {
 	log := zap.L()
 
@@ -481,16 +345,19 @@ func ListSubmittedApplicationFilesHandler(w http.ResponseWriter, r *http.Request
 	}, http.StatusOK)
 }
 
-func getLinkedUniversityForUser(ctx context.Context, uid string) (*string, error) {
-	user, err := usecases_impl.GetAdminUserById(ctx, uid)
+func getLinkedUniversityForUser(ctx context.Context, _ string) (*string, error) {
+	claims, err := middlewares.GetClaimsFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return nil, utils.NewHandlerFuncErr(http.StatusUnauthorized, "unauthorized")
 	}
 
-	return user.UniversityLinked, nil
+	return claims.UniversityLinked, nil
 }
 
 func enforcePartnerUniversityFilter(role string, linkedUniversityId *string, requestedUniversityId *string) (*string, error) {
+	if role != "staff" && role != "partner" {
+		return nil, utils.NewHandlerFuncErr(http.StatusForbidden, "forbidden")
+	}
 	if role != "partner" {
 		return requestedUniversityId, nil
 	}
@@ -504,6 +371,9 @@ func enforcePartnerUniversityFilter(role string, linkedUniversityId *string, req
 }
 
 func enforcePartnerUniversityAccess(role string, linkedUniversityId *string, applicationUniversityId string) error {
+	if role != "staff" && role != "partner" {
+		return utils.NewHandlerFuncErr(http.StatusForbidden, "forbidden")
+	}
 	if role != "partner" {
 		return nil
 	}

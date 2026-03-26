@@ -18,19 +18,9 @@ Tight viewport spot-check: `360x800`
 
 ### `/auth/sign-in`
 
-- Portal cards stack vertically.
-- Card CTA buttons stay full-width and readable.
-- Footer note wraps cleanly.
-
-### `/auth/sign-in/student`
-
 - Session-expired banner wraps without overflow.
 - Form fields and button remain fully visible with keyboard open.
-
-### `/auth/sign-in/management`
-
-- Session-expired banner wraps without overflow.
-- Error state and back-link remain visible on narrow screens.
+- Role-based redirect after successful sign-in does not flash the wrong shell.
 
 ### `/auth/sign-up`
 
@@ -44,17 +34,17 @@ Tight viewport spot-check: `360x800`
 
 ### `/auth/reset-password`
 
-- Reset form and token state messages fit inside the viewport.
+- Unavailable-state messaging and return link fit inside the viewport.
 
-## Student routes
+## Applicant routes
 
-### `/student/dashboard`
+### `/applicant/dashboard`
 
 - Top stats collapse to one column.
 - Readiness card rows wrap cleanly.
 - Recent application actions do not overflow.
 
-### `/student/universities`
+### `/applicant/universities`
 
 - Search bar and header actions stack correctly.
 - Mobile filters open in sheet mode.
@@ -62,13 +52,13 @@ Tight viewport spot-check: `360x800`
 
 Spot-check at `360x800`.
 
-### `/student/universities/:id`
+### `/applicant/universities/:id`
 
 - Hero section stacks.
 - CTA buttons wrap or fill width cleanly.
 - Tabs remain usable via horizontal scroll without clipping.
 
-### `/student/basket`
+### `/applicant/basket`
 
 - Basket items stack vertically.
 - Plan selection and proceed actions remain visible.
@@ -76,12 +66,12 @@ Spot-check at `360x800`.
 
 Spot-check at `360x800`.
 
-### `/student/applications`
+### `/applicant/applications`
 
 - List cards stack cleanly.
 - Draft/submitted action buttons stay reachable.
 
-### `/student/applications/new/:universityId`
+### `/applicant/applications/new/:universityId`
 
 - Step header remains readable.
 - Form rows collapse to one column.
@@ -89,20 +79,20 @@ Spot-check at `360x800`.
 
 Spot-check at `360x800`.
 
-### `/student/applications/:universityId/:cycle`
+### `/applicant/applications/:universityId/:cycle`
 
 - Summary metadata stacks.
 - Submitted field sections stay single-column.
 - Nested cards do not clip labels or values.
 
-### `/student/compare`
+### `/applicant/compare`
 
 - Mobile card comparison layout renders instead of desktop table.
 - Remove/compare actions remain reachable.
 
 Spot-check at `360x800`.
 
-### `/student/settings`
+### `/applicant/settings`
 
 - Tabs stay usable through horizontal scroll.
 - Test score form rows stack correctly.
@@ -110,35 +100,35 @@ Spot-check at `360x800`.
 
 Spot-check at `360x800`.
 
-### `/student/help`
+### `/applicant/help`
 
 - Help cards and CTA rows stack cleanly.
 - Long copy wraps without clipping.
 
-### `/student/billing`
+### `/applicant/billing`
 
 - Billing summary cards stack.
 - Invoice history is readable on mobile.
 
-### `/student/checkout`
+### `/applicant/checkout`
 
 - Checkout form uses single-column layout.
 - Order summary stacks below content on phone.
 - CTA remains reachable without side scroll.
 
-## Management routes
+## Partner routes
 
-### `/management/:universityId/dashboard`
+### `/partner/:universityId/dashboard`
 
 - Overview cards collapse cleanly.
 - Recent applications use mobile-friendly card layout.
 
-### `/management/:universityId/profile`
+### `/partner/:universityId/profile`
 
 - Form sections stack correctly.
 - Save actions wrap cleanly.
 
-### `/management/:universityId/application-structure`
+### `/partner/:universityId/application-structure`
 
 - Sections list renders above active editor on phone.
 - Edit controls remain reachable.
@@ -146,20 +136,15 @@ Spot-check at `360x800`.
 
 Spot-check at `360x800`.
 
-### `/management/:universityId/applications`
+### `/partner/:universityId/applications`
 
 - Mobile applicant cards render instead of desktop-only table.
 - Filter sheet works and detail drawer remains usable.
+- No review/decision actions are shown.
 
 Spot-check at `360x800`.
 
-### `/management/:universityId/users`
-
-- Staff cards render on phone.
-- Invitations render as cards on phone.
-- Action menus remain reachable inside viewport.
-
-### `/management/:universityId/billing`
+### `/partner/:universityId/billing`
 
 - Package cards stack.
 - Invoice history remains readable.
@@ -169,80 +154,50 @@ Spot-check at `360x800`.
 
 - Error card and return action stay centered and readable.
 
-## Superuser routes
+## Staff routes
 
-### `/management/global/overview`
+### `/staff/dashboard`
 
 - Top metrics collapse to one column.
 - Secondary grids wrap without overflow.
 
 Spot-check at `360x800`.
 
-### `/management/global/universities`
+### `/staff/universities`
 
 - Mobile university cards render cleanly.
 - Filters and actions wrap correctly.
 
 Spot-check at `360x800`.
 
-### `/management/global/drafts`
-
-- Draft list cards stay readable.
-- Filter controls stack correctly.
-
-### `/management/global/applications`
-
-- Filters and summary stats stack.
-- Detail sections remain readable on phone.
-
-Spot-check at `360x800`.
-
-### `/management/global/users`
-
-- Mobile user cards render instead of relying on a wide table.
-- Header actions remain reachable.
-
-Spot-check at `360x800`.
-
-### `/management/global/service-logs`
+### `/staff/service-logs`
 
 - Mobile log cards render cleanly.
 - Filters stay inside viewport.
 
 Spot-check at `360x800`.
 
-### `/management/global/audit-logs`
+### `/staff/audit-logs`
 
 - Mobile audit cards render cleanly.
 - Detail modal stays usable on phone.
 
-### `/management/global/settings`
+### `/staff/settings`
 
 - Settings sections stack correctly.
 - Any tab or section navigation stays reachable.
 
-## Legacy redirects
+## Forbidden and not-found behavior
 
-Verify these still route correctly on mobile and do not flash broken legacy layouts:
+Verify these routes fail cleanly on mobile and do not flash protected content:
 
 - `/`
-- `/signin`
-- `/signup`
-- `/dashboard`
-- `/search`
-- `/applications`
-- `/applications/:universityId/:cycle`
-- `/applications/:universityId/:cycle/edit`
-- `/university/:id`
-- `/management`
+- `/student/dashboard`
+- `/management/any/dashboard`
 - `/superuser/overview`
-- `/superuser/universities`
-- `/superuser/drafts`
-- `/superuser/applications`
-- `/superuser/users`
-- `/superuser/service-logs`
-- `/superuser/audit-logs`
-- `/superuser/settings`
+- any applicant route while signed in as `partner` or `staff`
+- any partner route while signed in as `applicant` or `staff`
+- any staff route while signed in as `applicant` or `partner`
 
 ## Sign-off
 

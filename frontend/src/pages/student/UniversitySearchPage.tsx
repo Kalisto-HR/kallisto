@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
+  AlertCircle,
   Award,
   CheckCircle2,
   ChevronDown,
@@ -16,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../components/ui/collapsible";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../../components/ui/sheet";
 import {
   Select,
@@ -31,7 +33,13 @@ import {
   useUniversitySearchData,
   type UniversityAdvancedFilters,
 } from "../../hooks/useUniversitySearchData";
-import { addCompareItem, fetchCompareList, removeCompareItem } from "../../services/client/compareService";
+import {
+  addCompareItem,
+  COMPARE_LIMIT_MESSAGE,
+  fetchCompareList,
+  MAX_COMPARE_ITEMS,
+  removeCompareItem,
+} from "../../services/client/compareService";
 import { routes } from "../../routes/routeConfig";
 import { formatRmb } from "../../utils/currency";
 
@@ -104,6 +112,8 @@ export function UniversitySearchPage() {
     filterValidationError,
   } = useUniversitySearchData();
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+  const [compareFeedback, setCompareFeedback] = useState<string | null>(null);
+  const [compareFeedbackId, setCompareFeedbackId] = useState<string | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [academicOpen, setAcademicOpen] = useState(true);
   const [financialOpen, setFinancialOpen] = useState(true);
@@ -115,6 +125,8 @@ export function UniversitySearchPage() {
       try {
         const compareList = await fetchCompareList();
         setCompareIds(new Set(compareList.map((item) => item.id)));
+        setCompareFeedback(null);
+        setCompareFeedbackId(null);
       } catch {
         setCompareIds(new Set());
       }
@@ -141,12 +153,22 @@ export function UniversitySearchPage() {
           next.delete(universityId);
           return next;
         });
+        setCompareFeedback(null);
+        setCompareFeedbackId(null);
       } else {
+        if (compareIds.size >= MAX_COMPARE_ITEMS) {
+          setCompareFeedback(COMPARE_LIMIT_MESSAGE);
+          setCompareFeedbackId(universityId);
+          return;
+        }
         await addCompareItem(universityId);
         setCompareIds((prev) => new Set(prev).add(universityId));
+        setCompareFeedback(null);
+        setCompareFeedbackId(null);
       }
-    } catch {
-      // Keep UI stable; global error handling is covered by API-layer toasts/logging.
+    } catch (error) {
+      setCompareFeedback(error instanceof Error ? error.message : "Failed to update compare list.");
+      setCompareFeedbackId(universityId);
     }
   };
 
@@ -157,10 +179,10 @@ export function UniversitySearchPage() {
   };
 
   const filterPanel = (
-    <div className="space-y-4 rounded-2xl border bg-card p-4">
+    <div className="brand-panel space-y-4 p-4">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-[#4F46E5]" />
+          <Filter className="h-4 w-4 text-primary" />
           <h2 className="text-2xl font-semibold">Advanced Filters</h2>
           {activeFilterCount > 0 ? <Badge variant="secondary">{activeFilterCount}</Badge> : null}
         </div>
@@ -404,15 +426,15 @@ export function UniversitySearchPage() {
             ? cards.map((item) => {
               const isInCompare = compareIds.has(item.id);
               return (
-                <Card key={item.id} className="cursor-pointer transition-all hover:border-[#4F46E5]/30">
+                <Card key={item.id} className="cursor-pointer transition-all hover:border-primary/25 hover:shadow-[0_18px_38px_-30px_rgba(20,90,67,0.35)]">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
-                          <CardTitle className="text-xl transition-colors hover:text-[#4F46E5]">
+                          <CardTitle className="text-xl transition-colors hover:text-primary">
                             {item.name}
                           </CardTitle>
-                          <Badge variant="secondary" className="bg-[#4F46E5]/10 text-[#4F46E5]">
+                          <Badge variant="secondary" className="brand-soft-badge">
                             {item.ranking ? `${Math.max(60, 300 - item.ranking)}% Match` : "N/A Match"}
                           </Badge>
                           <Badge
@@ -445,35 +467,44 @@ export function UniversitySearchPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          Programs available
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          Application open
-                        </Badge>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            Programs available
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Application open
+                          </Badge>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Button
+                            variant={isInCompare ? "default" : "outline"}
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={() => void toggleCompare(item.id)}
+                          >
+                            {isInCompare ? (
+                              <>
+                                <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                                Added
+                              </>
+                            ) : (
+                              "Add to Compare"
+                            )}
+                          </Button>
+                          <Link to={routes.student.universityDetail(item.id)}>
+                            <Button size="sm" className="w-full sm:w-auto">View Details</Button>
+                          </Link>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <Button
-                          variant={isInCompare ? "default" : "outline"}
-                          size="sm"
-                          className="w-full sm:w-auto"
-                          onClick={() => void toggleCompare(item.id)}
-                        >
-                          {isInCompare ? (
-                            <>
-                              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                              Added
-                            </>
-                          ) : (
-                            "Add to Compare"
-                          )}
-                        </Button>
-                        <Link to={routes.student.universityDetail(item.id)}>
-                          <Button size="sm" className="w-full sm:w-auto">View Details</Button>
-                        </Link>
-                      </div>
+                      {compareFeedback && compareFeedbackId === item.id ? (
+                        <Alert className="border-primary/20 bg-card/80">
+                          <AlertCircle className="h-4 w-4 text-primary" />
+                          <AlertTitle>Compare table full</AlertTitle>
+                          <AlertDescription>{compareFeedback}</AlertDescription>
+                        </Alert>
+                      ) : null}
                     </div>
                   </CardContent>
                 </Card>

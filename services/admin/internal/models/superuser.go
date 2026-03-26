@@ -9,7 +9,6 @@ type GlobalOverviewStats struct {
 	TotalUniversities  int `json:"total_universities"`
 	ManagementAccounts int `json:"management_accounts"`
 	TotalApplications  int `json:"total_applications"`
-	PendingDrafts      int `json:"pending_drafts"`
 }
 
 type GlobalOverviewActivity struct {
@@ -39,7 +38,6 @@ type GlobalOverviewHealthMetric struct {
 type GlobalOverviewResponse struct {
 	Stats          GlobalOverviewStats          `json:"stats"`
 	RecentActivity []GlobalOverviewActivity     `json:"recent_activity"`
-	PendingDrafts  []GlobalOverviewPendingDraft `json:"pending_drafts"`
 	SystemHealth   []GlobalOverviewHealthMetric `json:"system_health"`
 }
 
@@ -96,6 +94,12 @@ type GlobalServiceLogItem struct {
 	Message      string          `json:"message" db:"message"`
 	UserId       *string         `json:"user_id,omitempty" db:"user_id"`
 	RequestId    *string         `json:"request_id,omitempty" db:"request_id"`
+	Method       string          `json:"method" db:"method"`
+	StatusCode   int             `json:"status_code" db:"status_code"`
+	DurationMs   int64           `json:"duration_ms" db:"duration_ms"`
+	Role         *string         `json:"role,omitempty" db:"role"`
+	IpAddress    *string         `json:"ip_address,omitempty" db:"ip_address"`
+	UserAgent    *string         `json:"user_agent,omitempty" db:"user_agent"`
 	Metadata     json.RawMessage `json:"metadata,omitempty" db:"metadata"`
 }
 
@@ -111,6 +115,7 @@ type GlobalAuditLogItem struct {
 	TargetId          *string         `json:"target_id,omitempty" db:"target_id"`
 	Outcome           string          `json:"outcome" db:"outcome"`
 	IpAddress         *string         `json:"ip_address,omitempty" db:"ip_address"`
+	RequestId         *string         `json:"request_id,omitempty" db:"request_id"`
 	Metadata          json.RawMessage `json:"metadata,omitempty" db:"metadata"`
 }
 
@@ -149,6 +154,12 @@ type GlobalLogWrite struct {
 	Message      string
 	UserId       *string
 	RequestId    *string
+	Method       string
+	StatusCode   int
+	DurationMs   int64
+	Role         *string
+	IpAddress    *string
+	UserAgent    string
 	Metadata     json.RawMessage
 }
 
@@ -162,5 +173,6 @@ type GlobalAuditWrite struct {
 	TargetId          *string
 	Outcome           string
 	IpAddress         *string
+	RequestId         *string
 	Metadata          json.RawMessage
 }

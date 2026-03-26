@@ -185,7 +185,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
+              <div className="brand-icon-tile flex h-12 w-12 items-center justify-center rounded-xl">
                 <Building2 className="h-6 w-6 text-white" />
               </div>
               <div>

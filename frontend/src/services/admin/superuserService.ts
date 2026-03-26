@@ -1,13 +1,12 @@
 import { adminApi } from "../api/httpClient";
-import { normalizeAdminSubmittedApplication, normalizePagination } from "../mappers/responseMappers";
-import type { AdminSubmittedApplication, Pagination } from "../../types/domain";
+import { normalizePagination } from "../mappers/responseMappers";
+import type { Pagination } from "../../types/domain";
 
 export interface SuperuserOverviewPayload {
   stats: {
     total_universities: number;
     management_accounts: number;
     total_applications: number;
-    pending_drafts: number;
   };
   recent_activity: Array<{
     id: string;
@@ -16,14 +15,6 @@ export interface SuperuserOverviewPayload {
     user: string;
     timestamp: string;
     status: string;
-  }>;
-  pending_drafts: Array<{
-    id: string;
-    type: string;
-    target: string;
-    requester: string;
-    created_at: string;
-    priority: string;
   }>;
   system_health: Array<{
     label: string;
@@ -46,33 +37,119 @@ export interface SuperuserUniversityItem {
   last_active: string;
 }
 
-export interface SuperuserDraftItem {
-  id: string;
-  type: string;
-  status: string;
-  title: string;
-  description: string;
-  requester: string;
-  requester_email: string;
-  target_entity: string;
-  target_id: string;
-  created_at: string;
-  reviewed_at?: string;
-  executed_at?: string;
-  reviewed_by?: string;
-  priority: "low" | "medium" | "high" | string;
-  changes: Array<{ field: string; before: string; after: string }>;
-  comments: number;
+function toString(value: unknown): string {
+  return typeof value === "string" ? value : "";
 }
 
-export interface SuperuserUserItem {
-  user_id: string;
-  name: string;
-  email?: string | null;
-  phone?: string | null;
-  status: "active" | "banned" | "suspended" | string;
-  updated_at: string;
-  ban_reason?: string | null;
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function toNullableNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function normalizeUniversityType(value: unknown): SuperuserUniversityItem["type"] {
+  const normalized = toString(value).trim().toLowerCase();
+  if (normalized === "private" || normalized === "international") {
+    return normalized;
+  }
+  return "public";
+}
+
+function normalizeUniversityStatus(value: unknown): SuperuserUniversityItem["status"] {
+  const normalized = toString(value).trim().toLowerCase();
+  if (normalized === "inactive" || normalized === "pending" || normalized === "suspended") {
+    return normalized;
+  }
+  return "active";
+}
+
+function buildUniversityLocation(source: Record<string, unknown>): string {
+  const explicit = toString(source.location).trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const parts = [
+    toString(source.city).trim(),
+    toString(source.province).trim(),
+    toString(source.country).trim(),
+  ].filter(Boolean);
+
+  return parts.join(", ");
+}
+
+function buildAcceptanceRate(source: Record<string, unknown>): string {
+  const explicit = toString(source.acceptance_rate).trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  const numeric = toNullableNumber(source.acceptance_rate ?? source.acceptanceRate);
+  if (numeric !== null) {
+    return `${numeric}%`;
+  }
+
+  return "N/A";
+}
+
+export function normalizeSuperuserUniversityItem(value: unknown): SuperuserUniversityItem {
+  const source = (value ?? {}) as Record<string, unknown>;
+  const metadata = toRecord(source.metadata);
+  const managementProfile = toRecord(source.management_profile ?? source.managementProfile);
+
+  const fallbackType =
+    metadata?.type ??
+    metadata?.university_type ??
+    managementProfile?.type ??
+    managementProfile?.universityType;
+
+  const fallbackStatus =
+    metadata?.status ??
+    managementProfile?.status ??
+    managementProfile?.publicationStatus;
+
+  const fallbackNameEn =
+    metadata?.name_en ??
+    metadata?.nameEn ??
+    managementProfile?.name_en ??
+    managementProfile?.nameEn;
+
+  const fallbackApplications =
+    metadata?.applications ??
+    metadata?.application_count ??
+    managementProfile?.applications ??
+    managementProfile?.applicationCount;
+
+  const fallbackAdmins =
+    metadata?.admins ??
+    metadata?.admin_count ??
+    managementProfile?.admins ??
+    managementProfile?.adminCount;
+
+  const joinedDate = toString(source.joined_date).trim() || toString(source.created_at ?? source.createdAt).trim();
+
+  return {
+    id: toString(source.id),
+    name: toString(source.name),
+    name_en: toString(source.name_en ?? fallbackNameEn).trim() || toString(source.name),
+    type: normalizeUniversityType(source.type ?? fallbackType),
+    location: buildUniversityLocation(source),
+    status: normalizeUniversityStatus(source.status ?? fallbackStatus),
+    admins: toNumber(source.admins ?? fallbackAdmins),
+    applications: toNumber(source.applications ?? fallbackApplications),
+    acceptance_rate: buildAcceptanceRate(source),
+    joined_date: joinedDate,
+    last_active: toString(source.last_active ?? source.lastActive).trim() || "Unknown",
+  };
 }
 
 export interface SuperuserServiceLogItem {
@@ -82,8 +159,14 @@ export interface SuperuserServiceLogItem {
   microservice: string;
   handler: string;
   message: string;
+  method: string;
+  status_code: number;
+  duration_ms: number;
+  role?: string | null;
   user_id?: string | null;
   request_id?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -92,13 +175,14 @@ export interface SuperuserAuditLogItem {
   timestamp: string;
   actor: string;
   actor_id?: string | null;
-  actor_type: "superuser" | "admin" | "system" | "user" | string;
+  actor_type: "applicant" | "partner" | "staff" | "system" | "anonymous" | string;
   action: string;
   action_description: string;
   target_entity: string;
   target_id?: string | null;
   outcome: "success" | "failed" | "pending" | string;
   ip_address?: string | null;
+  request_id?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -110,7 +194,7 @@ export interface GlobalSettingItem {
 }
 
 export async function fetchSuperuserOverview(): Promise<SuperuserOverviewPayload> {
-  const result = await adminApi.get<SuperuserOverviewPayload>("/v1.0/global/overview");
+  const result = await adminApi.get<SuperuserOverviewPayload>("/v1.0/staff/dashboard");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load superuser overview");
   }
@@ -131,101 +215,16 @@ export async function fetchSuperuserUniversities(params?: {
   search.set("page", String(params?.page ?? 1));
   search.set("limit", String(params?.limit ?? 20));
 
-  const result = await adminApi.get<unknown>(`/v1.0/global/universities?${search.toString()}`);
+  const result = await adminApi.get<unknown>(`/v1.0/staff/universities?${search.toString()}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load global universities");
   }
 
-  return normalizePagination<SuperuserUniversityItem>(result.data);
-}
-
-export async function fetchSuperuserDrafts(params?: {
-  q?: string;
-  type?: string;
-  status?: string;
-  page?: number;
-  limit?: number;
-}): Promise<Pagination<SuperuserDraftItem>> {
-  const search = new URLSearchParams();
-  if (params?.q) search.set("q", params.q);
-  if (params?.type) search.set("type", params.type);
-  if (params?.status) search.set("status", params.status);
-  search.set("page", String(params?.page ?? 1));
-  search.set("limit", String(params?.limit ?? 20));
-
-  const result = await adminApi.get<unknown>(`/v1.0/global/drafts?${search.toString()}`);
-  if (!result.ok || !result.data) {
-    throw new Error(result.error ?? "Failed to load drafts");
-  }
-  return normalizePagination<SuperuserDraftItem>(result.data);
-}
-
-export async function approveSuperuserDraft(id: string, notes?: string): Promise<void> {
-  const result = await adminApi.post<{ msg: string }>(`/v1.0/global/drafts/${id}/approve`, { notes });
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to approve draft");
-  }
-}
-
-export async function rejectSuperuserDraft(id: string, reason: string): Promise<void> {
-  const result = await adminApi.post<{ msg: string }>(`/v1.0/global/drafts/${id}/reject`, { reason });
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to reject draft");
-  }
-}
-
-export async function fetchSuperuserApplications(params?: {
-  universityId?: string;
-  status?: string;
-  page?: number;
-  limit?: number;
-}): Promise<Pagination<AdminSubmittedApplication>> {
-  const search = new URLSearchParams();
-  if (params?.universityId) search.set("university_id", params.universityId);
-  if (params?.status) search.set("status", params.status);
-  search.set("page", String(params?.page ?? 1));
-  search.set("limit", String(params?.limit ?? 20));
-
-  const result = await adminApi.get<unknown>(`/v1.0/global/applications?${search.toString()}`);
-  if (!result.ok || !result.data) {
-    throw new Error(result.error ?? "Failed to load global applications");
-  }
-
-  const pageData = normalizePagination<unknown>(result.data);
+  const page = normalizePagination<unknown>(result.data);
   return {
-    ...pageData,
-    items: pageData.items.map(normalizeAdminSubmittedApplication),
+    ...page,
+    items: page.items.map(normalizeSuperuserUniversityItem),
   };
-}
-
-export async function fetchSuperuserUsers(params?: {
-  q?: string;
-  status?: string;
-  page?: number;
-  limit?: number;
-}): Promise<Pagination<SuperuserUserItem>> {
-  const search = new URLSearchParams();
-  if (params?.q) search.set("q", params.q);
-  if (params?.status) search.set("status", params.status);
-  search.set("page", String(params?.page ?? 1));
-  search.set("limit", String(params?.limit ?? 20));
-
-  const result = await adminApi.get<unknown>(`/v1.0/global/users?${search.toString()}`);
-  if (!result.ok || !result.data) {
-    throw new Error(result.error ?? "Failed to load global users");
-  }
-  return normalizePagination<SuperuserUserItem>(result.data);
-}
-
-export async function createBanUserDraft(userId: string, reason: string, duration: string): Promise<string> {
-  const result = await adminApi.post<{ id?: string; msg: string }>(`/v1.0/global/users/${userId}/ban-draft`, {
-    reason,
-    duration,
-  });
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to create ban draft");
-  }
-  return result.data?.id ?? "";
 }
 
 export async function fetchSuperuserServiceLogs(params?: {
@@ -234,6 +233,12 @@ export async function fetchSuperuserServiceLogs(params?: {
   handler?: string;
   userId?: string;
   timeRange?: string;
+  requestId?: string;
+  method?: string;
+  statusCode?: number | string;
+  role?: string;
+  from?: string;
+  to?: string;
   page?: number;
   limit?: number;
 }): Promise<Pagination<SuperuserServiceLogItem>> {
@@ -243,20 +248,37 @@ export async function fetchSuperuserServiceLogs(params?: {
   if (params?.handler) search.set("handler", params.handler);
   if (params?.userId) search.set("user_id", params.userId);
   if (params?.timeRange) search.set("time_range", params.timeRange);
+  if (params?.requestId) search.set("request_id", params.requestId);
+  if (params?.method) search.set("method", params.method);
+  if (params?.statusCode !== undefined && params?.statusCode !== null && `${params.statusCode}`.trim() !== "") {
+    search.set("status_code", `${params.statusCode}`);
+  }
+  if (params?.role) search.set("role", params.role);
+  if (params?.from) search.set("from", params.from);
+  if (params?.to) search.set("to", params.to);
   search.set("page", String(params?.page ?? 1));
   search.set("limit", String(params?.limit ?? 50));
 
-  const result = await adminApi.get<unknown>(`/v1.0/global/service-logs?${search.toString()}`);
+  const result = await adminApi.get<unknown>(`/v1.0/staff/service-logs?${search.toString()}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load service logs");
   }
-  return normalizePagination<SuperuserServiceLogItem>(result.data);
+  const page = normalizePagination<unknown>(result.data);
+  return {
+    ...page,
+    items: page.items.map(normalizeServiceLogItem),
+  };
 }
 
 export async function fetchSuperuserAuditLogs(params?: {
   q?: string;
   action?: string;
   outcome?: string;
+  requestId?: string;
+  actorType?: string;
+  targetEntity?: string;
+  from?: string;
+  to?: string;
   page?: number;
   limit?: number;
 }): Promise<Pagination<SuperuserAuditLogItem>> {
@@ -264,18 +286,27 @@ export async function fetchSuperuserAuditLogs(params?: {
   if (params?.q) search.set("q", params.q);
   if (params?.action) search.set("action", params.action);
   if (params?.outcome) search.set("outcome", params.outcome);
+  if (params?.requestId) search.set("request_id", params.requestId);
+  if (params?.actorType) search.set("actor_type", params.actorType);
+  if (params?.targetEntity) search.set("target_entity", params.targetEntity);
+  if (params?.from) search.set("from", params.from);
+  if (params?.to) search.set("to", params.to);
   search.set("page", String(params?.page ?? 1));
   search.set("limit", String(params?.limit ?? 50));
 
-  const result = await adminApi.get<unknown>(`/v1.0/global/audit-logs?${search.toString()}`);
+  const result = await adminApi.get<unknown>(`/v1.0/staff/audit-logs?${search.toString()}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load audit logs");
   }
-  return normalizePagination<SuperuserAuditLogItem>(result.data);
+  const page = normalizePagination<unknown>(result.data);
+  return {
+    ...page,
+    items: page.items.map(normalizeAuditLogItem),
+  };
 }
 
 export async function fetchGlobalSettings(): Promise<GlobalSettingItem[]> {
-  const result = await adminApi.get<{ settings?: GlobalSettingItem[] }>("/v1.0/global/settings");
+  const result = await adminApi.get<{ settings?: GlobalSettingItem[] }>("/v1.0/staff/settings");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load global settings");
   }
@@ -283,8 +314,61 @@ export async function fetchGlobalSettings(): Promise<GlobalSettingItem[]> {
 }
 
 export async function updateGlobalSettings(settings: Record<string, Record<string, unknown>>): Promise<void> {
-  const result = await adminApi.put<{ msg: string }>("/v1.0/global/settings", { settings });
+  const result = await adminApi.put<{ msg: string }>("/v1.0/staff/settings", { settings });
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to update global settings");
   }
+}
+
+function toNullableString(value: unknown): string | null {
+  const normalized = toString(value).trim();
+  return normalized ? normalized : null;
+}
+
+function normalizeRole(value: unknown): string {
+  const normalized = toString(value).trim().toLowerCase();
+  if (normalized === "applicant" || normalized === "partner" || normalized === "staff" || normalized === "system" || normalized === "anonymous") {
+    return normalized;
+  }
+  return "anonymous";
+}
+
+export function normalizeServiceLogItem(value: unknown): SuperuserServiceLogItem {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    timestamp: toString(source.timestamp),
+    level: toString(source.level) || "info",
+    microservice: toString(source.microservice),
+    handler: toString(source.handler),
+    message: toString(source.message),
+    method: toString(source.method) || "GET",
+    status_code: toNumber(source.status_code, 0),
+    duration_ms: toNumber(source.duration_ms, 0),
+    role: toNullableString(source.role),
+    user_id: toNullableString(source.user_id),
+    request_id: toNullableString(source.request_id),
+    ip_address: toNullableString(source.ip_address),
+    user_agent: toNullableString(source.user_agent),
+    metadata: toRecord(source.metadata),
+  };
+}
+
+export function normalizeAuditLogItem(value: unknown): SuperuserAuditLogItem {
+  const source = (value ?? {}) as Record<string, unknown>;
+  return {
+    id: toString(source.id),
+    timestamp: toString(source.timestamp),
+    actor: toString(source.actor),
+    actor_id: toNullableString(source.actor_id),
+    actor_type: normalizeRole(source.actor_type),
+    action: toString(source.action),
+    action_description: toString(source.action_description),
+    target_entity: toString(source.target_entity),
+    target_id: toNullableString(source.target_id),
+    outcome: toString(source.outcome) || "success",
+    ip_address: toNullableString(source.ip_address),
+    request_id: toNullableString(source.request_id),
+    metadata: toRecord(source.metadata),
+  };
 }

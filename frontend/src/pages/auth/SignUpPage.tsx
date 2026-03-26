@@ -5,7 +5,7 @@ import { ErrorState } from "../../components/common/PageState";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { signUpStudent } from "../../services/client/authService";
+import { signUpApplicant } from "../../services/authService";
 import { routes } from "../../routes/routeConfig";
 
 export function SignUpPage() {
@@ -22,19 +22,19 @@ export function SignUpPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await signUpStudent(email, firstName, lastName, password);
+      const result = await signUpApplicant(email, firstName, lastName, password);
       if (!result.ok) {
         setError(result.error ?? "Sign up failed");
         return;
       }
-      navigate(routes.auth.signInStudent, { replace: true });
+      navigate(routes.auth.signIn, { replace: true });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthShell title="Create account" subtitle="Student registration only">
+    <AuthShell title="Create Applicant Account" subtitle="Applicant registration only">
       <form className="space-y-4" onSubmit={onSubmit}>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>

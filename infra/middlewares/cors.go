@@ -12,7 +12,7 @@ func CORS() mux.MiddlewareFunc {
 	allowedOrigins := parseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))
 	allowedHeaders := strings.TrimSpace(os.Getenv("CORS_ALLOWED_HEADERS"))
 	if allowedHeaders == "" {
-		allowedHeaders = "Content-Type, Authorization, X-Requested-With"
+		allowedHeaders = "Content-Type, Authorization, X-Requested-With, X-CSRF-Token"
 	}
 	allowedMethods := strings.TrimSpace(os.Getenv("CORS_ALLOWED_METHODS"))
 	if allowedMethods == "" {

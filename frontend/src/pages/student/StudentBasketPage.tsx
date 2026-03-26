@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Package, Trash2 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { AlertTriangle, ArrowLeft, Check, Package, Trash2 } from "lucide-react";
 import type { BasketPlan, StudentBasketState } from "../../types/domain";
 import {
   clearBasket,
-  fetchBasketCheckoutPreview,
   fetchBasketPlans,
   fetchBasketState,
   removeBasketItem,
-  setBasketPlan,
 } from "../../services/client/basketService";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -19,14 +17,12 @@ import { routes } from "../../routes/routeConfig";
 import { formatRmb } from "../../utils/currency";
 
 export function StudentBasketPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<BasketPlan[]>([]);
   const [basket, setBasket] = useState<StudentBasketState | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [selectedUniversityIds, setSelectedUniversityIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -120,27 +116,6 @@ export function StudentBasketPage() {
     }
   };
 
-  const onContinue = async () => {
-    if (!selectedPlan || !canContinue) {
-      return;
-    }
-
-    setSubmitting(true);
-    setActionError(null);
-    try {
-      await setBasketPlan(selectedPlan.id);
-      const preview = await fetchBasketCheckoutPreview({
-        planId: selectedPlan.id,
-        universityIds: selectedUniversityIds,
-      });
-      navigate(routes.student.checkout, { state: { basketPreview: preview } });
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to prepare checkout");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   if (loading) return <LoadingState label="Loading basket..." />;
   if (error) return <ErrorState message={error} onRetry={() => void load()} />;
   if (!basket || basket.items.length === 0) {
@@ -164,7 +139,7 @@ export function StudentBasketPage() {
           </Link>
           <h1 className="text-3xl font-semibold">Application Basket</h1>
           <p className="text-muted-foreground">
-            Select universities, choose a package plan, and continue to checkout.
+            Select universities and choose a package plan. Checkout is still unavailable, so this page stays in preview mode.
           </p>
         </div>
         <Button variant="outline" className="w-full sm:w-auto" onClick={() => void onClear()}>
@@ -206,7 +181,7 @@ export function StudentBasketPage() {
                   <div
                     key={item.id}
                     className={`rounded-lg border p-4 transition ${
-                      isSelected ? "border-[#4F46E5]/50 bg-[#4F46E5]/5" : "border-border"
+                      isSelected ? "border-primary/30 bg-primary/6 shadow-[0_18px_34px_-30px_rgba(20,90,67,0.28)]" : "border-border"
                     }`}
                   >
                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
@@ -260,14 +235,14 @@ export function StudentBasketPage() {
                     type="button"
                     onClick={() => setSelectedPlanId(plan.id)}
                     className={`w-full rounded-lg border p-4 text-left transition ${
-                      isSelected ? "border-[#4F46E5] bg-[#4F46E5]/5" : "border-border hover:border-[#4F46E5]/40"
+                      isSelected ? "border-primary bg-primary/6 shadow-[0_18px_34px_-30px_rgba(20,90,67,0.28)]" : "border-border hover:border-primary/30"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="font-medium">{plan.name}</div>
                       <div className="flex items-center gap-2">
-                        {isRecommended ? <Badge className="bg-blue-100 text-blue-700">Recommended</Badge> : null}
-                        {plan.featured ? <Badge className="bg-[#4F46E5] text-white">Best Value</Badge> : null}
+                        {isRecommended ? <Badge className="bg-accent text-accent-foreground">Recommended</Badge> : null}
+                        {plan.featured ? <Badge className="bg-primary text-primary-foreground">Best Value</Badge> : null}
                       </div>
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">{plan.description}</div>
@@ -313,12 +288,11 @@ export function StudentBasketPage() {
                 </span>
               </div>
               <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
-                Payment capture is not integrated yet. This step validates plan and university selection, then forwards you to checkout UI.
+                Checkout is not available yet. Basket plans and totals are shown as previews only until payment capture is implemented.
               </div>
-              <Button className="w-full" size="lg" disabled={!canContinue || submitting} onClick={() => void onContinue()}>
+              <Button className="w-full" size="lg" disabled>
                 <Package className="mr-2 h-4 w-4" />
-                {submitting ? "Preparing..." : "Continue to Checkout"}
-                <ArrowRight className="ml-2 h-4 w-4" />
+                Checkout unavailable
               </Button>
               {!canContinue ? (
                 <p className="text-xs text-red-600">
@@ -327,7 +301,7 @@ export function StudentBasketPage() {
               ) : (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Check className="h-3.5 w-3.5 text-green-600" />
-                  Ready for checkout preview
+                  Your selection is saved locally for future checkout support
                 </p>
               )}
             </CardContent>

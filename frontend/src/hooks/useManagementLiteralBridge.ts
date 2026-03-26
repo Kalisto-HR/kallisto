@@ -12,7 +12,7 @@ export function useManagementLiteralBridge() {
   const effectiveUniversityId = routeUniversityId ?? linkedUniversityId;
 
   const context: ManagementContext =
-    effectiveUniversityId
+    user?.role === "partner" && effectiveUniversityId
       ? {
         type: "university",
         universityId: effectiveUniversityId,
@@ -20,7 +20,7 @@ export function useManagementLiteralBridge() {
       }
       : { type: "global" };
 
-  const userRole: ManagementUserRole = user?.role === "partner" ? "university-manager" : "superuser";
+  const userRole: ManagementUserRole = user?.role === "partner" ? "partner" : "staff";
   const fallbackUniversityId = effectiveUniversityId;
 
   const onNavigate = (page: string) => {

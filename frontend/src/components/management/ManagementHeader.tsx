@@ -13,7 +13,7 @@ import {
 
 interface ManagementHeaderProps {
   userName: string;
-  userRole: 'university-manager' | 'superuser';
+  userRole: 'partner' | 'staff';
   currentContext: ManagementContext;
   onContextChange: (context: ManagementContext) => void;
   onMenuClick: () => void;
@@ -29,7 +29,7 @@ export function ManagementHeader({
   onLogout,
 }: ManagementHeaderProps) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-2 border-b bg-card px-3 sm:px-6">
+    <header className="brand-topbar sticky top-0 z-10 flex h-16 items-center justify-between gap-2 px-3 sm:px-6">
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         {/* Mobile menu button */}
         <Button
@@ -59,7 +59,7 @@ export function ManagementHeader({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 px-2 sm:px-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+              <div className="brand-avatar-mark flex h-8 w-8 items-center justify-center rounded-full">
                 <User className="w-4 h-4 text-white" />
               </div>
               <span className="text-sm font-medium hidden sm:inline-block">{userName}</span>
@@ -69,7 +69,7 @@ export function ManagementHeader({
             <div className="px-2 py-1.5">
               <p className="text-sm font-medium">{userName}</p>
               <p className="text-xs text-muted-foreground">
-                {userRole === 'superuser' ? 'Superuser' : 'University Manager'}
+                {userRole === 'staff' ? 'Staff' : 'Partner'}
               </p>
             </div>
             <DropdownMenuSeparator />

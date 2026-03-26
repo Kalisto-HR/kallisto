@@ -3,10 +3,12 @@ package usecases_impl
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"kallisto/infra/middlewares"
+	"kallisto/infra/observability"
 	"kallisto/infra/utils"
 	"kallisto/services/admin/internal/models"
 	"net/http"
@@ -108,14 +110,10 @@ func GetUniversityDashboard(ctx context.Context, universityId string) (*models.M
 	rows, err := conn.Query(ctx, `
 		SELECT
 			id,
-			COALESCE(
-				NULLIF(applicant_info->>'name', ''),
-				TRIM(COALESCE(applicant_info->>'first_name', '') || ' ' || COALESCE(applicant_info->>'last_name', '')),
-				'Applicant'
-			) AS name,
+			COALESCE(NULLIF(`+submittedApplicantNameExpr()+`, ''), 'Applicant') AS name,
 			COALESCE(NULLIF(application_data->>'program', ''), NULLIF(applicant_info->>'program', ''), 'General') AS program,
-			COALESCE(NULLIF(applicant_info->>'citizenship', ''), 'Unknown') AS citizenship,
-			status,
+			COALESCE(NULLIF(`+submittedApplicantCitizenshipExpr()+`, ''), 'Unknown') AS citizenship,
+			'submitted' AS status,
 			submitted_at,
 			NULL::double precision AS acceptance_pct
 		FROM submitted_applications
@@ -575,6 +573,10 @@ func GetApplicationStructureHistory(ctx context.Context, universityId string, li
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan structure history: %s", err.Error())
 	}
+
+	for index := range versions {
+		versions[index].Schema = utils.NormalizeApplicationSchema(versions[index].Schema)
+	}
 	return versions, nil
 }
 
@@ -641,6 +643,22 @@ func PublishApplicationStructure(
 			return fmt.Errorf("failed to publish application structure: %s", err.Error())
 		}
 		schema = []byte(out.Schema)
+
+		metadata, _ := json.Marshal(map[string]any{
+			"version_no":  nextVersion,
+			"change_note": req.ChangeNote,
+		})
+		if err := insertAuditLog(ctx, tx, observability.AuditEntry{
+			ActionType:        "application-structure.publish",
+			ActionDescription: "Published application structure",
+			TargetEntity:      "university_application_structure",
+			TargetID:          &universityId,
+			Outcome:           "success",
+			Metadata:          metadata,
+		}); err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -651,5 +669,6 @@ func PublishApplicationStructure(
 		return nil, fmt.Errorf("published in admin db but failed syncing to client db: %s", err.Error())
 	}
 
+	out.Schema = utils.NormalizeApplicationSchema(out.Schema)
 	return &out, nil
 }

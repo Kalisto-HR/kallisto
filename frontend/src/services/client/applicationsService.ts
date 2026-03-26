@@ -17,7 +17,7 @@ export interface ApplicationUploadedFile {
 }
 
 export async function fetchStudentApplications(): Promise<StudentApplicationListItem[]> {
-  const result = await clientApi.get<unknown>("/v1.0/applications");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/applications");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load applications");
   }
@@ -32,7 +32,7 @@ export async function fetchStudentApplications(): Promise<StudentApplicationList
 }
 
 export async function fetchStudentApplication(universityId: string, cycle: string): Promise<StudentApplication> {
-  const result = await clientApi.get<unknown>(`/v1.0/applications/${universityId}/${cycle}`);
+  const result = await clientApi.get<unknown>(`/v1.0/applicant/applications/${universityId}/${cycle}`);
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load application");
   }
@@ -48,7 +48,7 @@ export async function createStudentApplication(payload: {
   cycle: string;
   data: Record<string, unknown>;
 }): Promise<void> {
-  const result = await clientApi.post<{ msg: string }>("/v1.0/applications", {
+  const result = await clientApi.post<{ msg: string }>("/v1.0/applicant/applications", {
     university_id: payload.universityId,
     application_cycle: payload.cycle,
     data: payload.data,
@@ -63,14 +63,14 @@ export async function updateStudentApplication(
   cycle: string,
   data: Record<string, unknown>,
 ): Promise<void> {
-  const result = await clientApi.put<{ msg: string }>(`/v1.0/applications/${universityId}/${cycle}`, { data });
+  const result = await clientApi.put<{ msg: string }>(`/v1.0/applicant/applications/${universityId}/${cycle}`, { data });
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to update application");
   }
 }
 
 export async function submitStudentApplication(universityId: string, cycle: string): Promise<void> {
-  const result = await clientApi.post<{ msg: string }>(`/v1.0/applications/${universityId}/${cycle}/submit`);
+  const result = await clientApi.post<{ msg: string }>(`/v1.0/applicant/applications/${universityId}/${cycle}/submit`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to submit application");
   }
@@ -81,7 +81,7 @@ export async function importStudentProfileTestScoresToApplication(
   cycle: string,
   testScoreIds?: string[],
 ): Promise<ApplicationTestScoreImportResult> {
-  const result = await clientApi.post<unknown>(`/v1.0/applications/${universityId}/${cycle}/import-test-scores`, {
+  const result = await clientApi.post<unknown>(`/v1.0/applicant/applications/${universityId}/${cycle}/import-test-scores`, {
     test_score_ids: testScoreIds,
   });
   if (!result.ok || !result.data) {
@@ -115,7 +115,7 @@ export async function uploadStudentApplicationFiles(
     query.set("field_key", fieldKey);
   }
 
-  const response = await clientApi.raw(`/v1.0/application-files/upload?${query.toString()}`, {
+  const response = await clientApi.raw(`/v1.0/applicant/application-files/upload?${query.toString()}`, {
     method: "POST",
     body: formData,
   });

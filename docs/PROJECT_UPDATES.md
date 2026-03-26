@@ -1,5 +1,53 @@
 # Kallisto Project Updates
 
+## 2026-03-24
+
+### Monolith runtime, role cleanup, and schema/read-path hardening
+
+- Consolidated the supported backend runtime to one Go monolith on `:8081`.
+- Standardized the supported role model to:
+  - `applicant`
+  - `partner`
+  - `staff`
+- Unified authentication under `/v1.0/auth/*` with the current `applicant|partner|staff` role model.
+- Moved the supported public route namespaces to:
+  - `/applicant/*`
+  - `/partner/:universityId/*`
+  - `/staff/*`
+- Collapsed the frontend dev API surface to one proxy: `/api`.
+- Removed the supported cross-service application intake flow. Applicant submission now writes the management-side copy directly through the monolith and only marks the applicant-side record as `submitted` after admin-side persistence succeeds.
+- Locked the supported application lifecycle to:
+  - applicant-side `draft | submitted`
+  - management-side `submitted`
+- Removed verdict release from the supported product flow. Partner and staff users can inspect submissions and files, but decision release is handled outside Kallisto.
+- Disabled password reset at the supported runtime level pending a real delivery path.
+- Normalized university application schema reads to one canonical contract:
+  - `application_schema.sections[*].fields[*]`
+- Added runtime normalization for legacy flat university schemas so seeded universities such as WIUT keep rendering all fields, including essay fields, in the applicant form.
+- Updated the main docs to reflect:
+  - monolith runtime
+  - two-database ownership model
+  - current route namespaces
+  - current role model
+  - current submission and schema behavior
+
+## 2026-03-26
+
+### Before-production auth enforcement hardening
+
+- Replaced frontend-readable session bootstrap with server-backed auth sessions in `admin_db.auth_sessions`.
+- Reduced `access_token` to a session transport token carrying `sid` and expiry, while deriving current role, permissions, and linked university from the session row on each authenticated request.
+- Added `GET /v1.0/auth/session` for SPA session bootstrap.
+- Made sign-out `POST` only and removed the old `GET /v1.0/auth/sign-out` surface.
+- Added readable `csrf_token` cookie plus `X-CSRF-Token` enforcement on authenticated unsafe requests.
+- Added DB-backed sign-in throttling in `admin_db.auth_login_attempts`.
+- Added reauth reason handling for server-enforced logout:
+  - `session-expired`
+  - `session-revoked`
+  - `password-changed`
+  - `account-updated`
+- Removed dead standalone auth runtimes and the unsupported `/staff/drafts` surface from the mounted app.
+
 ## 2026-03-11
 
 ### Review sync, gender analytics, and working application templates
@@ -105,10 +153,9 @@
 
 ### Auth/session and endpoint cleanup
 
-- Added signed `session_meta` cookie alongside `access_token` for frontend role/identity resolution.
-- Updated client/admin sign-in and sign-out handlers to set/clear both cookies consistently.
-- Removed `/v1.0/me` endpoint usage from active frontend session flow.
+- Added the earlier readable session-cookie flow and removed `/v1.0/me` from the active frontend session flow.
 - Added CORS middleware in shared infra and applied it to client/admin services.
+- This was later superseded by the server-backed session model documented in the 2026-03-26 update above.
 
 ### Password reset
 

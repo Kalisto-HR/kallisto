@@ -3,7 +3,7 @@ import { normalizeEnvelope, normalizeProfile, normalizeStudentTestScore } from "
 import type { Profile, StudentTestScore, StudentTestScoreType } from "../../types/domain";
 
 export async function fetchStudentProfile(): Promise<Profile> {
-  const result = await clientApi.get<unknown>("/v1.0/profile");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/profile");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load profile");
   }
@@ -19,7 +19,7 @@ export async function updateStudentProfile(payload: {
   lastName?: string;
   data?: Record<string, unknown>;
 }): Promise<void> {
-  const result = await clientApi.put<{ msg: string }>("/v1.0/profile", {
+  const result = await clientApi.put<{ msg: string }>("/v1.0/applicant/profile", {
     first_name: payload.firstName,
     last_name: payload.lastName,
     data: payload.data,
@@ -32,8 +32,8 @@ export async function updateStudentProfile(payload: {
 export async function updateStudentPassword(payload: {
   currentPassword: string;
   newPassword: string;
-}): Promise<void> {
-  const result = await clientApi.put<{ msg: string }>("/v1.0/profile/password", {
+}): Promise<{ reauthRequired: boolean; reason?: string }> {
+  const result = await clientApi.put<{ msg: string; reauth_required?: boolean; reason?: string }>("/v1.0/applicant/profile/password", {
     current_password: payload.currentPassword,
     new_password: payload.newPassword,
   });
@@ -41,13 +41,18 @@ export async function updateStudentPassword(payload: {
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to update password");
   }
+
+  return {
+    reauthRequired: result.data?.reauth_required === true,
+    reason: typeof result.data?.reason === "string" ? result.data.reason : undefined,
+  };
 }
 
 export async function uploadStudentPhoto(photo: File): Promise<void> {
   const formData = new FormData();
   formData.append("photo", photo);
 
-  const response = await clientApi.raw("/v1.0/profile/photo", {
+  const response = await clientApi.raw("/v1.0/applicant/profile/photo", {
     method: "PUT",
     body: formData,
   });
@@ -58,7 +63,7 @@ export async function uploadStudentPhoto(photo: File): Promise<void> {
 }
 
 export async function fetchStudentPhotoUrl(): Promise<string | null> {
-  const response = await clientApi.raw("/v1.0/profile/photo", {
+  const response = await clientApi.raw("/v1.0/applicant/profile/photo", {
     method: "GET",
   });
 
@@ -75,7 +80,7 @@ export async function fetchStudentPhotoUrl(): Promise<string | null> {
 }
 
 export async function fetchStudentTestScores(): Promise<StudentTestScore[]> {
-  const result = await clientApi.get<unknown>("/v1.0/profile/test-scores");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/profile/test-scores");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load test scores");
   }
@@ -100,7 +105,7 @@ interface UpsertTestScorePayload {
 }
 
 export async function createStudentTestScore(payload: UpsertTestScorePayload): Promise<StudentTestScore> {
-  const result = await clientApi.post<unknown>("/v1.0/profile/test-scores", {
+  const result = await clientApi.post<unknown>("/v1.0/applicant/profile/test-scores", {
     test_type: payload.testType,
     other_test_name: payload.otherTestName ?? null,
     score: payload.score,
@@ -120,7 +125,7 @@ export async function createStudentTestScore(payload: UpsertTestScorePayload): P
 }
 
 export async function updateStudentTestScore(id: string, payload: UpsertTestScorePayload): Promise<StudentTestScore> {
-  const result = await clientApi.put<unknown>(`/v1.0/profile/test-scores/${id}`, {
+  const result = await clientApi.put<unknown>(`/v1.0/applicant/profile/test-scores/${id}`, {
     test_type: payload.testType,
     other_test_name: payload.otherTestName ?? null,
     score: payload.score,
@@ -140,7 +145,7 @@ export async function updateStudentTestScore(id: string, payload: UpsertTestScor
 }
 
 export async function deleteStudentTestScore(id: string): Promise<void> {
-  const result = await clientApi.delete<{ msg: string }>(`/v1.0/profile/test-scores/${id}`);
+  const result = await clientApi.delete<{ msg: string }>(`/v1.0/applicant/profile/test-scores/${id}`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to delete test score");
   }

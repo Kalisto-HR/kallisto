@@ -7,10 +7,11 @@ export interface HttpResult<T> {
   error: string | null;
 }
 
-type ApiBase = "/api" | "/adminapi";
+type ApiBase = "/api";
 const UNAUTHORIZED_ERROR_MESSAGE = "Session expired. Please sign in again.";
+const CSRF_COOKIE_NAME = "csrf_token";
 
-function dispatchAuthExpired(base: ApiBase, path: string) {
+function dispatchAuthExpired(base: ApiBase, path: string, reason?: string | null) {
   if (typeof window === "undefined") {
     return;
   }
@@ -21,6 +22,7 @@ function dispatchAuthExpired(base: ApiBase, path: string) {
         base,
         path,
         status: 401,
+        reason: reason ?? undefined,
         at: Date.now(),
       },
     }),
@@ -33,10 +35,24 @@ function buildPath(base: ApiBase, path: string): string {
 }
 
 export async function requestRaw(base: ApiBase, path: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(buildPath(base, path), {
-    credentials: "include",
+  const headers = new Headers(init.headers ?? {});
+  attachCSRFHeader(headers, init.method);
+
+  const response = await fetch(buildPath(base, path), {
     ...init,
+    credentials: "include",
+    headers,
   });
+
+  if (response.status === 401) {
+    const data = await response
+      .clone()
+      .json()
+      .catch(() => null);
+    dispatchAuthExpired(base, path, extractReasonCode(data));
+  }
+
+  return response;
 }
 
 export async function requestJson<T>(
@@ -45,17 +61,18 @@ export async function requestJson<T>(
   init: RequestInit = {},
 ): Promise<HttpResult<T>> {
   try {
+    const mergedHeaders = new Headers(init.headers ?? {});
+    if (!mergedHeaders.has("Content-Type")) {
+      mergedHeaders.set("Content-Type", "application/json");
+    }
+
     const response = await requestRaw(base, path, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(init.headers ?? {}),
-      },
       ...init,
+      headers: mergedHeaders,
     });
 
     const data = (await response.json().catch(() => null)) as T | null;
     if (response.status === 401) {
-      dispatchAuthExpired(base, path);
       return {
         ok: false,
         status: response.status,
@@ -113,7 +130,7 @@ function extractErrorMessage(data: unknown): string | null {
   return null;
 }
 
-export const clientApi = {
+export const api = {
   get: <T>(path: string) => requestJson<T>("/api", path, { method: "GET" }),
   post: <T>(path: string, body?: unknown) =>
     requestJson<T>("/api", path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
@@ -123,12 +140,59 @@ export const clientApi = {
   raw: (path: string, init: RequestInit = {}) => requestRaw("/api", path, init),
 };
 
-export const adminApi = {
-  get: <T>(path: string) => requestJson<T>("/adminapi", path, { method: "GET" }),
-  post: <T>(path: string, body?: unknown) =>
-    requestJson<T>("/adminapi", path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
-  put: <T>(path: string, body?: unknown) =>
-    requestJson<T>("/adminapi", path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
-  delete: <T>(path: string) => requestJson<T>("/adminapi", path, { method: "DELETE" }),
-  raw: (path: string, init: RequestInit = {}) => requestRaw("/adminapi", path, init),
-};
+export const clientApi = api;
+export const adminApi = api;
+
+function attachCSRFHeader(headers: Headers, method?: string) {
+  if (!requiresCSRF(method)) {
+    return;
+  }
+  if (headers.has("X-CSRF-Token")) {
+    return;
+  }
+
+  const csrfToken = readCookieValue(CSRF_COOKIE_NAME);
+  if (!csrfToken) {
+    return;
+  }
+
+  headers.set("X-CSRF-Token", csrfToken);
+}
+
+function requiresCSRF(method?: string): boolean {
+  switch ((method ?? "GET").toUpperCase()) {
+    case "POST":
+    case "PUT":
+    case "PATCH":
+    case "DELETE":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function readCookieValue(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${name}=`;
+  const cookies = document.cookie.split(";");
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+
+  return null;
+}
+
+function extractReasonCode(data: unknown): string | null {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const maybeReason = (data as { reason?: unknown }).reason;
+  return typeof maybeReason === "string" && maybeReason.trim() !== "" ? maybeReason : null;
+}

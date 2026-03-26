@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var EXPIRATION_THRESHOLD int64 = 900
+const EXPIRATION_THRESHOLD int64 = 900
 
 type JWT struct {
 	TokenHeader Header
@@ -59,7 +59,7 @@ func NewJWTFromToken(token *string) (*JWT, error) {
 	}
 
 	// validating expiry
-	if time.Now().Unix()-res.TokenClaims.Iat > EXPIRATION_THRESHOLD {
+	if res.TokenClaims.Exp <= 0 || time.Now().Unix() >= res.TokenClaims.Exp {
 
 		return nil, ErrExpiredToken
 	}
@@ -97,6 +97,7 @@ func NewJWTFromClaims(claims *Claims) (*JWT, error) {
 
 func Extend(jwt *JWT) *JWT {
 	jwt.TokenClaims.Iat = time.Now().Unix()
+	jwt.TokenClaims.Exp = jwt.TokenClaims.Iat + EXPIRATION_THRESHOLD
 
 	res, _ := NewJWTFromClaims(&jwt.TokenClaims)
 
@@ -104,7 +105,7 @@ func Extend(jwt *JWT) *JWT {
 }
 
 func CheckExpiryAndExtend(jwt *JWT) *JWT {
-	if time.Now().Unix()-jwt.TokenClaims.Iat > EXPIRATION_THRESHOLD/4*3 {
+	if jwt.TokenClaims.Exp-time.Now().Unix() <= EXPIRATION_THRESHOLD/4 {
 		return Extend(jwt)
 	}
 

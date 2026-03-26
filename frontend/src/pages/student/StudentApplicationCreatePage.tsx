@@ -32,6 +32,12 @@ import { Textarea } from "../../components/ui/textarea";
 import { ErrorState } from "../../components/common/PageState";
 import { COUNTRY_OPTIONS } from "../../data/countries";
 import { useApplicationFlowData } from "../../hooks/useApplicationFlowData";
+import {
+  fallbackApplicantSchemaSection,
+  getApplicantSchemaSections,
+  type SchemaField,
+  type SchemaSection,
+} from "./applicationSchema";
 import { routes } from "../../routes/routeConfig";
 import {
   fetchStudentApplication,
@@ -46,62 +52,6 @@ import type { StudentApplicationListItem, StudentTestScore } from "../../types/d
 
 type Step = 1 | 2 | 3 | 4;
 
-type SchemaFieldType =
-  | "short-text"
-  | "long-text"
-  | "email"
-  | "phone"
-  | "date"
-  | "number"
-  | "radio"
-  | "checkbox"
-  | "dropdown"
-  | "country"
-  | "essay"
-  | "agreement"
-  | "file-upload"
-  | "document"
-  | "rating"
-  | "address"
-  | "repeating-group"
-  | "recommender";
-
-interface SchemaField {
-  id: string;
-  type: SchemaFieldType;
-  label: string;
-  helperText?: string;
-  placeholder?: string;
-  required?: boolean;
-  dataKey?: string;
-  options?: string[];
-  validation?: {
-    min?: number;
-    max?: number;
-    minLength?: number;
-    maxLength?: number;
-    wordLimit?: number;
-    fileTypes?: string[];
-    maxFileSize?: number;
-    maxFiles?: number;
-  };
-  visibility?: {
-    applicant?: boolean;
-    reviewer?: boolean;
-    admin?: boolean;
-  };
-}
-
-interface SchemaSection {
-  id: string;
-  title?: string;
-  name?: string;
-  description?: string;
-  order?: number;
-  visible?: boolean;
-  fields: SchemaField[];
-}
-
 interface RecommenderEntry {
   name: string;
   email: string;
@@ -114,18 +64,6 @@ const steps = [
   { number: 3, label: "Application Form" },
   { number: 4, label: "Review" },
 ] as const;
-
-const fallbackPersonalSection: SchemaSection = {
-  id: "personal-info",
-  title: "Personal Information",
-  description: "Basic applicant details",
-  fields: [
-    { id: "full_name", type: "short-text", label: "Full Name", required: true, dataKey: "full_name" },
-    { id: "email", type: "email", label: "Email", required: true, dataKey: "email" },
-    { id: "dob", type: "date", label: "Date of Birth", required: true, dataKey: "dob" },
-    { id: "citizenship", type: "country", label: "Country of Citizenship", required: true, dataKey: "citizenship" },
-  ],
-};
 
 function fieldKey(field: SchemaField): string {
   return field.dataKey && field.dataKey.trim() ? field.dataKey : field.id;
@@ -399,47 +337,14 @@ export function StudentApplicationCreatePage() {
         setUniversityName(university.name || "Selected University");
         setUniversityMeta([university.city, university.country].filter(Boolean).join(", "));
 
-        const rawSchema = university.applicationSchema;
-        const sectionsRaw = Array.isArray(rawSchema?.sections) ? rawSchema.sections : [];
-        const sections = sectionsRaw
-          .filter((section): section is SchemaSection => {
-            if (!section || typeof section !== "object") {
-              return false;
-            }
-            const maybeSection = section as Record<string, unknown>;
-            return Array.isArray(maybeSection.fields);
-          })
-          .map((section) => {
-            const current = section as unknown as SchemaSection;
-            const fields = current.fields
-              .filter((field): field is SchemaField => !!field && typeof field === "object")
-              .filter((field) => field.visibility?.applicant !== false)
-              .sort((left, right) => {
-                const leftOrder = typeof (left as SchemaField & { order?: number }).order === "number"
-                  ? (left as SchemaField & { order?: number }).order ?? 0
-                  : 0;
-                const rightOrder = typeof (right as SchemaField & { order?: number }).order === "number"
-                  ? (right as SchemaField & { order?: number }).order ?? 0
-                  : 0;
-                return leftOrder - rightOrder;
-              });
-            return {
-              ...current,
-              fields,
-            };
-          })
-          .filter((section) => section.visible !== false)
-          .filter((section) => section.fields.length > 0);
-
-        sections.sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
-
-        setSchemaSections(sections.length > 0 ? sections : [fallbackPersonalSection]);
+        const sections = getApplicantSchemaSections(university.applicationSchema);
+        setSchemaSections(sections.length > 0 ? sections : [fallbackApplicantSchemaSection]);
       } catch (err) {
         if (!mounted) {
           return;
         }
         setSchemaError(err instanceof Error ? err.message : "Failed to load application schema");
-        setSchemaSections([fallbackPersonalSection]);
+        setSchemaSections([fallbackApplicantSchemaSection]);
       } finally {
         if (mounted) {
           setSchemaLoading(false);
@@ -1312,7 +1217,7 @@ export function StudentApplicationCreatePage() {
             {typeof field.validation?.maxFileSize === "number" ? <span>Max size: {field.validation.maxFileSize} MB</span> : null}
             {field.validation?.fileTypes?.length ? <span>Allowed: {field.validation.fileTypes.join(", ")}</span> : null}
           </div>
-          {uploadingFieldKey === key ? <p className="text-xs text-[#4F46E5]">Uploading files...</p> : null}
+          {uploadingFieldKey === key ? <p className="text-xs text-primary">Uploading files...</p> : null}
           {renderUploadedFiles(field, files)}
         </div>
       );
@@ -1500,8 +1405,8 @@ export function StudentApplicationCreatePage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert className="border-[#4F46E5]/30 bg-[#4F46E5]/5">
-              <Info className="h-4 w-4 text-[#4F46E5]" />
+            <Alert className="border-primary/20 bg-primary/6">
+              <Info className="h-4 w-4 text-primary" />
               <AlertDescription>You can track status updates from your applications dashboard.</AlertDescription>
             </Alert>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -1540,7 +1445,7 @@ export function StudentApplicationCreatePage() {
               You've already applied to this university for <strong>{duplicateApplication.applicationCycle}</strong>.
             </p>
             {duplicateApplicationHref ? (
-              <Link className="font-medium text-[#4F46E5] underline-offset-4 hover:underline" to={duplicateApplicationHref}>
+              <Link className="font-medium text-primary underline-offset-4 hover:text-brand-primary-hover hover:underline" to={duplicateApplicationHref}>
                 Open existing application
               </Link>
             ) : null}
@@ -1573,9 +1478,9 @@ export function StudentApplicationCreatePage() {
                 <div
                   className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full border-2 ${
                     currentStep > step.number
-                      ? "border-[#4F46E5] bg-[#4F46E5] text-white"
+                      ? "border-primary bg-primary text-white"
                       : currentStep === step.number
-                      ? "border-[#4F46E5] bg-[#4F46E5]/10 text-[#4F46E5]"
+                      ? "border-primary bg-primary/10 text-primary"
                       : "border-muted-foreground/30 text-muted-foreground"
                   }`}
                 >
@@ -1679,7 +1584,7 @@ export function StudentApplicationCreatePage() {
 
               {testScoresLoading ? <p className="text-sm text-muted-foreground">Loading profile test scores...</p> : null}
               {testScoresError ? <p className="text-sm text-red-600">{testScoresError}</p> : null}
-              {importFeedback ? <p className="text-sm text-[#4F46E5]">{importFeedback}</p> : null}
+              {importFeedback ? <p className="text-sm text-primary">{importFeedback}</p> : null}
               {uploadError ? <p className="text-sm text-red-600">{uploadError}</p> : null}
 
               {!testScoresLoading && !testScoresError && profileTestScores.length === 0 ? (
@@ -1785,7 +1690,7 @@ export function StudentApplicationCreatePage() {
                 Back
               </Button>
               <Button
-                className="flex-1 bg-[#4F46E5] hover:bg-[#4338CA]"
+                className="flex-1"
                 disabled={flow.loading || !canSubmit}
                 onClick={() =>
                   void (async () => {

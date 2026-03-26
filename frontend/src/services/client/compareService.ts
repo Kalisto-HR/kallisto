@@ -2,8 +2,17 @@ import { clientApi } from "../api/httpClient";
 import { normalizeEnvelope, normalizeUniversityListItem } from "../mappers/responseMappers";
 import type { UniversityListItem } from "../../types/domain";
 
+export const MAX_COMPARE_ITEMS = 4;
+export const COMPARE_LIMIT_MESSAGE =
+  `You already have ${MAX_COMPARE_ITEMS} universities in Compare. Remove one to add this university.`;
+
+function isCompareLimitErrorMessage(message: string | null | undefined): boolean {
+  const normalized = message?.toLowerCase() ?? "";
+  return normalized.includes(`supports up to ${MAX_COMPARE_ITEMS} universities`);
+}
+
 export async function fetchCompareList(): Promise<UniversityListItem[]> {
-  const result = await clientApi.get<unknown>("/v1.0/compare");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/compare");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load compare list");
   }
@@ -21,21 +30,24 @@ export async function fetchCompareList(): Promise<UniversityListItem[]> {
 }
 
 export async function addCompareItem(universityId: string): Promise<void> {
-  const result = await clientApi.post(`/v1.0/compare/${universityId}`);
+  const result = await clientApi.post(`/v1.0/applicant/compare/${universityId}`);
   if (!result.ok) {
+    if (isCompareLimitErrorMessage(result.error)) {
+      throw new Error(COMPARE_LIMIT_MESSAGE);
+    }
     throw new Error(result.error ?? "Failed to add compare item");
   }
 }
 
 export async function removeCompareItem(universityId: string): Promise<void> {
-  const result = await clientApi.delete(`/v1.0/compare/${universityId}`);
+  const result = await clientApi.delete(`/v1.0/applicant/compare/${universityId}`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to remove compare item");
   }
 }
 
 export async function clearCompareList(): Promise<void> {
-  const result = await clientApi.delete("/v1.0/compare");
+  const result = await clientApi.delete("/v1.0/applicant/compare");
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to clear compare list");
   }

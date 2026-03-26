@@ -14,7 +14,7 @@ interface BasketCheckoutPreviewRequest {
 }
 
 export async function fetchBasketPlans(): Promise<BasketPlan[]> {
-  const result = await clientApi.get<unknown>("/v1.0/basket/plans");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/basket/plans");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load basket plans");
   }
@@ -32,7 +32,7 @@ export async function fetchBasketPlans(): Promise<BasketPlan[]> {
 }
 
 export async function fetchBasketState(): Promise<StudentBasketState> {
-  const result = await clientApi.get<unknown>("/v1.0/basket");
+  const result = await clientApi.get<unknown>("/v1.0/applicant/basket");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load basket");
   }
@@ -46,7 +46,7 @@ export async function fetchBasketState(): Promise<StudentBasketState> {
 }
 
 export async function addBasketItem(universityId: string): Promise<void> {
-  const result = await clientApi.post(`/v1.0/basket/${universityId}`);
+  const result = await clientApi.post(`/v1.0/applicant/basket/${universityId}`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to add basket item");
   }
@@ -54,7 +54,7 @@ export async function addBasketItem(universityId: string): Promise<void> {
 }
 
 export async function removeBasketItem(universityId: string): Promise<void> {
-  const result = await clientApi.delete(`/v1.0/basket/${universityId}`);
+  const result = await clientApi.delete(`/v1.0/applicant/basket/${universityId}`);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to remove basket item");
   }
@@ -62,7 +62,7 @@ export async function removeBasketItem(universityId: string): Promise<void> {
 }
 
 export async function clearBasket(): Promise<void> {
-  const result = await clientApi.delete("/v1.0/basket");
+  const result = await clientApi.delete("/v1.0/applicant/basket");
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to clear basket");
   }
@@ -70,7 +70,7 @@ export async function clearBasket(): Promise<void> {
 }
 
 export async function setBasketPlan(planId: string | null): Promise<void> {
-  const result = await clientApi.put("/v1.0/basket/plan", {
+  const result = await clientApi.put("/v1.0/applicant/basket/plan", {
     plan_id: planId,
   });
   if (!result.ok) {
@@ -80,7 +80,7 @@ export async function setBasketPlan(planId: string | null): Promise<void> {
 }
 
 export async function fetchBasketCheckoutPreview(payload: BasketCheckoutPreviewRequest): Promise<BasketCheckoutPreview> {
-  const result = await clientApi.post<unknown>("/v1.0/basket/checkout-preview", {
+  const result = await clientApi.post<unknown>("/v1.0/applicant/basket/checkout-preview", {
     plan_id: payload.planId,
     university_ids: payload.universityIds,
   });
@@ -95,4 +95,3 @@ export async function fetchBasketCheckoutPreview(payload: BasketCheckoutPreviewR
 
   return normalizeBasketCheckoutPreview(envelope.data);
 }
-

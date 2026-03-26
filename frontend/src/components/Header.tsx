@@ -38,14 +38,14 @@ export function Header({
   const basketItems = typeof basketCount === "number" ? basketCount : 0;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-card">
+    <header className="brand-topbar sticky top-0 z-40 w-full">
       <div className="flex h-16 items-center gap-2 px-3 sm:gap-3 sm:px-4 md:px-6">
         <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
           <Menu className="h-5 w-5" />
         </Button>
 
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
+          <div className="brand-logo-mark h-9 w-9 rounded-2xl">
             <span className="text-sm font-semibold text-white">K</span>
           </div>
           <span className="hidden text-xl font-semibold tracking-tight sm:inline">Kallisto</span>
@@ -55,10 +55,10 @@ export function Header({
           <Button
             variant="outline"
             size="sm"
-            className="min-w-0 gap-1 border-[#4F46E5]/20 px-2 hover:border-[#4F46E5]/40 sm:gap-2 sm:px-3"
+            className="min-w-0 gap-1 border-border/80 bg-card/80 px-2 shadow-none hover:border-primary/25 hover:bg-secondary/80 sm:gap-2 sm:px-3"
             onClick={() => onNavigate?.("basket")}
           >
-            <ShoppingBasket className="h-4 w-4 shrink-0 text-[#4F46E5]" />
+            <ShoppingBasket className="h-4 w-4 shrink-0 text-primary" />
             <span className="hidden font-semibold sm:inline">
               {basketItems} {basketItems === 1 ? "Basket Item" : "Basket Items"}
             </span>
@@ -68,10 +68,10 @@ export function Header({
           <Button
             variant="outline"
             size="sm"
-            className="min-w-0 gap-1 border-[#4F46E5]/20 px-2 hover:border-[#4F46E5]/40 sm:gap-2 sm:px-3"
+            className="min-w-0 gap-1 border-border/80 bg-card/80 px-2 shadow-none hover:border-primary/25 hover:bg-secondary/80 sm:gap-2 sm:px-3"
             onClick={() => onNavigate?.("applications")}
           >
-            <CreditCard className="h-4 w-4 shrink-0 text-[#4F46E5]" />
+            <CreditCard className="h-4 w-4 shrink-0 text-primary" />
             <span className="hidden font-semibold sm:inline">
               {count} {count === 1 ? "Application" : "Applications"}
             </span>
@@ -82,7 +82,7 @@ export function Header({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-sm text-white">
+                  <AvatarFallback className="brand-avatar-mark text-sm">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -91,13 +91,13 @@ export function Header({
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-2 p-2">
                 <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-white">
+                  <AvatarFallback className="brand-avatar-mark">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <p className="truncate text-sm font-medium">{userName}</p>
-                  <p className="truncate text-xs text-muted-foreground">Student account</p>
+                  <p className="truncate text-xs text-muted-foreground">Applicant account</p>
                 </div>
               </div>
 

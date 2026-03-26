@@ -1,72 +1,64 @@
+import type { PortalRole } from "../types/session";
+
 export const routes = {
   auth: {
     signIn: "/auth/sign-in",
-    signInStudent: "/auth/sign-in/student",
-    signInManagement: "/auth/sign-in/management",
     signUp: "/auth/sign-up",
     forgotPassword: "/auth/forgot-password",
     resetPassword: "/auth/reset-password",
   },
-  student: {
-    dashboard: "/student/dashboard",
-    universities: "/student/universities",
-    universityDetail: (id: string) => `/student/universities/${id}`,
-    basket: "/student/basket",
-    applications: "/student/applications",
-    applicationDetail: (universityId: string, cycle: string) => `/student/applications/${universityId}/${cycle}`,
-    applicationCreate: (universityId: string) => `/student/applications/new/${universityId}`,
-    compare: "/student/compare",
-    settings: "/student/settings",
-    help: "/student/help",
-    billing: "/student/billing",
-    checkout: "/student/checkout",
+  forbidden: "/forbidden",
+  applicant: {
+    dashboard: "/applicant/dashboard",
+    universities: "/applicant/universities",
+    universityDetail: (id: string) => `/applicant/universities/${id}`,
+    basket: "/applicant/basket",
+    applications: "/applicant/applications",
+    applicationDetail: (universityId: string, cycle: string) => `/applicant/applications/${universityId}/${cycle}`,
+    applicationCreate: (universityId: string) => `/applicant/applications/new/${universityId}`,
+    compare: "/applicant/compare",
+    settings: "/applicant/settings",
+    help: "/applicant/help",
+    billing: "/applicant/billing",
+    checkout: "/applicant/checkout",
   },
-  management: {
-    university: {
-      dashboard: (universityId: string) => `/management/${universityId}/dashboard`,
-      profile: (universityId: string) => `/management/${universityId}/profile`,
-      applicationStructure: (universityId: string) => `/management/${universityId}/application-structure`,
-      applications: (universityId: string) => `/management/${universityId}/applications`,
-      users: (universityId: string) => `/management/${universityId}/users`,
-      billing: (universityId: string) => `/management/${universityId}/billing`,
-    },
-    global: {
-      overview: "/management/global/overview",
-      universities: "/management/global/universities",
-      drafts: "/management/global/drafts",
-      applications: "/management/global/applications",
-      users: "/management/global/users",
-      serviceLogs: "/management/global/service-logs",
-      auditLogs: "/management/global/audit-logs",
-      settings: "/management/global/settings",
-    },
-    // Legacy alias for components/tests that still use superuser naming.
-    superuser: {
-      overview: "/management/global/overview",
-      universities: "/management/global/universities",
-      drafts: "/management/global/drafts",
-      applications: "/management/global/applications",
-      users: "/management/global/users",
-      serviceLogs: "/management/global/service-logs",
-      auditLogs: "/management/global/audit-logs",
-      settings: "/management/global/settings",
-    },
+  partner: {
+    dashboard: (universityId: string) => `/partner/${universityId}/dashboard`,
+    profile: (universityId: string) => `/partner/${universityId}/profile`,
+    applicationStructure: (universityId: string) => `/partner/${universityId}/application-structure`,
+    applications: (universityId: string) => `/partner/${universityId}/applications`,
+  },
+  staff: {
+    dashboard: "/staff/dashboard",
+    universities: "/staff/universities",
+    serviceLogs: "/staff/service-logs",
+    auditLogs: "/staff/audit-logs",
+    settings: "/staff/settings",
+  },
+  student: {
+    dashboard: "/applicant/dashboard",
+    universities: "/applicant/universities",
+    universityDetail: (id: string) => `/applicant/universities/${id}`,
+    basket: "/applicant/basket",
+    applications: "/applicant/applications",
+    applicationDetail: (universityId: string, cycle: string) => `/applicant/applications/${universityId}/${cycle}`,
+    applicationCreate: (universityId: string) => `/applicant/applications/new/${universityId}`,
+    compare: "/applicant/compare",
+    settings: "/applicant/settings",
+    help: "/applicant/help",
+    billing: "/applicant/billing",
+    checkout: "/applicant/checkout",
   },
 } as const;
 
-export const legacyRedirects: Record<string, string> = {
-  "/": routes.auth.signIn,
-  "/signin": routes.auth.signIn,
-  "/signup": routes.auth.signUp,
-  "/dashboard": routes.student.dashboard,
-  "/search": routes.student.universities,
-  "/applications": routes.student.applications,
-  "/superuser/overview": routes.management.global.overview,
-  "/superuser/universities": routes.management.global.universities,
-  "/superuser/drafts": routes.management.global.drafts,
-  "/superuser/applications": routes.management.global.applications,
-  "/superuser/users": routes.management.global.users,
-  "/superuser/service-logs": routes.management.global.serviceLogs,
-  "/superuser/audit-logs": routes.management.global.auditLogs,
-  "/superuser/settings": routes.management.global.settings,
-};
+export function getDefaultRouteForRole(role: PortalRole, universityLinked?: string | null): string {
+  if (role === "partner" && universityLinked) {
+    return routes.partner.profile(universityLinked);
+  }
+
+  if (role === "staff") {
+    return routes.staff.dashboard;
+  }
+
+  return routes.applicant.dashboard;
+}

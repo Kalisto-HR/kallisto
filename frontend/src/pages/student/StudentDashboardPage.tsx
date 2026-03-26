@@ -91,9 +91,9 @@ export function StudentDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-[#4F46E5]/20 bg-gradient-to-br from-[#4F46E5]/5 to-background">
+        <Card className="brand-panel-accent">
           <CardContent className="pt-6">
-            <Badge className="mb-3 bg-[#4F46E5]/10 text-[#4F46E5]" variant="secondary">
+            <Badge className="mb-3 brand-soft-badge" variant="secondary">
               Credits
             </Badge>
             <div className="text-3xl font-semibold">N/A</div>
@@ -113,7 +113,7 @@ export function StudentDashboardPage() {
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-semibold text-[#4F46E5]">{readiness}%</div>
+                <div className="text-3xl font-semibold text-primary">{readiness}%</div>
                 <div className="text-xs text-muted-foreground">Complete</div>
               </div>
             </div>

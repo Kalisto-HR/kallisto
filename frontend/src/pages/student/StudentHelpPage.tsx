@@ -49,7 +49,7 @@ export function StudentHelpPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <section className="space-y-4 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7C3AED]">
+        <div className="brand-logo-mark mx-auto flex h-16 w-16 items-center justify-center rounded-full">
           <HelpCircle className="h-8 w-8 text-white" />
         </div>
         <h1 className="text-3xl font-semibold sm:text-4xl">How can we help?</h1>
@@ -95,7 +95,7 @@ export function StudentHelpPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
-            <MessageCircle className="mb-2 h-8 w-8 text-[#4F46E5]" />
+            <MessageCircle className="mb-2 h-8 w-8 text-primary" />
             <CardTitle className="text-lg">Live Chat</CardTitle>
             <CardDescription>Real-time support channel.</CardDescription>
           </CardHeader>
@@ -108,7 +108,7 @@ export function StudentHelpPage() {
 
         <Card>
           <CardHeader>
-            <Mail className="mb-2 h-8 w-8 text-[#4F46E5]" />
+            <Mail className="mb-2 h-8 w-8 text-primary" />
             <CardTitle className="text-lg">Email Support</CardTitle>
             <CardDescription>We respond within one business day.</CardDescription>
           </CardHeader>
@@ -121,7 +121,7 @@ export function StudentHelpPage() {
 
         <Card>
           <CardHeader>
-            <BookOpen className="mb-2 h-8 w-8 text-[#4F46E5]" />
+            <BookOpen className="mb-2 h-8 w-8 text-primary" />
             <CardTitle className="text-lg">Documentation</CardTitle>
             <CardDescription>Technical and onboarding docs.</CardDescription>
           </CardHeader>

@@ -108,13 +108,13 @@ export interface StudentTestScore {
   updatedAt: string;
 }
 
-export type StudentApplicationStatus = "draft" | "submitted" | "accepted" | "rejected";
+export type ApplicantApplicationStatus = "draft" | "submitted";
 
 export interface StudentApplicationListItem {
   universityId: string;
   universityName: string;
   applicationCycle: string;
-  status: StudentApplicationStatus;
+  status: ApplicantApplicationStatus;
   createdAt: string;
   submittedAt: string | null;
 }
@@ -123,7 +123,7 @@ export interface StudentApplication {
   userId: string;
   universityId: string;
   applicationCycle: string;
-  status: StudentApplicationStatus;
+  status: ApplicantApplicationStatus;
   data: Record<string, unknown> | null;
   submittedAt: string | null;
   createdAt: string;
@@ -142,7 +142,7 @@ export interface ApplicationTestScoreImportResult {
   }>;
 }
 
-export type ReviewStatus = "pending" | "reviewing" | "accepted" | "rejected";
+export type SubmissionStatus = "submitted";
 
 export interface AdminSubmittedApplication {
   id: string;
@@ -153,7 +153,7 @@ export interface AdminSubmittedApplication {
   applicationData: Record<string, unknown>;
   submittedAt: string | null;
   receivedAt: string;
-  status: ReviewStatus;
+  status: SubmissionStatus;
   reviewedBy: string | null;
   reviewedAt: string | null;
   notes: string | null;
@@ -174,7 +174,7 @@ export interface ManagerDashboardRecentApplication {
   name: string;
   program: string;
   citizenship: string;
-  status: ReviewStatus;
+  status: SubmissionStatus;
   submittedAt: string | null;
 }
 
@@ -198,7 +198,7 @@ export interface ManagerDashboardPayload {
 }
 
 export type ManagementStaffStatus = "active" | "suspended" | "pending" | "deactivated";
-export type ManagementStaffRole = "University Manager" | "Admissions Officer" | "Reviewer" | "Read-only";
+export type ManagementStaffRole = "partner" | "staff";
 
 export interface ManagementStaffMember {
   id: string;

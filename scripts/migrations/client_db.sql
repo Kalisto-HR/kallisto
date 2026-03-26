@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL, -- store hashed passwords
     first_name TEXT,
     last_name TEXT,
+    role TEXT NOT NULL DEFAULT 'applicant' CHECK (role IN ('applicant')),
     data JSONB, -- encrypted personal data
     last_seen TIMESTAMP,
     photo BYTEA
@@ -66,7 +67,7 @@ CREATE TABLE IF NOT EXISTS applications (
     user_id UUID NOT NULL,
     university_id UUID NOT NULL,
     application_cycle TEXT NOT NULL,
-    status TEXT CHECK (status in ('draft', 'submitted', 'accepted', 'rejected')),
+    status TEXT CHECK (status in ('draft', 'submitted')),
     data JSONB,
     submitted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -139,6 +140,19 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 ALTER TABLE users
     ALTER COLUMN id SET DEFAULT  uuid_generate_v4();
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'applicant';
+
+UPDATE users
+SET role = 'applicant'
+WHERE role IS DISTINCT FROM 'applicant';
+
+ALTER TABLE users
+    DROP CONSTRAINT IF EXISTS users_role_check;
+
+ALTER TABLE users
+    ADD CONSTRAINT users_role_check CHECK (role IN ('applicant'));
 
 ALTER TABLE universities
     ALTER COLUMN id SET DEFAULT uuid_generate_v4();
@@ -228,5 +242,15 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_client_password_reset_tokens_user_id ON password_reset_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_client_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
+
+ALTER TABLE applications
+    DROP CONSTRAINT IF EXISTS applications_status_check;
+
+UPDATE applications
+SET status = 'submitted'
+WHERE status IN ('accepted', 'rejected');
+
+ALTER TABLE applications
+    ADD CONSTRAINT applications_status_check CHECK (status in ('draft', 'submitted'));
 
 COMMIT;

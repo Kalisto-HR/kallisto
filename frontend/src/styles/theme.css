@@ -2,108 +2,94 @@
 
 :root {
   --font-size: 16px;
-  
-  /* Premium Luxury × Innovation Color Palette */
-  --background: #FAFBFC;
-  --foreground: #0F1419;
-  --card: #FFFFFF;
-  --card-foreground: #0F1419;
-  --popover: #FFFFFF;
-  --popover-foreground: #0F1419;
-  
-  /* Primary: Deep Indigo for luxury tech feel */
-  --primary: #1E293B;
-  --primary-foreground: #FFFFFF;
-  
-  /* Secondary: Refined Purple accent */
-  --secondary: #F8F9FB;
-  --secondary-foreground: #1E293B;
-  
-  /* Muted: Soft neutrals */
-  --muted: #F1F3F5;
-  --muted-foreground: #64748B;
-  
-  /* Accent: Subtle highlight */
-  --accent: #EFF6FF;
-  --accent-foreground: #1E40AF;
-  
-  /* Success, Warning, Error */
-  --success: #10B981;
-  --success-foreground: #FFFFFF;
-  --warning: #F59E0B;
-  --warning-foreground: #FFFFFF;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  
-  /* Borders and inputs */
-  --border: #E2E8F0;
+  --background: #f7f4eb;
+  --foreground: #17231d;
+  --card: #fffdf8;
+  --card-foreground: #17231d;
+  --popover: #fffdf8;
+  --popover-foreground: #17231d;
+  --primary: #145a43;
+  --primary-foreground: #f8faf7;
+  --secondary: #edf2eb;
+  --secondary-foreground: #1b3228;
+  --muted: #f1eee4;
+  --muted-foreground: #607066;
+  --accent: #dde8e0;
+  --accent-foreground: #145a43;
+  --success: #2f7a59;
+  --success-foreground: #f8faf7;
+  --warning: #b57816;
+  --warning-foreground: #fff9ef;
+  --destructive: #b54949;
+  --destructive-foreground: #fff5f5;
+  --border: #d8ddd2;
   --input: transparent;
-  --input-background: #F8F9FB;
-  --switch-background: #CBD5E1;
-  
-  /* Premium accent color for CTAs */
-  --brand-primary: #4F46E5;
-  --brand-primary-hover: #4338CA;
-  
+  --input-background: #fffaf2;
+  --switch-background: #b8c4bc;
+  --brand-primary: #145a43;
+  --brand-primary-hover: #0f4a37;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #4F46E5;
-  
-  /* Chart colors */
-  --chart-1: #4F46E5;
-  --chart-2: #10B981;
-  --chart-3: #F59E0B;
-  --chart-4: #06B6D4;
-  --chart-5: #8B5CF6;
-  
+  --ring: #2d6f56;
+  --chart-1: #145a43;
+  --chart-2: #2f7a59;
+  --chart-3: #b57816;
+  --chart-4: #5d8f7a;
+  --chart-5: #8ba89a;
   --radius: 0.75rem;
-  
-  /* Sidebar */
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #0F1419;
-  --sidebar-primary: #1E293B;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F8F9FB;
-  --sidebar-accent-foreground: #1E293B;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #4F46E5;
+  --sidebar: #fffdf8;
+  --sidebar-foreground: #17231d;
+  --sidebar-primary: #145a43;
+  --sidebar-primary-foreground: #f8faf7;
+  --sidebar-accent: #edf2eb;
+  --sidebar-accent-foreground: #1b3228;
+  --sidebar-border: #d8ddd2;
+  --sidebar-ring: #2d6f56;
 }
 
 .dark {
-  --background: #0F1419;
-  --foreground: #F8FAFC;
-  --card: #1E293B;
-  --card-foreground: #F8FAFC;
-  --popover: #1E293B;
-  --popover-foreground: #F8FAFC;
-  --primary: #F8FAFC;
-  --primary-foreground: #1E293B;
-  --secondary: #334155;
-  --secondary-foreground: #F8FAFC;
-  --muted: #334155;
-  --muted-foreground: #94A3B8;
-  --accent: #1E3A8A;
-  --accent-foreground: #93C5FD;
-  --destructive: #DC2626;
-  --destructive-foreground: #FEE2E2;
-  --border: #334155;
-  --input: #334155;
-  --ring: #6366F1;
+  --background: #0f1713;
+  --foreground: #edf3ee;
+  --card: #16231d;
+  --card-foreground: #edf3ee;
+  --popover: #16231d;
+  --popover-foreground: #edf3ee;
+  --primary: #2d6f56;
+  --primary-foreground: #f3f8f4;
+  --secondary: #1d2c25;
+  --secondary-foreground: #edf3ee;
+  --muted: #23352b;
+  --muted-foreground: #96a89d;
+  --accent: #20392e;
+  --accent-foreground: #9bd1b4;
+  --success: #3f8e69;
+  --success-foreground: #f3f8f4;
+  --warning: #c79032;
+  --warning-foreground: #fff7e8;
+  --destructive: #c95d5d;
+  --destructive-foreground: #fff2f2;
+  --border: #2a3b31;
+  --input: #203127;
+  --input-background: #1c2b24;
+  --switch-background: #406251;
+  --brand-primary: #2d6f56;
+  --brand-primary-hover: #255945;
+  --ring: #64a884;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --chart-1: #6366F1;
-  --chart-2: #10B981;
-  --chart-3: #F59E0B;
-  --chart-4: #06B6D4;
-  --chart-5: #A78BFA;
-  --sidebar: #1E293B;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #6366F1;
-  --sidebar-primary-foreground: #F8FAFC;
-  --sidebar-accent: #334155;
-  --sidebar-accent-foreground: #F8FAFC;
-  --sidebar-border: #334155;
-  --sidebar-ring: #6366F1;
+  --chart-1: #64a884;
+  --chart-2: #3f8e69;
+  --chart-3: #c79032;
+  --chart-4: #6f9583;
+  --chart-5: #b6d1c0;
+  --sidebar: #16231d;
+  --sidebar-foreground: #edf3ee;
+  --sidebar-primary: #2d6f56;
+  --sidebar-primary-foreground: #f3f8f4;
+  --sidebar-accent: #20392e;
+  --sidebar-accent-foreground: #edf3ee;
+  --sidebar-border: #2a3b31;
+  --sidebar-ring: #64a884;
 }
 
 @theme inline {
@@ -158,17 +144,14 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
-
   html {
     font-size: var(--font-size);
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
   }
 
   h1 {

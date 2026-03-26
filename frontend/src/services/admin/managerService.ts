@@ -6,7 +6,6 @@ import type {
   ManagementStaffRole,
   ManagementStaffStatus,
 } from "../../types/domain";
-import { normalizePagination } from "../mappers/responseMappers";
 
 function toString(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -69,8 +68,9 @@ function normalizeDashboard(value: unknown): ManagerDashboardPayload {
   };
 }
 
-export async function fetchManagementDashboard(universityId: string): Promise<ManagerDashboardPayload> {
-  const result = await adminApi.get<unknown>(`/v1.0/universities/${universityId}/dashboard`);
+export async function fetchManagementDashboard(_universityId: string): Promise<ManagerDashboardPayload> {
+  void _universityId;
+  const result = await adminApi.get<unknown>("/v1.0/partner/dashboard");
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load dashboard");
   }
@@ -102,76 +102,22 @@ export interface UpdateManagementStaffPayload {
 }
 
 export async function fetchManagementStaff(
-  universityId: string,
-  query: ManagementStaffQuery = {},
+  _universityId: string,
+  _query: ManagementStaffQuery = {},
 ): Promise<ManagementStaffPagePayload> {
-  const params = new URLSearchParams();
-  if (query.search) params.set("search", query.search);
-  if (query.role && query.role !== "all") params.set("role", query.role);
-  if (query.status && query.status !== "all") params.set("status", query.status);
-  params.set("page", String(query.page ?? 1));
-  params.set("limit", String(query.limit ?? 20));
-
-  const result = await adminApi.get<unknown>(`/v1.0/universities/${universityId}/staff?${params.toString()}`);
-  if (!result.ok || !result.data) {
-    throw new Error(result.error ?? "Failed to load staff");
-  }
-
-  const pageData = normalizePagination<unknown>(result.data);
-  const source = (result.data ?? {}) as Record<string, unknown>;
-  const invitationsRaw = Array.isArray(source.invitations) ? source.invitations : [];
-  const rolesRaw = Array.isArray(source.roles) ? source.roles : [];
-
-  return {
-    ...pageData,
-    items: pageData.items.map((value) => {
-      const item = (value ?? {}) as Record<string, unknown>;
-      return {
-        id: toString(item.id),
-        email: toString(item.email),
-        firstName: toString(item.first_name ?? item.firstName),
-        lastName: toString(item.last_name ?? item.lastName),
-        staffRole: toString(item.staff_role ?? item.staffRole) as ManagementStaffRole,
-        status: toString(item.status) as ManagementStaffStatus,
-        lastActiveAt: toNullableString(item.last_active_at ?? item.lastActiveAt),
-        createdAt: toString(item.created_at ?? item.createdAt),
-      };
-    }),
-    invitations: invitationsRaw.map((value) => {
-      const item = (value ?? {}) as Record<string, unknown>;
-      return {
-        id: toString(item.id),
-        email: toString(item.email),
-        staffRole: toString(item.staff_role ?? item.staffRole) as ManagementStaffRole,
-        status: toString(item.status) as ManagementStaffPagePayload["invitations"][number]["status"],
-        createdAt: toString(item.created_at ?? item.createdAt),
-        expiresAt: toString(item.expires_at ?? item.expiresAt),
-      };
-    }),
-    roles: rolesRaw.map((value) => {
-      const item = (value ?? {}) as Record<string, unknown>;
-      const permissions = Array.isArray(item.permissions)
-        ? item.permissions.filter((permission): permission is string => typeof permission === "string")
-        : [];
-      return {
-        id: toString(item.id),
-        name: toString(item.name) as ManagementStaffRole,
-        description: toString(item.description),
-        userCount: toNumber(item.user_count ?? item.userCount),
-        permissions,
-      };
-    }),
-  };
+  void _universityId;
+  void _query;
+  throw new Error("University-side user management has been removed");
 }
 
-export async function createManagementStaff(universityId: string, payload: CreateManagementStaffPayload): Promise<void> {
-  const result = await adminApi.post<{ msg: string }>(`/v1.0/universities/${universityId}/staff`, {
+export async function createManagementStaff(_universityId: string, payload: CreateManagementStaffPayload): Promise<void> {
+  void _universityId;
+  const result = await adminApi.post<{ msg: string }>("/v1.0/staff/accounts", {
     email: payload.email,
     password: payload.password,
     first_name: payload.firstName,
     last_name: payload.lastName,
-    staff_role: payload.staffRole,
-    status: payload.status,
+    role: payload.staffRole === "staff" ? "staff" : "partner",
   });
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to create staff");
@@ -179,49 +125,42 @@ export async function createManagementStaff(universityId: string, payload: Creat
 }
 
 export async function updateManagementStaff(
-  universityId: string,
-  staffId: string,
-  payload: UpdateManagementStaffPayload,
+  _universityId: string,
+  _staffId: string,
+  _payload: UpdateManagementStaffPayload,
 ): Promise<void> {
-  const result = await adminApi.put<{ msg: string }>(`/v1.0/universities/${universityId}/staff/${staffId}`, {
-    email: payload.email,
-    first_name: payload.firstName,
-    last_name: payload.lastName,
-    staff_role: payload.staffRole,
-  });
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to update staff");
-  }
+  void _universityId;
+  void _staffId;
+  void _payload;
+  throw new Error("University-side user management has been removed");
 }
 
 export async function updateManagementStaffStatus(
-  universityId: string,
-  staffId: string,
-  status: ManagementStaffStatus,
-  reason?: string,
+  _universityId: string,
+  _staffId: string,
+  _status: ManagementStaffStatus,
+  _reason?: string,
 ): Promise<void> {
-  const result = await adminApi.put<{ msg: string }>(`/v1.0/universities/${universityId}/staff/${staffId}/status`, {
-    status,
-    reason,
-  });
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to update staff status");
-  }
+  void _universityId;
+  void _staffId;
+  void _status;
+  void _reason;
+  throw new Error("University-side user management has been removed");
 }
 
-export async function resendManagementStaffInvite(universityId: string, staffId: string): Promise<void> {
-  const result = await adminApi.post<{ msg: string }>(`/v1.0/universities/${universityId}/staff/${staffId}/resend-invite`);
-  if (!result.ok) {
-    throw new Error(result.error ?? "Failed to resend invitation");
-  }
+export async function resendManagementStaffInvite(_universityId: string, _staffId: string): Promise<void> {
+  void _universityId;
+  void _staffId;
+  throw new Error("University-side user management has been removed");
 }
 
 export async function fetchApplicationStructureHistory(
-  universityId: string,
+  _universityId: string,
   limit = 20,
 ): Promise<ApplicationStructureVersion[]> {
+  void _universityId;
   const result = await adminApi.get<{ items?: unknown[] }>(
-    `/v1.0/universities/${universityId}/application-structure/history?limit=${limit}`,
+    `/v1.0/partner/university/application-structure/history?limit=${limit}`,
   );
   if (!result.ok || !result.data) {
     throw new Error(result.error ?? "Failed to load structure history");
@@ -242,8 +181,9 @@ export async function fetchApplicationStructureHistory(
   });
 }
 
-export async function publishApplicationStructure(universityId: string, changeNote?: string): Promise<void> {
-  const result = await adminApi.post<{ id: string }>(`/v1.0/universities/${universityId}/application-structure/publish`, {
+export async function publishApplicationStructure(_universityId: string, changeNote?: string): Promise<void> {
+  void _universityId;
+  const result = await adminApi.post<{ id: string }>("/v1.0/partner/university/application-structure/publish", {
     change_note: changeNote,
   });
   if (!result.ok) {

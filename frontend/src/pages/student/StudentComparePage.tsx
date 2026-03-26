@@ -116,7 +116,7 @@ export function StudentComparePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <GitCompare className="h-5 w-5 text-[#4F46E5]" />
+            <GitCompare className="h-5 w-5 text-primary" />
             Comparison Table
           </CardTitle>
         </CardHeader>
@@ -126,7 +126,7 @@ export function StudentComparePage() {
               <div key={uni.id || uni.name} className="rounded-xl border p-4 space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-2">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-sm font-semibold text-white">
+                    <div className="brand-logo-mark flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold text-white">
                       {(uni.name || uni.id || "UN")
                         .split(" ")
                         .slice(0, 2)
@@ -199,7 +199,7 @@ export function StudentComparePage() {
                   {items.map((uni) => (
                     <TableHead key={uni.id || uni.name} className="text-center">
                       <div className="space-y-2">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-sm font-semibold text-white">
+                        <div className="brand-logo-mark mx-auto flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold text-white">
                           {(uni.name || uni.id || "UN")
                             .split(" ")
                             .slice(0, 2)

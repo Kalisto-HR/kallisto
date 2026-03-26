@@ -7,6 +7,7 @@ toolchain go1.24.6
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.7.6
+	github.com/pashagolub/pgxmock/v4 v4.9.0
 	go.uber.org/zap v1.27.0
 )
 

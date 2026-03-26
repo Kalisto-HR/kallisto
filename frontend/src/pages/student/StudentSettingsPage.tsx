@@ -36,6 +36,8 @@ import {
   updateStudentProfile,
   uploadStudentPhoto,
 } from "../../services/client/profileService";
+import { PASSWORD_CHANGED_REASON } from "../../services/sessionEvents";
+import { routes } from "../../routes/routeConfig";
 import type { Profile, StudentTestScore, StudentTestScoreType } from "../../types/domain";
 
 function getInitials(firstName: string, lastName: string): string {
@@ -340,13 +342,17 @@ export function StudentSettingsPage() {
     setError(null);
     setSuccess(null);
     try {
-      await updateStudentPassword({
+      const result = await updateStudentPassword({
         currentPassword,
         newPassword,
       });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
+      if (result.reauthRequired) {
+        window.location.replace(`${routes.auth.signIn}?reason=${encodeURIComponent(result.reason ?? PASSWORD_CHANGED_REASON)}`);
+        return;
+      }
       setSuccess("Password updated successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update password");
@@ -546,7 +552,7 @@ export function StudentSettingsPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Avatar className="h-24 w-24">
                   {photoUrl ? <AvatarImage src={photoUrl} alt={`${firstName} ${lastName}`} /> : null}
-                  <AvatarFallback className="bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-2xl text-white">
+                  <AvatarFallback className="brand-avatar-mark text-2xl text-white">
                     {getInitials(firstName, lastName)}
                   </AvatarFallback>
                 </Avatar>

@@ -39,7 +39,7 @@ interface AuditLog {
   timestamp: string;
   actor: string;
   actorId: string;
-  actorType: 'superuser' | 'admin' | 'system' | 'user';
+  actorType: 'staff' | 'admin' | 'system' | 'user';
   action: ActionType;
   actionDescription: string;
   targetEntity: string;
@@ -63,9 +63,9 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
     {
       id: 'LOG-2024-001234',
       timestamp: '2024-01-20 14:30:45',
-      actor: 'Super Admin',
+      actor: 'Staff Admin',
       actorId: 'SUPERUSER-001',
-      actorType: 'superuser',
+      actorType: 'staff',
       action: 'draft-approved',
       actionDescription: 'Approved draft for management account creation',
       targetEntity: 'Draft DR-2024-001',
@@ -98,9 +98,9 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
     {
       id: 'LOG-2024-001232',
       timestamp: '2024-01-20 13:45:18',
-      actor: 'Super Admin',
+      actor: 'Staff Admin',
       actorId: 'SUPERUSER-001',
-      actorType: 'superuser',
+      actorType: 'staff',
       action: 'user-banned',
       actionDescription: 'User permanently banned for policy violations',
       targetEntity: 'User #45678',
@@ -150,9 +150,9 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
     {
       id: 'LOG-2024-001229',
       timestamp: '2024-01-20 10:15:47',
-      actor: 'Super Admin',
+      actor: 'Staff Admin',
       actorId: 'SUPERUSER-001',
-      actorType: 'superuser',
+      actorType: 'staff',
       action: 'draft-rejected',
       actionDescription: 'Draft rejected due to insufficient information',
       targetEntity: 'Draft DR-2024-002',
@@ -254,9 +254,9 @@ export default function SuperuserAuditLogs({ logsData }: SuperuserAuditLogsProps
     );
   };
 
-  const getActorTypeBadge = (type: 'superuser' | 'admin' | 'system' | 'user') => {
+  const getActorTypeBadge = (type: 'staff' | 'admin' | 'system' | 'user') => {
     const styles = {
-      superuser: 'bg-purple-50 text-purple-700',
+      staff: 'bg-purple-50 text-purple-700',
       admin: 'bg-blue-50 text-blue-700',
       system: 'bg-gray-50 text-gray-700',
       user: 'bg-indigo-50 text-indigo-700',

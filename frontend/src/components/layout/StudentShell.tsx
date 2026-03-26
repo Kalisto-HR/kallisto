@@ -11,28 +11,28 @@ import { fetchBasketState } from "../../services/client/basketService";
 import { BASKET_UPDATED_EVENT } from "../../services/basketEvents";
 
 const pageRouteMap: Record<string, string> = {
-  "student-dashboard": routes.student.dashboard,
-  "university-search": routes.student.universities,
-  basket: routes.student.basket,
-  applications: routes.student.applications,
-  "university-compare": routes.student.compare,
-  billing: routes.student.billing,
-  settings: routes.student.settings,
-  help: routes.student.help,
-  checkout: routes.student.checkout,
+  "applicant-dashboard": routes.applicant.dashboard,
+  "university-search": routes.applicant.universities,
+  basket: routes.applicant.basket,
+  applications: routes.applicant.applications,
+  "university-compare": routes.applicant.compare,
+  billing: routes.applicant.billing,
+  settings: routes.applicant.settings,
+  help: routes.applicant.help,
+  checkout: routes.applicant.checkout,
 };
 
 function getCurrentPage(pathname: string): string {
-  if (pathname.startsWith(routes.student.dashboard)) return "student-dashboard";
-  if (pathname.startsWith(routes.student.universities)) return "university-search";
-  if (pathname.startsWith(routes.student.basket)) return "basket";
-  if (pathname.startsWith(routes.student.applications)) return "applications";
-  if (pathname.startsWith(routes.student.compare)) return "university-compare";
-  if (pathname.startsWith(routes.student.billing)) return "billing";
-  if (pathname.startsWith(routes.student.settings)) return "settings";
-  if (pathname.startsWith(routes.student.help)) return "help";
-  if (pathname.startsWith(routes.student.checkout)) return "checkout";
-  return "student-dashboard";
+  if (pathname.startsWith(routes.applicant.dashboard)) return "applicant-dashboard";
+  if (pathname.startsWith(routes.applicant.universities)) return "university-search";
+  if (pathname.startsWith(routes.applicant.basket)) return "basket";
+  if (pathname.startsWith(routes.applicant.applications)) return "applications";
+  if (pathname.startsWith(routes.applicant.compare)) return "university-compare";
+  if (pathname.startsWith(routes.applicant.billing)) return "billing";
+  if (pathname.startsWith(routes.applicant.settings)) return "settings";
+  if (pathname.startsWith(routes.applicant.help)) return "help";
+  if (pathname.startsWith(routes.applicant.checkout)) return "checkout";
+  return "applicant-dashboard";
 }
 
 export function StudentShell({ children }: { children: ReactNode }) {
@@ -80,9 +80,9 @@ export function StudentShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <Header
-        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Student"}
+    <div className="brand-shell flex h-screen flex-col overflow-hidden bg-background">
+        <Header
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Applicant"}
         applicationsCount={applicationsCount}
         basketCount={basketCount}
         onNavigate={handleNavigate}
@@ -95,10 +95,10 @@ export function StudentShell({ children }: { children: ReactNode }) {
         </div>
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-64" aria-describedby="student-mobile-menu-description">
-            <SheetTitle className="sr-only">Student Navigation</SheetTitle>
-            <SheetDescription id="student-mobile-menu-description" className="sr-only">
-              Access student dashboard navigation links.
+          <SheetContent side="left" className="p-0 w-64" aria-describedby="applicant-mobile-menu-description">
+            <SheetTitle className="sr-only">Applicant Navigation</SheetTitle>
+            <SheetDescription id="applicant-mobile-menu-description" className="sr-only">
+              Access applicant dashboard navigation links.
             </SheetDescription>
             <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
           </SheetContent>

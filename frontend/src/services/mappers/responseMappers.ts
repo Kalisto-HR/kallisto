@@ -14,20 +14,14 @@ import type {
   UniversityListItem,
 } from "../../types/domain";
 
-export function toPortalRole(role: string): "student" | "partner" | "staff" | "superuser-ui" {
-  if (role === "applicant" || role === "student") {
-    return "student";
-  }
+export function toPortalRole(role: string): "applicant" | "partner" | "staff" {
   if (role === "partner") {
     return "partner";
-  }
-  if (role === "superuser-ui") {
-    return "superuser-ui";
   }
   if (role === "staff") {
     return "staff";
   }
-  return "student";
+  return "applicant";
 }
 
 export function normalizeEnvelope<T>(value: unknown): ApiEnvelope<T> {

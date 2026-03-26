@@ -6,11 +6,15 @@ var HS256Header = Header{
 }
 
 type Claims struct {
-	UID       string `json:"uid"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Role      string `json:"role"`
-	Iat       int64  `json:"iat"`
+	SID              string   `json:"sid,omitempty"`
+	UID              string   `json:"uid"`
+	FirstName        string   `json:"first_name"`
+	LastName         string   `json:"last_name"`
+	Role             string   `json:"role"`
+	Permissions      []string `json:"permissions,omitempty"`
+	UniversityLinked *string  `json:"university_linked,omitempty"`
+	Iat              int64    `json:"iat"`
+	Exp              int64    `json:"exp"`
 }
 
 type Header struct {

@@ -1,166 +1,78 @@
-// @ts-nocheck
-import React from 'react';
-import { 
-  Building2, 
-  Users, 
-  FileText, 
-  TrendingUp, 
-  AlertCircle,
+import { Link } from "react-router-dom";
+import {
+  ArrowUpRight,
+  Building2,
   CheckCircle,
-  Clock,
-  ArrowUpRight
-} from 'lucide-react';
+  FileText,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import type { SuperuserOverviewPayload } from "../../services/admin/superuserService";
+import { routes } from "../../routes/routeConfig";
 
 interface SuperuserOverviewProps {
-  data?: {
-    stats?: {
-      total_universities?: number;
-      management_accounts?: number;
-      total_applications?: number;
-      pending_drafts?: number;
-    };
-    recent_activity?: Array<{
-      id: string | number;
-      type: string;
-      description: string;
-      user: string;
-      timestamp: string;
-      status?: string;
-    }>;
-    pending_drafts?: Array<{
-      id: string;
-      type: string;
-      target: string;
-      requester: string;
-      created_at: string;
-      priority: string;
-    }>;
-    system_health?: Array<{
-      label: string;
-      value: string;
-      status: string;
-    }>;
-  };
+  data: SuperuserOverviewPayload;
+}
+
+type StatTone = "primary" | "accent" | "success";
+
+function statToneClass(tone: StatTone): string {
+  switch (tone) {
+    case "accent":
+      return "bg-accent text-accent-foreground";
+    case "success":
+      return "bg-success/10 text-success";
+    default:
+      return "bg-primary/10 text-primary";
+  }
 }
 
 export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
-  const stats = data?.stats
-    ? [
-        { label: 'Total Universities', value: String(data.stats.total_universities ?? 0), change: 'Live data', icon: Building2, color: 'blue' },
-        { label: 'Management Accounts', value: String(data.stats.management_accounts ?? 0), change: 'Live data', icon: Users, color: 'purple' },
-        { label: 'Total Applications', value: String(data.stats.total_applications ?? 0), change: 'Live data', icon: FileText, color: 'green' },
-        { label: 'Pending Drafts', value: String(data.stats.pending_drafts ?? 0), change: 'Requires attention', icon: Clock, color: 'orange' },
-      ]
-    : [
-    { label: 'Total Universities', value: '847', change: '+12 this month', icon: Building2, color: 'blue' },
-    { label: 'Management Accounts', value: '2,341', change: '+45 this month', icon: Users, color: 'purple' },
-    { label: 'Total Applications', value: '156,892', change: '+3,421 today', icon: FileText, color: 'green' },
-    { label: 'Pending Drafts', value: '12', change: 'Requires attention', icon: Clock, color: 'orange' },
-  ];
-
-  const recentActivity = data?.recent_activity ?? [
+  const stats = [
     {
-      id: 1,
-      type: 'University Created',
-      description: 'New university "Shanghai Tech University" added to platform',
-      user: 'System Admin',
-      timestamp: '2 hours ago',
-      status: 'completed'
+      label: "Total Universities",
+      value: String(data.stats.total_universities ?? 0),
+      change: "Live data",
+      icon: Building2,
+      tone: "primary" as const,
     },
     {
-      id: 2,
-      type: 'Management Account Created',
-      description: 'Account created for admin@tsinghua.edu.cn',
-      user: 'Super Admin',
-      timestamp: '4 hours ago',
-      status: 'completed'
+      label: "Management Accounts",
+      value: String(data.stats.management_accounts ?? 0),
+      change: "Live data",
+      icon: Users,
+      tone: "accent" as const,
     },
     {
-      id: 3,
-      type: 'Draft Approved',
-      description: 'Profile update for "Peking University" approved',
-      user: 'Super Admin',
-      timestamp: '6 hours ago',
-      status: 'completed'
+      label: "Total Applications",
+      value: String(data.stats.total_applications ?? 0),
+      change: "Live data",
+      icon: FileText,
+      tone: "success" as const,
     },
-    {
-      id: 4,
-      type: 'User Banned',
-      description: 'User #23451 banned for policy violation',
-      user: 'Super Admin',
-      timestamp: '1 day ago',
-      status: 'completed'
-    },
-  ];
-
-  const pendingDrafts = data?.pending_drafts ?? [
-    {
-      id: 'DR-2024-001',
-      type: 'Create Management Account',
-      target: 'admin@fudan.edu.cn',
-      requester: 'System',
-      createdAt: '2024-01-20 09:30',
-      priority: 'high'
-    },
-    {
-      id: 'DR-2024-002',
-      type: 'University Profile Update',
-      target: 'Zhejiang University',
-      requester: 'admin@zju.edu.cn',
-      createdAt: '2024-01-20 08:15',
-      priority: 'medium'
-    },
-    {
-      id: 'DR-2024-003',
-      type: 'Ban User',
-      target: 'User #45678',
-      requester: 'Support Team',
-      createdAt: '2024-01-19 16:45',
-      priority: 'high'
-    },
-  ];
-
-  const systemHealth = data?.system_health ?? [
-    { label: 'API Response Time', value: '124ms', status: 'good' },
-    { label: 'Database Connections', value: '847/1000', status: 'good' },
-    { label: 'Error Rate', value: '0.02%', status: 'good' },
-    { label: 'Active Users', value: '12,345', status: 'good' },
   ];
 
   return (
     <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
-      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#171717] mb-2">Overview</h1>
-        <p className="text-[#737373]">Monitor platform activity and system health</p>
+        <h1 className="mb-2 text-2xl font-semibold text-foreground">Overview</h1>
+        <p className="text-muted-foreground">Monitor platform activity and system health.</p>
       </div>
 
-      {/* Stats Grid */}
       <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
-          const colorClasses = {
-            blue: 'bg-blue-50 text-blue-600',
-            purple: 'bg-purple-50 text-purple-600',
-            green: 'bg-green-50 text-green-600',
-            orange: 'bg-orange-50 text-orange-600',
-          }[stat.color];
-
           return (
-            <div key={stat.label} className="bg-white rounded-xl border border-[#E5E5E5] p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-10 h-10 ${colorClasses} rounded-lg flex items-center justify-center`}>
-                  <Icon className="w-5 h-5" />
+            <div key={stat.label} className="brand-panel p-6">
+              <div className="mb-4 flex items-start justify-between">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${statToneClass(stat.tone)}`}>
+                  <Icon className="h-5 w-5" />
                 </div>
               </div>
-              <div className="text-3xl font-semibold text-[#171717] mb-1">{stat.value}</div>
-              <div className="text-sm text-[#737373] mb-2">{stat.label}</div>
-              <div className="text-xs text-[#A3A3A3] flex items-center gap-1">
-                {stat.color === 'orange' ? (
-                  <AlertCircle className="w-3 h-3" />
-                ) : (
-                  <TrendingUp className="w-3 h-3" />
-                )}
+              <div className="mb-1 text-3xl font-semibold text-foreground">{stat.value}</div>
+              <div className="mb-2 text-sm text-muted-foreground">{stat.label}</div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
+                <TrendingUp className="h-3 w-3" />
                 {stat.change}
               </div>
             </div>
@@ -168,93 +80,65 @@ export default function SuperuserOverview({ data }: SuperuserOverviewProps) {
         })}
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-        {/* Pending Drafts */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5] xl:col-span-2">
-          <div className="flex flex-col gap-3 border-b border-[#E5E5E5] p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-semibold text-[#171717]">Pending Drafts</h2>
-              <p className="text-sm text-[#737373] mt-1">Requires your review and approval</p>
-            </div>
-            <button className="text-sm text-[#171717] hover:text-[#404040] flex items-center gap-1">
-              View all
-              <ArrowUpRight className="w-4 h-4" />
-            </button>
+      <div className="mb-8">
+        <div className="brand-panel overflow-hidden">
+          <div className="border-b border-border/70 p-6">
+            <h2 className="font-semibold text-foreground">System Health</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Real-time metrics</p>
           </div>
-          <div className="divide-y divide-[#F5F5F5]">
-            {pendingDrafts.map((draft) => (
-              <div key={draft.id} className="p-6 hover:bg-[#FAFAFA] transition-colors cursor-pointer">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-mono text-[#737373]">{draft.id}</span>
-                    {draft.priority === 'high' && (
-                      <span className="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded-full">
-                        High Priority
-                      </span>
-                    )}
+          <div className="space-y-4 p-6">
+            {data.system_health.length > 0 ? (
+              data.system_health.map((metric) => (
+                <div key={metric.label}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{metric.label}</span>
+                    {metric.status === "good" ? <CheckCircle className="h-4 w-4 text-success" /> : null}
                   </div>
-                  <span className="text-xs text-[#A3A3A3]">{draft.createdAt ?? draft.created_at}</span>
+                  <div className="font-medium text-foreground">{metric.value}</div>
                 </div>
-                <div className="font-medium text-[#171717] mb-1">{draft.type}</div>
-                <div className="text-sm text-[#737373] mb-2">Target: {draft.target}</div>
-                <div className="text-xs text-[#A3A3A3]">Requested by: {draft.requester}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* System Health */}
-        <div className="bg-white rounded-xl border border-[#E5E5E5]">
-          <div className="p-6 border-b border-[#E5E5E5]">
-            <h2 className="font-semibold text-[#171717]">System Health</h2>
-            <p className="text-sm text-[#737373] mt-1">Real-time metrics</p>
-          </div>
-          <div className="p-6 space-y-4">
-            {systemHealth.map((metric) => (
-              <div key={metric.label}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-[#737373]">{metric.label}</span>
-                  {metric.status === 'good' && (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  )}
-                </div>
-                <div className="font-medium text-[#171717]">{metric.value}</div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No system health metrics are available right now.</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl border border-[#E5E5E5]">
-          <div className="flex flex-col gap-3 border-b border-[#E5E5E5] p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="brand-panel overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-border/70 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-semibold text-[#171717]">Recent Activity</h2>
-            <p className="text-sm text-[#737373] mt-1">Latest platform actions and events</p>
+            <h2 className="font-semibold text-foreground">Recent Activity</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Latest platform actions and events</p>
           </div>
-          <button className="text-sm text-[#171717] hover:text-[#404040] flex items-center gap-1">
+          <Link
+            to={routes.staff.auditLogs}
+            className="flex items-center gap-1 text-sm text-primary transition-colors hover:text-brand-primary-hover"
+          >
             View audit log
-            <ArrowUpRight className="w-4 h-4" />
-          </button>
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
         </div>
-        <div className="divide-y divide-[#F5F5F5]">
-          {recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-start gap-4 p-6">
-              <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-[#171717] mb-1">{activity.type}</div>
-                <div className="text-sm text-[#737373] mb-2">{activity.description}</div>
-                <div className="text-xs text-[#A3A3A3]">
-                  by {activity.user} • {activity.timestamp}
+        <div className="divide-y divide-border/60">
+          {data.recent_activity.length > 0 ? (
+            data.recent_activity.map((activity) => (
+              <div key={activity.id} className="flex items-start gap-4 p-6">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-success/10">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 font-medium text-foreground">{activity.type}</div>
+                  <div className="mb-2 text-sm text-muted-foreground">{activity.description}</div>
+                  <div className="text-xs text-muted-foreground/80">
+                    by {activity.user} | {activity.timestamp}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div className="p-6 text-sm text-muted-foreground">No recent activity has been recorded yet.</div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

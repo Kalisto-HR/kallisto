@@ -1,27 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { signOutStudent } from "../services/client/authService";
-import { signOutManagement } from "../services/admin/authService";
+import { getSessionUser, signOut as signOutRequest } from "../services/authService";
 import { routes } from "../routes/routeConfig";
-import { readSessionUserFromCookie } from "../services/sessionCookie";
 import {
+  ACCOUNT_UPDATED_REASON,
   AUTH_EXPIRED_EVENT,
+  PASSWORD_CHANGED_REASON,
   SESSION_ACTIVITY_STORAGE_KEY,
+  SESSION_REVOKED_REASON,
   SESSION_EXPIRED_REASON,
   SESSION_FORCE_LOGOUT_STORAGE_KEY,
+  type AuthExpiredReason,
 } from "../services/sessionEvents";
 import type { SessionContextValue, SessionUser } from "../types/session";
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 const DEFAULT_IDLE_TIMEOUT_MINUTES = 15;
 const ACTIVITY_BROADCAST_THROTTLE_MS = 5000;
-
-function toArea(user: SessionUser): SessionUser {
-  if (user.role === "staff" || user.role === "partner" || user.role === "superuser-ui") {
-    return { ...user, area: "management" };
-  }
-  return { ...user, area: "student" };
-}
 
 function getIdleTimeoutMs(): number {
   const raw = Number(import.meta.env.VITE_SESSION_IDLE_TIMEOUT_MINUTES ?? DEFAULT_IDLE_TIMEOUT_MINUTES);
@@ -31,11 +26,17 @@ function getIdleTimeoutMs(): number {
   return raw * 60 * 1000;
 }
 
-function getSessionExpiredRedirectPath(user: SessionUser): string {
-  if (user.role === "student") {
-    return routes.auth.signInStudent;
-  }
-  return routes.auth.signInManagement;
+function getSessionExpiredRedirectPath(): string {
+  return routes.auth.signIn;
+}
+
+function isReauthReason(value: string): value is AuthExpiredReason {
+  return (
+    value === SESSION_EXPIRED_REASON ||
+    value === SESSION_REVOKED_REASON ||
+    value === PASSWORD_CHANGED_REASON ||
+    value === ACCOUNT_UPDATED_REASON
+  );
 }
 
 function writeSharedLastActivity(timestamp: number) {
@@ -104,12 +105,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const requestServerSignOut = useCallback(async (currentUser: SessionUser | null) => {
     try {
-      if (currentUser?.role === "student") {
-        await signOutStudent();
-      } else if (currentUser?.role === "partner" || currentUser?.role === "staff" || currentUser?.role === "superuser-ui") {
-        await signOutManagement();
-      } else {
-        await Promise.allSettled([signOutStudent(), signOutManagement()]);
+      if (currentUser) {
+        await signOutRequest();
       }
     } catch {
       // Intentionally ignored: local auth state must still be cleared.
@@ -142,8 +139,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setInitialized(true);
       forceSignOutInFlightRef.current = false;
 
-      if (reason === SESSION_EXPIRED_REASON && typeof window !== "undefined") {
-        const target = `${getSessionExpiredRedirectPath(currentUser)}?reason=${encodeURIComponent(SESSION_EXPIRED_REASON)}`;
+      if (typeof window !== "undefined" && isReauthReason(reason)) {
+        const target = `${getSessionExpiredRedirectPath()}?reason=${encodeURIComponent(reason)}`;
         redirectTo(target);
       }
     }
@@ -194,11 +191,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const refreshPromise = (async () => {
       setLoading(true);
       try {
-        const parsed = readSessionUserFromCookie();
-        if (parsed) {
-          setUser(toArea(parsed));
+        const resolved = await getSessionUser();
+        if (resolved) {
+          setUser(resolved);
           return;
         }
+        setUser(null);
+      } catch {
         setUser(null);
       } finally {
         setLoading(false);
@@ -246,8 +245,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         handleActivity();
       }
     };
-    const handleAuthExpired = () => {
-      void forceSignOut(SESSION_EXPIRED_REASON, { notifyServer: true, broadcast: true });
+    const handleAuthExpired = (event: Event) => {
+      const detail = (event as CustomEvent<{ reason?: string }>).detail;
+      const reason = detail?.reason && isReauthReason(detail.reason) ? detail.reason : SESSION_EXPIRED_REASON;
+      void forceSignOut(reason, { notifyServer: true, broadcast: true });
     };
     const handleStorage = (event: StorageEvent) => {
       if (!user) {
@@ -270,7 +271,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         } catch {
           reason = "manual-signout";
         }
-        void forceSignOut(reason, { notifyServer: false, broadcast: false });
+        void forceSignOut(isReauthReason(reason) ? reason : "manual-signout", { notifyServer: false, broadcast: false });
       }
     };
 
@@ -296,16 +297,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     };
   }, [clearIdleTimer, forceSignOut, markActivity, scheduleIdleTimeout, user]);
 
-  const setSuperuserMode = useCallback((_enabled: boolean) => {}, []);
-
   const value = useMemo<SessionContextValue>(() => ({
     user,
     loading,
     initialized,
     refreshSession,
     signOut,
-    setSuperuserMode,
-  }), [user, loading, initialized, refreshSession, signOut, setSuperuserMode]);
+  }), [user, loading, initialized, refreshSession, signOut]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

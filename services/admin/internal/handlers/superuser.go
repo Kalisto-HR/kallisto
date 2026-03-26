@@ -13,7 +13,6 @@ import (
 	"kallisto/services/admin/internal/models"
 	"kallisto/services/admin/internal/usecases/usecases_impl"
 
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -55,96 +54,6 @@ func GetGlobalUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSONResponse(w, utils.NewPaginatedResponse(items, total, page, limit), http.StatusOK)
-}
-
-func GetGlobalDraftsHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-	_, err := ensureStaffAccess(r.Context())
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	query := r.URL.Query()
-	page, limit := parsePagination(query.Get("page"), query.Get("limit"))
-	search := query.Get("q")
-	draftType := query.Get("type")
-	status := query.Get("status")
-
-	items, total, err := usecases_impl.GetGlobalDrafts(r.Context(), search, draftType, status, page, limit)
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	utils.WriteJSONResponse(w, utils.NewPaginatedResponse(items, total, page, limit), http.StatusOK)
-}
-
-func ApproveGlobalDraftHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-	claims, err := ensureStaffAccess(r.Context())
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	draftID := mux.Vars(r)["id"]
-	if strings.TrimSpace(draftID) == "" {
-		utils.WriteJSONResponseWithMsg(w, "draft id is required", http.StatusBadRequest)
-		return
-	}
-
-	var req models.DraftDecisionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err.Error() != "EOF" {
-		utils.WriteJSONResponseWithMsg(w, "malformed json request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	if err := usecases_impl.ApproveGlobalDraft(r.Context(), draftID, claims.UID, req.Notes); err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	utils.WriteJSONResponseWithMsg(w, "draft approved and executed", http.StatusOK)
-}
-
-func RejectGlobalDraftHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-	claims, err := ensureStaffAccess(r.Context())
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	draftID := mux.Vars(r)["id"]
-	if strings.TrimSpace(draftID) == "" {
-		utils.WriteJSONResponseWithMsg(w, "draft id is required", http.StatusBadRequest)
-		return
-	}
-
-	var req models.DraftDecisionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSONResponseWithMsg(w, "malformed json request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	reason := strings.TrimSpace(req.Reason)
-	if reason == "" {
-		reason = strings.TrimSpace(req.Notes)
-	}
-	if reason == "" {
-		utils.WriteJSONResponseWithMsg(w, "rejection reason is required", http.StatusBadRequest)
-		return
-	}
-
-	if err := usecases_impl.RejectGlobalDraft(r.Context(), draftID, claims.UID, reason); err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	utils.WriteJSONResponseWithMsg(w, "draft rejected", http.StatusOK)
 }
 
 func GetGlobalApplicationsHandler(w http.ResponseWriter, r *http.Request) {
@@ -190,76 +99,6 @@ func GetGlobalApplicationsHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, utils.NewPaginatedResponse(items, total, page, limit), http.StatusOK)
 }
 
-func GetGlobalUsersHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-	_, err := ensureStaffAccess(r.Context())
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	query := r.URL.Query()
-	page, limit := parsePagination(query.Get("page"), query.Get("limit"))
-	search := query.Get("q")
-	status := query.Get("status")
-
-	items, total, err := usecases_impl.GetGlobalUsers(r.Context(), search, status, page, limit)
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	utils.WriteJSONResponse(w, utils.NewPaginatedResponse(items, total, page, limit), http.StatusOK)
-}
-
-func CreateBanUserDraftHandler(w http.ResponseWriter, r *http.Request) {
-	log := zap.L()
-	claims, err := ensureStaffAccess(r.Context())
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	userID := mux.Vars(r)["id"]
-	if strings.TrimSpace(userID) == "" {
-		utils.WriteJSONResponseWithMsg(w, "user id is required", http.StatusBadRequest)
-		return
-	}
-
-	var req models.CreateUserBanDraftRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteJSONResponseWithMsg(w, "malformed json request body", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	draftID, err := usecases_impl.CreateBanUserDraft(r.Context(), claims.UID, userID, req.Reason, req.Duration)
-	if err != nil {
-		writeHandlerErr(w, log, err)
-		return
-	}
-
-	actorID := claims.UID
-	targetID := draftID
-	_ = usecases_impl.WriteAuditLog(r.Context(), &models.GlobalAuditWrite{
-		ActorName:         claims.FirstName + " " + claims.LastName,
-		ActorId:           &actorID,
-		ActorType:         "superuser",
-		ActionType:        "draft-created",
-		ActionDescription: "Created ban-user draft",
-		TargetEntity:      userID,
-		TargetId:          &targetID,
-		Outcome:           "pending",
-		IpAddress:         requestIP(r),
-		Metadata:          []byte(`{"draft_type":"ban-user"}`),
-	})
-
-	utils.WriteJSONResponse(w, map[string]string{
-		"msg": "ban draft created",
-		"id":  draftID,
-	}, http.StatusCreated)
-}
-
 func GetGlobalServiceLogsHandler(w http.ResponseWriter, r *http.Request) {
 	log := zap.L()
 	_, err := ensureStaffAccess(r.Context())
@@ -275,8 +114,14 @@ func GetGlobalServiceLogsHandler(w http.ResponseWriter, r *http.Request) {
 	handler := query.Get("handler")
 	userID := query.Get("user_id")
 	timeRange := query.Get("time_range")
+	requestID := query.Get("request_id")
+	method := query.Get("method")
+	statusCode := query.Get("status_code")
+	role := query.Get("role")
+	from := query.Get("from")
+	to := query.Get("to")
 
-	items, total, err := usecases_impl.GetGlobalServiceLogs(r.Context(), level, microservice, handler, userID, timeRange, page, limit)
+	items, total, err := usecases_impl.GetGlobalServiceLogs(r.Context(), level, microservice, handler, userID, timeRange, requestID, method, statusCode, role, from, to, page, limit)
 	if err != nil {
 		writeHandlerErr(w, log, err)
 		return
@@ -298,8 +143,13 @@ func GetGlobalAuditLogsHandler(w http.ResponseWriter, r *http.Request) {
 	search := query.Get("q")
 	action := query.Get("action")
 	outcome := query.Get("outcome")
+	requestID := query.Get("request_id")
+	actorType := query.Get("actor_type")
+	targetEntity := query.Get("target_entity")
+	from := query.Get("from")
+	to := query.Get("to")
 
-	items, total, err := usecases_impl.GetGlobalAuditLogs(r.Context(), search, action, outcome, page, limit)
+	items, total, err := usecases_impl.GetGlobalAuditLogs(r.Context(), search, action, outcome, requestID, actorType, targetEntity, from, to, page, limit)
 	if err != nil {
 		writeHandlerErr(w, log, err)
 		return
@@ -348,19 +198,6 @@ func UpdateGlobalSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actorID := claims.UID
-	_ = usecases_impl.WriteAuditLog(r.Context(), &models.GlobalAuditWrite{
-		ActorName:         claims.FirstName + " " + claims.LastName,
-		ActorId:           &actorID,
-		ActorType:         "superuser",
-		ActionType:        "settings-updated",
-		ActionDescription: "Updated global settings",
-		TargetEntity:      "global_settings",
-		Outcome:           "success",
-		IpAddress:         requestIP(r),
-		Metadata:          []byte(`{"source":"global/settings"}`),
-	})
-
 	utils.WriteJSONResponseWithMsg(w, "settings updated", http.StatusOK)
 }
 
@@ -370,7 +207,7 @@ func ensureStaffAccess(ctx context.Context) (*middlewaresClaimsShim, error) {
 		return nil, utils.NewHandlerFuncErr(http.StatusUnauthorized, "unauthorized")
 	}
 	if claims.Role != "staff" {
-		return nil, utils.NewHandlerFuncErr(http.StatusForbidden, "superuser access required")
+		return nil, utils.NewHandlerFuncErr(http.StatusForbidden, "staff access required")
 	}
 	return &middlewaresClaimsShim{
 		UID:       claims.UID,

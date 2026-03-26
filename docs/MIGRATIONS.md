@@ -11,6 +11,18 @@ Use only:
 
 Versioned migration fragments were consolidated into these canonical files.
 
+## Current schema invariants
+
+The supported runtime assumes these current invariants from the canonical files:
+
+- `client_db.users.role` is fixed to `applicant`
+- `admin_db.users.role` is limited to `partner|staff`
+- `client_db.applications.status` is limited to `draft|submitted`
+- `admin_db.submitted_applications.status` is limited to `submitted`
+- `submitted_applications.reviewed_by`, `reviewed_at`, and `notes` are no longer part of the supported schema
+- `university_staff_profiles`, `university_staff_invitations`, and `university_staff_status_events` are dropped from the supported schema
+- university application read payloads are expected to normalize to `application_schema.sections[*].fields[*]`
+
 ## Apply migrations
 
 ### Linux/macOS

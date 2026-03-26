@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	authsession "kallisto/infra/auth/session"
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
 	"kallisto/infra/validation"
@@ -180,8 +181,12 @@ func UpdatePasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := utils.NewApiResponse[any](true, nil, "password updated successfully")
-	utils.WriteApiResponse(w, resp, http.StatusOK)
+	utils.ClearAuthCookies(w)
+	utils.WriteJSONResponse(w, map[string]any{
+		"msg":             "password updated successfully",
+		"reauth_required": true,
+		"reason":          authsession.ReasonPasswordChanged,
+	}, http.StatusOK)
 }
 
 func UpdateProfilePhotoHandler(w http.ResponseWriter, r *http.Request) {

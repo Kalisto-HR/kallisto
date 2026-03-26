@@ -110,10 +110,7 @@ CREATE TABLE IF NOT EXISTS submitted_applications (
     application_data JSONB,
     submitted_at TIMESTAMP WITH TIME ZONE,
     received_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    status TEXT CHECK (status IN ('pending', 'reviewing', 'accepted', 'rejected')) DEFAULT 'pending',
-    reviewed_by UUID REFERENCES users(id),
-    reviewed_at TIMESTAMP WITH TIME ZONE,
-    notes TEXT,
+    status TEXT CHECK (status IN ('submitted')) DEFAULT 'submitted',
     UNIQUE (user_id, university_id, application_cycle)
 );
 
@@ -228,106 +225,91 @@ CREATE TABLE IF NOT EXISTS service_logs (
     message TEXT NOT NULL,
     user_id TEXT,
     request_id TEXT,
+    method TEXT,
+    status_code INT,
+    duration_ms BIGINT,
+    role TEXT,
+    ip_address INET,
+    user_agent TEXT,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb
 );
+
+ALTER TABLE service_logs ADD COLUMN IF NOT EXISTS method TEXT;
+ALTER TABLE service_logs ADD COLUMN IF NOT EXISTS status_code INT;
+ALTER TABLE service_logs ADD COLUMN IF NOT EXISTS duration_ms BIGINT;
+ALTER TABLE service_logs ADD COLUMN IF NOT EXISTS role TEXT;
+ALTER TABLE service_logs ADD COLUMN IF NOT EXISTS ip_address INET;
+ALTER TABLE service_logs ADD COLUMN IF NOT EXISTS user_agent TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_service_logs_logged_at ON service_logs(logged_at DESC);
 CREATE INDEX IF NOT EXISTS idx_service_logs_level ON service_logs(level);
 CREATE INDEX IF NOT EXISTS idx_service_logs_microservice ON service_logs(microservice);
 CREATE INDEX IF NOT EXISTS idx_service_logs_request_id ON service_logs(request_id);
+CREATE INDEX IF NOT EXISTS idx_service_logs_status_code ON service_logs(status_code);
+CREATE INDEX IF NOT EXISTS idx_service_logs_role ON service_logs(role);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     occurred_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     actor_name TEXT NOT NULL,
     actor_id TEXT,
-    actor_type TEXT NOT NULL CHECK (actor_type IN ('superuser', 'admin', 'system', 'user')),
+    actor_type TEXT NOT NULL CHECK (actor_type IN ('applicant', 'partner', 'staff', 'system', 'anonymous')),
     action_type TEXT NOT NULL,
     action_description TEXT NOT NULL,
     target_entity TEXT NOT NULL,
     target_id TEXT,
     outcome TEXT NOT NULL CHECK (outcome IN ('success', 'failed', 'pending')),
     ip_address INET,
+    request_id TEXT,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb
 );
+
+ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS request_id TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_occurred_at ON audit_logs(occurred_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action_type ON audit_logs(action_type);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_outcome ON audit_logs(outcome);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor_type ON audit_logs(actor_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_request_id ON audit_logs(request_id);
 
-CREATE TABLE IF NOT EXISTS user_moderation_states (
-    user_id TEXT PRIMARY KEY,
-    display_name TEXT NOT NULL,
-    email TEXT,
-    phone TEXT,
-    status TEXT NOT NULL CHECK (status IN ('active', 'banned', 'suspended')) DEFAULT 'active',
-    ban_reason TEXT,
-    ban_until TIMESTAMP WITH TIME ZONE,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_by UUID REFERENCES users(id),
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb
-);
-
-CREATE INDEX IF NOT EXISTS idx_user_moderation_status ON user_moderation_states(status);
-CREATE INDEX IF NOT EXISTS idx_user_moderation_email ON user_moderation_states(email);
-
--- =============================================================================
--- MANAGER PORTAL TABLES
--- =============================================================================
-
-ALTER TABLE universities
-    ADD COLUMN IF NOT EXISTS management_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
-
-CREATE TABLE IF NOT EXISTS university_staff_profiles (
-    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
-    staff_role TEXT NOT NULL CHECK (staff_role IN ('University Manager', 'Admissions Officer', 'Reviewer', 'Read-only')),
-    status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'pending', 'deactivated')) DEFAULT 'active',
-    invited_by UUID REFERENCES users(id),
-    invited_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    last_active_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_staff_profiles_university_id ON university_staff_profiles(university_id);
-CREATE INDEX IF NOT EXISTS idx_staff_profiles_status ON university_staff_profiles(status);
-CREATE INDEX IF NOT EXISTS idx_staff_profiles_role ON university_staff_profiles(staff_role);
-
-CREATE TABLE IF NOT EXISTS university_staff_invitations (
+CREATE TABLE IF NOT EXISTS auth_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
     email TEXT NOT NULL,
-    staff_role TEXT NOT NULL CHECK (staff_role IN ('University Manager', 'Admissions Officer', 'Reviewer', 'Read-only')),
-    status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'expired', 'cancelled')) DEFAULT 'pending',
-    invite_token_hash TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    role TEXT NOT NULL CHECK (role IN ('applicant', 'partner', 'staff')),
+    permissions JSONB NOT NULL DEFAULT '[]'::jsonb,
+    university_linked UUID,
+    csrf_token TEXT NOT NULL,
+    ip_address INET,
+    user_agent TEXT,
+    issued_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_seen_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    invited_by UUID REFERENCES users(id),
-    accepted_user_id UUID REFERENCES users(id),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    revoked_reason TEXT,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_staff_invitations_university_id ON university_staff_invitations(university_id);
-CREATE INDEX IF NOT EXISTS idx_staff_invitations_status ON university_staff_invitations(status);
-CREATE INDEX IF NOT EXISTS idx_staff_invitations_email ON university_staff_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires_at ON auth_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_revoked_at ON auth_sessions(revoked_at);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_role ON auth_sessions(role);
 
-CREATE TABLE IF NOT EXISTS university_staff_status_events (
+CREATE TABLE IF NOT EXISTS auth_login_attempts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
-    previous_status TEXT,
-    next_status TEXT NOT NULL,
-    reason TEXT,
-    changed_by UUID REFERENCES users(id),
-    changed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+    normalized_email TEXT NOT NULL,
+    ip_address INET,
+    attempted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    succeeded BOOLEAN NOT NULL DEFAULT FALSE,
+    blocked BOOLEAN NOT NULL DEFAULT FALSE,
+    failure_reason TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_staff_status_events_university_id ON university_staff_status_events(university_id);
-CREATE INDEX IF NOT EXISTS idx_staff_status_events_user_id ON university_staff_status_events(user_id);
-CREATE INDEX IF NOT EXISTS idx_staff_status_events_changed_at ON university_staff_status_events(changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_email_attempted_at ON auth_login_attempts(normalized_email, attempted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_ip_attempted_at ON auth_login_attempts(ip_address, attempted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_login_attempts_attempted_at ON auth_login_attempts(attempted_at DESC);
 
 CREATE TABLE IF NOT EXISTS university_application_structure_versions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -360,3 +342,46 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
+
+ALTER TABLE submitted_applications
+    DROP CONSTRAINT IF EXISTS submitted_applications_status_check;
+
+UPDATE submitted_applications
+SET status = 'submitted'
+WHERE status IS DISTINCT FROM 'submitted';
+
+ALTER TABLE submitted_applications
+    ADD CONSTRAINT submitted_applications_status_check CHECK (status IN ('submitted'));
+
+ALTER TABLE submitted_applications
+    ALTER COLUMN status SET DEFAULT 'submitted';
+
+ALTER TABLE submitted_applications DROP COLUMN IF EXISTS reviewed_by;
+ALTER TABLE submitted_applications DROP COLUMN IF EXISTS reviewed_at;
+ALTER TABLE submitted_applications DROP COLUMN IF EXISTS notes;
+
+ALTER TABLE audit_logs
+    DROP CONSTRAINT IF EXISTS audit_logs_actor_type_check;
+
+UPDATE audit_logs
+SET actor_type = CASE
+    WHEN LOWER(BTRIM(actor_type)) IN ('superuser', 'staff') THEN 'staff'
+    WHEN LOWER(BTRIM(actor_type)) IN ('admin', 'partner') THEN 'partner'
+    WHEN LOWER(BTRIM(actor_type)) IN ('user', 'applicant') THEN 'applicant'
+    WHEN LOWER(BTRIM(actor_type)) = 'anonymous' THEN 'anonymous'
+    ELSE 'system'
+END
+WHERE actor_type IS DISTINCT FROM CASE
+    WHEN LOWER(BTRIM(actor_type)) IN ('superuser', 'staff') THEN 'staff'
+    WHEN LOWER(BTRIM(actor_type)) IN ('admin', 'partner') THEN 'partner'
+    WHEN LOWER(BTRIM(actor_type)) IN ('user', 'applicant') THEN 'applicant'
+    WHEN LOWER(BTRIM(actor_type)) = 'anonymous' THEN 'anonymous'
+    ELSE 'system'
+END;
+
+ALTER TABLE audit_logs
+    ADD CONSTRAINT audit_logs_actor_type_check CHECK (actor_type IN ('applicant', 'partner', 'staff', 'system', 'anonymous'));
+
+DROP TABLE IF EXISTS university_staff_status_events;
+DROP TABLE IF EXISTS university_staff_invitations;
+DROP TABLE IF EXISTS university_staff_profiles;

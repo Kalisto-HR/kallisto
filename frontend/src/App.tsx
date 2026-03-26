@@ -1,14 +1,10 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { SessionProvider } from "./context/SessionContext";
 import { RoleProtectedRoute } from "./components/routing/RoleProtectedRoute";
-import { LegacyRedirect } from "./components/routing/LegacyRedirects";
-import { GlobalManagementRouteGuard, UniversityBillingRouteGuard, UniversityManagementRouteGuard } from "./components/routing/ManagementRouteGuards";
 import { routes } from "./routes/routeConfig";
 import { StudentShell } from "./components/layout/StudentShell";
 import { ManagementLiteralLayout } from "./components/layout/ManagementLiteralLayout";
-import { SignInPortalPage } from "./pages/auth/SignInPortalPage";
-import { SignInStudentPage } from "./pages/auth/SignInStudentPage";
-import { SignInManagementPage } from "./pages/auth/SignInManagementPage";
+import { SignInPage } from "./pages/auth/SignInPage";
 import { SignUpPage } from "./pages/auth/SignUpPage";
 import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/auth/ResetPasswordPage";
@@ -28,19 +24,15 @@ import { ManagementDashboardPage } from "./pages/management/ManagementDashboardP
 import { ManagementUniversityProfilePage } from "./pages/management/ManagementUniversityProfilePage";
 import { ManagementApplicationStructurePage } from "./pages/management/ManagementApplicationStructurePage";
 import { ManagementApplicationsPage } from "./pages/management/ManagementApplicationsPage";
-import { ManagementBillingPage } from "./pages/management/ManagementBillingPage";
-import { ManagementUsersPage } from "./pages/management/ManagementUsersPage";
 import { SuperuserOverviewPage } from "./pages/superuser/SuperuserOverviewPage";
 import { SuperuserUniversitiesPage } from "./pages/superuser/SuperuserUniversitiesPage";
-import { SuperuserDraftsPage } from "./pages/superuser/SuperuserDraftsPage";
-import { SuperuserApplicationsPage } from "./pages/superuser/SuperuserApplicationsPage";
-import { SuperuserUsersPage } from "./pages/superuser/SuperuserUsersPage";
 import { SuperuserServiceLogsPage } from "./pages/superuser/SuperuserServiceLogsPage";
 import { SuperuserAuditLogsPage } from "./pages/superuser/SuperuserAuditLogsPage";
 import { SuperuserSettingsPage } from "./pages/superuser/SuperuserSettingsPage";
+import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
-function StudentAreaLayout() {
+function ApplicantAreaLayout() {
   return (
     <StudentShell>
       <Outlet />
@@ -48,7 +40,7 @@ function StudentAreaLayout() {
   );
 }
 
-function ManagementAreaLayout() {
+function PartnerOrStaffLayout() {
   return (
     <ManagementLiteralLayout>
       <Outlet />
@@ -60,42 +52,19 @@ export default function App() {
   return (
     <SessionProvider>
       <Routes>
-        <Route path="/" element={<LegacyRedirect path="/" />} />
-        <Route path="/signin" element={<LegacyRedirect path="/signin" />} />
-        <Route path="/signup" element={<LegacyRedirect path="/signup" />} />
-        <Route path="/dashboard" element={<LegacyRedirect path="/dashboard" />} />
-        <Route path="/search" element={<LegacyRedirect path="/search" />} />
-        <Route path="/applications" element={<LegacyRedirect path="/applications" />} />
-        <Route
-          path="/applications/:universityId/:cycle"
-          element={<Navigate to={routes.student.applications} replace />}
-        />
-        <Route
-          path="/applications/:universityId/:cycle/edit"
-          element={<Navigate to={routes.student.applications} replace />}
-        />
-        <Route path="/university/:id" element={<Navigate to={routes.student.universities} replace />} />
-        <Route path="/management" element={<Navigate to={routes.auth.signInManagement} replace />} />
-        <Route path="/superuser/overview" element={<Navigate to={routes.management.global.overview} replace />} />
-        <Route path="/superuser/universities" element={<Navigate to={routes.management.global.universities} replace />} />
-        <Route path="/superuser/drafts" element={<Navigate to={routes.management.global.drafts} replace />} />
-        <Route path="/superuser/applications" element={<Navigate to={routes.management.global.applications} replace />} />
-        <Route path="/superuser/users" element={<Navigate to={routes.management.global.users} replace />} />
-        <Route path="/superuser/service-logs" element={<Navigate to={routes.management.global.serviceLogs} replace />} />
-        <Route path="/superuser/audit-logs" element={<Navigate to={routes.management.global.auditLogs} replace />} />
-        <Route path="/superuser/settings" element={<Navigate to={routes.management.global.settings} replace />} />
+        <Route path="/" element={<Navigate to={routes.auth.signIn} replace />} />
 
         <Route path="/auth" element={<Outlet />}>
-          <Route path="sign-in" element={<SignInPortalPage />} />
-          <Route path="sign-in/student" element={<SignInStudentPage />} />
-          <Route path="sign-in/management" element={<SignInManagementPage />} />
+          <Route path="sign-in" element={<SignInPage />} />
           <Route path="sign-up" element={<SignUpPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
         </Route>
 
-        <Route element={<RoleProtectedRoute allowedRoles={["student"]} />}>
-          <Route path="/student" element={<StudentAreaLayout />}>
+        <Route path={routes.forbidden} element={<ForbiddenPage />} />
+
+        <Route element={<RoleProtectedRoute allowedRoles={["applicant"]} />}>
+          <Route path="/applicant" element={<ApplicantAreaLayout />}>
             <Route path="dashboard" element={<StudentDashboardPage />} />
             <Route path="universities" element={<UniversitySearchPage />} />
             <Route path="universities/:id" element={<UniversityDetailPage />} />
@@ -107,31 +76,23 @@ export default function App() {
             <Route path="settings" element={<StudentSettingsPage />} />
             <Route path="help" element={<StudentHelpPage />} />
             <Route path="billing" element={<StudentBillingPage />} />
-            <Route path="pricing" element={<Navigate to={routes.student.billing} replace />} />
             <Route path="checkout" element={<StudentCheckoutPage />} />
           </Route>
         </Route>
 
-        <Route element={<UniversityManagementRouteGuard />}>
-          <Route path="/management/:universityId" element={<ManagementAreaLayout />}>
+        <Route element={<RoleProtectedRoute allowedRoles={["partner"]} />}>
+          <Route path="/partner/:universityId" element={<PartnerOrStaffLayout />}>
             <Route path="dashboard" element={<ManagementDashboardPage />} />
             <Route path="profile" element={<ManagementUniversityProfilePage />} />
             <Route path="application-structure" element={<ManagementApplicationStructurePage />} />
             <Route path="applications" element={<ManagementApplicationsPage />} />
-            <Route path="users" element={<ManagementUsersPage />} />
-            <Route element={<UniversityBillingRouteGuard />}>
-              <Route path="billing" element={<ManagementBillingPage />} />
-            </Route>
           </Route>
         </Route>
 
-        <Route element={<GlobalManagementRouteGuard />}>
-          <Route path="/management/global" element={<ManagementAreaLayout />}>
-            <Route path="overview" element={<SuperuserOverviewPage />} />
+        <Route element={<RoleProtectedRoute allowedRoles={["staff"]} />}>
+          <Route path="/staff" element={<PartnerOrStaffLayout />}>
+            <Route path="dashboard" element={<SuperuserOverviewPage />} />
             <Route path="universities" element={<SuperuserUniversitiesPage />} />
-            <Route path="drafts" element={<SuperuserDraftsPage />} />
-            <Route path="applications" element={<SuperuserApplicationsPage />} />
-            <Route path="users" element={<SuperuserUsersPage />} />
             <Route path="service-logs" element={<SuperuserServiceLogsPage />} />
             <Route path="audit-logs" element={<SuperuserAuditLogsPage />} />
             <Route path="settings" element={<SuperuserSettingsPage />} />
