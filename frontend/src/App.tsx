@@ -2,49 +2,49 @@ import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { SessionProvider } from "./context/SessionContext";
 import { RoleProtectedRoute } from "./components/routing/RoleProtectedRoute";
 import { routes } from "./routes/routeConfig";
-import { StudentShell } from "./components/layout/StudentShell";
-import { ManagementLiteralLayout } from "./components/layout/ManagementLiteralLayout";
+import { ApplicantShell } from "./components/layout/ApplicantShell";
+import { PortalShell } from "./components/layout/PortalShell";
 import { SignInPage } from "./pages/auth/SignInPage";
 import { SignUpPage } from "./pages/auth/SignUpPage";
 import { ForgotPasswordPage } from "./pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/auth/ResetPasswordPage";
-import { StudentDashboardPage } from "./pages/student/StudentDashboardPage";
-import { UniversitySearchPage } from "./pages/student/UniversitySearchPage";
-import { UniversityDetailPage } from "./pages/student/UniversityDetailPage";
-import { StudentApplicationsPage } from "./pages/student/StudentApplicationsPage";
-import { StudentApplicationDetailPage } from "./pages/student/StudentApplicationDetailPage";
-import { StudentApplicationCreatePage } from "./pages/student/StudentApplicationCreatePage";
-import { StudentBasketPage } from "./pages/student/StudentBasketPage";
-import { StudentComparePage } from "./pages/student/StudentComparePage";
-import { StudentSettingsPage } from "./pages/student/StudentSettingsPage";
-import { StudentHelpPage } from "./pages/student/StudentHelpPage";
-import { StudentBillingPage } from "./pages/student/StudentBillingPage";
-import { StudentCheckoutPage } from "./pages/student/StudentCheckoutPage";
-import { ManagementDashboardPage } from "./pages/management/ManagementDashboardPage";
-import { ManagementUniversityProfilePage } from "./pages/management/ManagementUniversityProfilePage";
-import { ManagementApplicationStructurePage } from "./pages/management/ManagementApplicationStructurePage";
-import { ManagementApplicationsPage } from "./pages/management/ManagementApplicationsPage";
-import { SuperuserOverviewPage } from "./pages/superuser/SuperuserOverviewPage";
-import { SuperuserUniversitiesPage } from "./pages/superuser/SuperuserUniversitiesPage";
-import { SuperuserServiceLogsPage } from "./pages/superuser/SuperuserServiceLogsPage";
-import { SuperuserAuditLogsPage } from "./pages/superuser/SuperuserAuditLogsPage";
-import { SuperuserSettingsPage } from "./pages/superuser/SuperuserSettingsPage";
+import { ApplicantDashboardPage } from "./pages/applicant/ApplicantDashboardPage";
+import { UniversitySearchPage } from "./pages/applicant/UniversitySearchPage";
+import { UniversityDetailPage } from "./pages/applicant/UniversityDetailPage";
+import { ApplicantApplicationsPage } from "./pages/applicant/ApplicantApplicationsPage";
+import { ApplicantApplicationDetailPage } from "./pages/applicant/ApplicantApplicationDetailPage";
+import { ApplicantApplicationCreatePage } from "./pages/applicant/ApplicantApplicationCreatePage";
+import { ApplicantBasketPage } from "./pages/applicant/ApplicantBasketPage";
+import { ApplicantComparePage } from "./pages/applicant/ApplicantComparePage";
+import { ApplicantSettingsPage } from "./pages/applicant/ApplicantSettingsPage";
+import { ApplicantHelpPage } from "./pages/applicant/ApplicantHelpPage";
+import { ApplicantBillingPage } from "./pages/applicant/ApplicantBillingPage";
+import { ApplicantCheckoutPage } from "./pages/applicant/ApplicantCheckoutPage";
+import { PartnerDashboardPage } from "./pages/partner/PartnerDashboardPage";
+import { PartnerUniversityProfilePage } from "./pages/partner/PartnerUniversityProfilePage";
+import { PartnerApplicationStructurePage } from "./pages/partner/PartnerApplicationStructurePage";
+import { PartnerApplicationsPage } from "./pages/partner/PartnerApplicationsPage";
+import { StaffOverviewPage } from "./pages/staff/StaffOverviewPage";
+import { StaffUniversitiesPage } from "./pages/staff/StaffUniversitiesPage";
+import { StaffServiceLogsPage } from "./pages/staff/StaffServiceLogsPage";
+import { StaffAuditLogsPage } from "./pages/staff/StaffAuditLogsPage";
+import { StaffSettingsPage } from "./pages/staff/StaffSettingsPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function ApplicantAreaLayout() {
   return (
-    <StudentShell>
+    <ApplicantShell>
       <Outlet />
-    </StudentShell>
+    </ApplicantShell>
   );
 }
 
 function PartnerOrStaffLayout() {
   return (
-    <ManagementLiteralLayout>
+    <PortalShell>
       <Outlet />
-    </ManagementLiteralLayout>
+    </PortalShell>
   );
 }
 
@@ -65,37 +65,37 @@ export default function App() {
 
         <Route element={<RoleProtectedRoute allowedRoles={["applicant"]} />}>
           <Route path="/applicant" element={<ApplicantAreaLayout />}>
-            <Route path="dashboard" element={<StudentDashboardPage />} />
+            <Route path="dashboard" element={<ApplicantDashboardPage />} />
             <Route path="universities" element={<UniversitySearchPage />} />
             <Route path="universities/:id" element={<UniversityDetailPage />} />
-            <Route path="basket" element={<StudentBasketPage />} />
-            <Route path="applications" element={<StudentApplicationsPage />} />
-            <Route path="applications/new/:universityId" element={<StudentApplicationCreatePage />} />
-            <Route path="applications/:universityId/:cycle" element={<StudentApplicationDetailPage />} />
-            <Route path="compare" element={<StudentComparePage />} />
-            <Route path="settings" element={<StudentSettingsPage />} />
-            <Route path="help" element={<StudentHelpPage />} />
-            <Route path="billing" element={<StudentBillingPage />} />
-            <Route path="checkout" element={<StudentCheckoutPage />} />
+            <Route path="basket" element={<ApplicantBasketPage />} />
+            <Route path="applications" element={<ApplicantApplicationsPage />} />
+            <Route path="applications/new/:universityId" element={<ApplicantApplicationCreatePage />} />
+            <Route path="applications/:universityId/:cycle" element={<ApplicantApplicationDetailPage />} />
+            <Route path="compare" element={<ApplicantComparePage />} />
+            <Route path="settings" element={<ApplicantSettingsPage />} />
+            <Route path="help" element={<ApplicantHelpPage />} />
+            <Route path="billing" element={<ApplicantBillingPage />} />
+            <Route path="checkout" element={<ApplicantCheckoutPage />} />
           </Route>
         </Route>
 
         <Route element={<RoleProtectedRoute allowedRoles={["partner"]} />}>
           <Route path="/partner/:universityId" element={<PartnerOrStaffLayout />}>
-            <Route path="dashboard" element={<ManagementDashboardPage />} />
-            <Route path="profile" element={<ManagementUniversityProfilePage />} />
-            <Route path="application-structure" element={<ManagementApplicationStructurePage />} />
-            <Route path="applications" element={<ManagementApplicationsPage />} />
+            <Route path="dashboard" element={<PartnerDashboardPage />} />
+            <Route path="profile" element={<PartnerUniversityProfilePage />} />
+            <Route path="application-structure" element={<PartnerApplicationStructurePage />} />
+            <Route path="applications" element={<PartnerApplicationsPage />} />
           </Route>
         </Route>
 
         <Route element={<RoleProtectedRoute allowedRoles={["staff"]} />}>
           <Route path="/staff" element={<PartnerOrStaffLayout />}>
-            <Route path="dashboard" element={<SuperuserOverviewPage />} />
-            <Route path="universities" element={<SuperuserUniversitiesPage />} />
-            <Route path="service-logs" element={<SuperuserServiceLogsPage />} />
-            <Route path="audit-logs" element={<SuperuserAuditLogsPage />} />
-            <Route path="settings" element={<SuperuserSettingsPage />} />
+            <Route path="dashboard" element={<StaffOverviewPage />} />
+            <Route path="universities" element={<StaffUniversitiesPage />} />
+            <Route path="service-logs" element={<StaffServiceLogsPage />} />
+            <Route path="audit-logs" element={<StaffAuditLogsPage />} />
+            <Route path="settings" element={<StaffSettingsPage />} />
           </Route>
         </Route>
 

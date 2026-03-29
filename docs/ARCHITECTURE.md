@@ -2,13 +2,11 @@
 
 ## Overview
 
-Kallisto currently runs as:
+Kallisto runs as:
 
 - one React SPA frontend
 - one Go backend monolith
-- two PostgreSQL databases used by that single backend process
-
-The backend is operationally a monolith, but the codebase still keeps `services/client` and `services/admin` as internal domain modules.
+- one PostgreSQL database
 
 ## Runtime topology
 
@@ -16,7 +14,7 @@ The backend is operationally a monolith, but the codebase still keeps `services/
 - Backend API: `http://localhost:8081/v1.0`
 - Frontend dev proxy: `/api -> http://localhost:8081`
 
-There is no separate supported admin service runtime and no supported `/adminapi` proxy anymore.
+There is no supported split-service runtime and no supported `/adminapi` proxy.
 
 ## Backend composition
 
@@ -33,23 +31,21 @@ Each route group is protected by shared middleware from `infra/`:
 
 - DB pool injection
 - JWT authentication
-- role/permission checks
+- CSRF enforcement
+- role and permission checks
 - request logging and CORS
 
 The effective request stack is:
 
 1. Gorilla Mux router
 2. shared middleware
-3. thin handler export layer in `services/client/api` or `services/admin/api`
-4. internal HTTP handlers
-5. usecases
-6. PostgreSQL
+3. role packages under `services/backend/internal`
+4. usecases
+5. PostgreSQL
 
-## Databases and ownership
+## Database and ownership
 
-### `client_db`
-
-`client_db` is the applicant-side store. Main tables include:
+`admin_db` is the only supported runtime store. Main tables include:
 
 - `users`
 - `universities`
@@ -58,59 +54,40 @@ The effective request stack is:
 - `application_transcripts`
 - `profile_test_scores`
 - `application_test_scores`
-- `password_reset_tokens`
-
-Important constraints:
-
-- `users.role` is fixed to `applicant`
-- `applications.status` is limited to `draft` or `submitted`
-
-### `admin_db`
-
-`admin_db` is the management-side store. Main tables include:
-
-- `users`
-- `universities`
-- `submitted_applications`
-- `submitted_application_files`
-- `drafts`
 - `auth_sessions`
 - `auth_login_attempts`
 - `service_logs`
 - `audit_logs`
 - `global_settings`
-- `university_application_structure_versions`
 - `password_reset_tokens`
+- `university_application_structure_versions`
 
 Important constraints:
 
-- `users.role` is limited to `partner` or `staff`
-- `submitted_applications.status` is limited to `submitted`
+- `users.role` is limited to `applicant`, `partner`, or `staff`
+- `applications.status` is limited to `draft` or `submitted`
+- `universities.university_profile` is the canonical profile JSON column
 
 ## Data flow
 
 ### Account flow
 
-- Public sign-up creates applicant accounts in `client_db.users`.
-- Staff can provision `partner` and `staff` accounts in `admin_db.users`.
-- Sign-in checks `admin_db.users` first, then `client_db.users`.
-- If the same email exists in both stores, sign-in fails closed.
+- public sign-up creates applicant accounts in `admin_db.users`
+- staff can provision `partner` and `staff` accounts in `admin_db.users`
+- sign-in reads the unified `users` table only
 
 ### University data flow
 
-- `admin_db.universities` is the source of truth.
-- The backend syncs university records into `client_db.universities` for applicant-facing reads.
-- Sync happens from backend usecases directly, not through a service-to-service HTTP call.
+- all roles read the same `admin_db.universities` rows
 
 ### Application flow
 
-1. Applicant creates and edits a draft in `client_db.applications`.
+1. The applicant creates and edits a draft in `admin_db.applications`.
 2. On submit, the backend validates the draft and essay limits.
-3. The backend writes or upserts the management copy into `admin_db.submitted_applications`.
-4. The backend copies submitted file blobs into `admin_db.submitted_application_files`.
-5. Only after the admin-side write succeeds does it mark the applicant-side row as `submitted`.
+3. Applicant submit writes one transaction against `admin_db.applications` and `admin_db.application_files`.
+4. Partner and staff read the same table filtered to `status = 'submitted'`.
 
-Kallisto no longer handles application verdict release. Partner and staff users can inspect submitted applications and files, but decision release is external to Kallisto.
+Kallisto does not handle decision release. Partner and staff can inspect submitted applications and files, but release remains external to Kallisto.
 
 ## Auth and authorization
 
@@ -128,29 +105,14 @@ Per-request authorization resolves the current session row and derives:
 - `permissions[]`
 - `university_linked` for partner accounts when applicable
 
-Only these roles are supported:
-
-- `applicant`
-- `partner`
-- `staff`
-
 Authorization is fail-closed:
 
 - unauthenticated requests return `401`
 - authenticated but unauthorized requests return `403`
 
-Backend permission checks are fail-closed and server-backed:
+## Frontend architecture
 
-1. validate JWT signature and `exp`
-2. load the current session row from `auth_sessions`
-3. reject revoked or expired sessions
-4. derive request claims from the session row
-
-Unsafe authenticated requests also require trusted origin checks plus a matching CSRF header/cookie pair.
-
-## Frontend architecture and restriction
-
-The React SPA routes users into these public route namespaces:
+The React SPA routes users into these public namespaces:
 
 - `/auth/*`
 - `/applicant/*`
@@ -159,32 +121,44 @@ The React SPA routes users into these public route namespaces:
 
 Frontend restriction is implemented through:
 
-- `SessionProvider` for session bootstrap from `GET /v1.0/auth/session`, idle timeout, and auth-expiry handling
-- `RoleProtectedRoute` for route gating
+- `SessionProvider` for session bootstrap from `GET /v1.0/auth/session`
+- route guards for role gating
 - a dedicated forbidden page for `403` scenarios
-
-Important behavior:
-
-- `401` responses trigger reauth handling with machine-readable reasons such as `password-changed` and `account-updated`
-- `403` responses remain forbidden states and do not log the user out
-- role guards resolve session state before protected layouts mount
+- role-owned frontend API layers under `frontend/src/services/{auth,applicant,partner,staff}`
 
 ## Application schema contract
 
-University application schemas are normalized on read into one canonical shape:
+University application schemas are normalized into one canonical read shape:
 
 - `application_schema.sections[*].fields[*]`
 
-Legacy flat schema payloads like `{"fields":[...]}` are normalized by the backend before they reach the frontend. This protects seeded and legacy university records from silently dropping fields in the applicant form.
+Canonical schema visibility keys are:
 
-## Supported surface vs legacy internals
+- `applicant`
+- `partner`
+- `staff`
 
-The supported runtime and public docs use the `applicant`, `partner`, and `staff` model.
+Legacy flat schema payloads are normalized before they reach the frontend.
 
-The repository still contains some legacy internal naming and historical code paths, especially in:
+## Observability
 
-- frontend page/module filenames such as `student`, `management`, and `superuser`
-- some old review-era usecase code that is no longer part of the supported flow
-- schema visibility keys such as `reviewer` and `admin`, kept for builder compatibility
+`service_logs` covers:
 
-Treat the route namespaces, migrations, and backend entrypoint as the source of truth for current behavior.
+- `/v1.0/auth/*`
+- `/v1.0/applicant/*`
+- `/v1.0/partner/*`
+- `/v1.0/staff/*`
+
+Responses on those route groups include `X-Request-Id`.
+
+`audit_logs` stays focused on auth, security, and administrative events rather than broad applicant activity logging.
+
+## Quality gates
+
+The supported local verification set is:
+
+- `go test ./...`
+- `cd frontend && npm run test -- --run`
+- `cd frontend && npm run test:coverage`
+- `cd frontend && npm run lint`
+- `cd frontend && npm run build`

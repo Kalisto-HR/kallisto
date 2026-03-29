@@ -1,12 +1,10 @@
 param(
-    [string]$ClientDb = "client_db",
-    [string]$AdminDb = "admin_db",
+    [Alias("AdminDb")]
+    [string]$Database = "admin_db",
     [string]$DbUser = "postgres",
     [string]$DbHost = "localhost",
     [int]$DbPort = 5432,
-    [string]$PsqlPath = "",
-    [switch]$SkipClient,
-    [switch]$SkipAdmin
+    [string]$PsqlPath = ""
 )
 
 Set-StrictMode -Version Latest
@@ -31,21 +29,18 @@ function Invoke-MigrationFile {
     }
 }
 
-if ($SkipClient -and $SkipAdmin) {
-    Write-Host "Both -SkipClient and -SkipAdmin were provided. Nothing to do."
-    exit 0
-}
-
 $migrationRoot = Join-Path $PSScriptRoot "..\migrations"
 $migrationRoot = [System.IO.Path]::GetFullPath($migrationRoot)
 $psqlPath = Resolve-PsqlCommand -PsqlPath $PsqlPath
 
-if (-not $SkipClient) {
-    Invoke-MigrationFile -ResolvedPsqlPath $psqlPath -Database $ClientDb -FilePath (Join-Path $migrationRoot "client_db.sql")
-}
+$migrationFiles = @(
+    "admin_db.sql",
+    "20260329_current_state_contracts.sql",
+    "20260329_drop_legacy_single_db_scaffolding.sql"
+)
 
-if (-not $SkipAdmin) {
-    Invoke-MigrationFile -ResolvedPsqlPath $psqlPath -Database $AdminDb -FilePath (Join-Path $migrationRoot "admin_db.sql")
+foreach ($migrationFile in $migrationFiles) {
+    Invoke-MigrationFile -ResolvedPsqlPath $psqlPath -Database $Database -FilePath (Join-Path $migrationRoot $migrationFile)
 }
 
 Write-Host "Migration apply complete."

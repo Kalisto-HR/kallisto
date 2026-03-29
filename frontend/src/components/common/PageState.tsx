@@ -26,6 +26,32 @@ export function EmptyState({ title, description }: { title: string; description:
   );
 }
 
+export function UnavailableState({
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  description: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="brand-panel space-y-4 p-6">
+      <div>
+        <h3 className="font-medium">{title}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      </div>
+      {actionLabel && onAction ? (
+        <Button variant="outline" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 export function SuccessState({ message }: { message: string }) {
   return <div className="rounded-xl border border-success/20 bg-success/8 p-4 text-sm text-success shadow-[0_18px_38px_-30px_rgba(47,122,89,0.32)]">{message}</div>;
 }

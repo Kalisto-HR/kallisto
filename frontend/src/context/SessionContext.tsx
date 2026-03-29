@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { getSessionUser, signOut as signOutRequest } from "../services/authService";
+import { getSessionUser, signOut as signOutRequest } from "../services/auth/service";
 import { routes } from "../routes/routeConfig";
 import {
   ACCOUNT_UPDATED_REASON,

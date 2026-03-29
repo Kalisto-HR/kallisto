@@ -26,13 +26,15 @@ This file defines the default working rules and project knowledge baseline for c
 
 ### 2.2 Services and Ports
 - Frontend dev server: `http://localhost:5173`
-- Client service API: `http://localhost:8081/v1.0`
-- Admin service API: `http://localhost:8082/v1.0`
+- Monolith backend API: `http://localhost:8081/v1.0`
 - PostgreSQL default port: `5432`
 
 ### 2.3 Responsibilities
-- `services/client`: applicant-facing auth, profile, universities, favorites, applications.
-- `services/admin`: staff/partner auth, submitted application review workflow, university management.
+- `services/backend/internal/auth`: auth, session bootstrap, sign-in, sign-up, sign-out, management account creation.
+- `services/backend/internal/applicant`: applicant-facing profile, universities, favorites, compare, basket, applications.
+- `services/backend/internal/partner`: linked-university dashboard and application-structure management handlers.
+- `services/backend/internal/staff`: staff overview, universities, settings, and observability handlers.
+- `services/backend/internal/shared`: shared partner/staff models, university handlers, submitted-application access, and usecases.
 - `infra`: shared auth, middleware, env loading, validation, utilities, logging.
 
 ### 2.4 Auth Model
@@ -43,20 +45,16 @@ This file defines the default working rules and project knowledge baseline for c
 
 ### 2.5 Data Ownership and Flow
 - `admin_db.universities` is source of truth.
-- `client_db.universities` is a read replica for applicant-facing reads.
+- All roles read the same `admin_db.universities` rows.
 - Application flow:
-1. Applicant creates draft in `client_db.applications`.
-2. Applicant submits from client service.
-3. Client service forwards to admin service (`/applications/receive`).
-4. Admin service stores in `admin_db.submitted_applications`.
-5. Admin/partner reviews and updates status.
-- University sync from admin DB to client DB is planned and should be treated as a known gap unless implemented.
+1. Applicant drafts live in `admin_db.applications`.
+2. On submit, the monolith validates the draft and commits the same row as `submitted`.
+3. Partner and staff users read submitted applications from the same unified tables.
 
 ## 3. Project Structure Reference
 
 - `frontend/`: React UI
-- `services/client/`: client API service
-- `services/admin/`: admin API service
+- `services/backend/`: monolith backend service and internal role packages
 - `infra/`: shared backend infrastructure
 - `scripts/migrations/`: SQL schema
 - `scripts/seeds/`: seed data
@@ -72,15 +70,12 @@ This file defines the default working rules and project knowledge baseline for c
 
 ## 5. Quick Start Context
 
-1. Create `client_db` and `admin_db`.
-2. Run migrations in `scripts/migrations/`.
+1. Create `admin_db`.
+2. Run migrations from `scripts/migrations/admin_db.sql`.
 3. Seed development data in `scripts/seeds/` when needed.
 4. Configure `.env`:
-- `DB_CONNECTION_URL`
-- `ADMIN_DB_CONNECTION_URL`
+- `DATABASE_URL`
 - `SECRET_KEY`
-- `ADMIN_SERVICE_URL`
 5. Run services:
-- `go run services/client/cmd/main.go`
-- `go run services/admin/cmd/main/main.go`
+- `go run services/backend/cmd/main.go`
 - `cd frontend && npm install && npm run dev`

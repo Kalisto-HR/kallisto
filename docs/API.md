@@ -5,27 +5,29 @@
 - Backend API: `http://localhost:8081/v1.0`
 - Frontend proxy during development: `/api`
 
-Kallisto now runs as a single backend service with role-scoped routes.
+Kallisto runs as one backend service with role-scoped routes.
 
 ## Authentication model
 
 - `access_token` is an `HttpOnly` JWT cookie carrying the session ID (`sid`)
 - `csrf_token` is a readable cookie used only for CSRF protection on authenticated unsafe requests
-- The authoritative session state lives in `admin_db.auth_sessions`
-- Protected requests resolve current role, permissions, and linked university from the server session row, not from a frontend-readable cookie
-- Authenticated unsafe requests under `/v1.0/applicant/*`, `/v1.0/partner/*`, `/v1.0/staff/*`, and `POST /v1.0/auth/sign-out` require:
+- the authoritative session state lives in `admin_db.auth_sessions`
+- protected requests resolve current role, permissions, and linked university from the server session row
+- authenticated unsafe requests under `/v1.0/applicant/*`, `/v1.0/partner/*`, `/v1.0/staff/*`, and `POST /v1.0/auth/sign-out` require:
   - trusted `Origin` or `Referer`
   - `X-CSRF-Token` matching the `csrf_token` cookie
 
 Unauthorized requests return `401`.
 Authenticated but disallowed requests return `403`.
 
-Session-related `401` responses may include one of these reasons:
+Session-related `401` responses may include:
 
 - `session-expired`
 - `session-revoked`
 - `password-changed`
 - `account-updated`
+
+Responses under `/v1.0/auth/*`, `/v1.0/applicant/*`, `/v1.0/partner/*`, and `/v1.0/staff/*` include `X-Request-Id`.
 
 ## Auth endpoints
 
@@ -42,9 +44,7 @@ Unified sign-in for `applicant`, `partner`, and `staff`.
 
 Behavior:
 
-- checks `admin_db.users` first for `partner` and `staff`
-- checks `client_db.users` second for `applicant`
-- fails closed if the same email exists in both stores
+- reads the unified `admin_db.users` table
 - applies DB-backed sign-in throttling by email and IP
 - may return `429 Too Many Requests` with `Retry-After`
 
@@ -56,20 +56,9 @@ Returns the current server-backed session payload for the SPA.
 
 Creates an `applicant` account only.
 
-```json
-{
-  "email": "applicant@example.com",
-  "password": "password123",
-  "first_name": "Test",
-  "last_name": "User"
-}
-```
-
 ### `POST /v1.0/auth/sign-out`
 
 Revokes the current session and clears auth cookies.
-
-Responses under `/v1.0/auth/*`, `/v1.0/partner/*`, and `/v1.0/staff/*` include `X-Request-Id`.
 
 ### `POST /v1.0/auth/password/forgot`
 ### `POST /v1.0/auth/password/reset`
@@ -91,7 +80,7 @@ Examples:
 - `POST /v1.0/applicant/applications/{universityId}/{cycle}/submit`
 - `GET /v1.0/applicant/profile`
 
-Application status in `client_db.applications` is limited to:
+Application status in `admin_db.applications` is limited to:
 
 - `draft`
 - `submitted`
@@ -99,16 +88,13 @@ Application status in `client_db.applications` is limited to:
 Submission behavior:
 
 - applicant draft validation happens first
-- admin-side submission persistence in `admin_db` must succeed first
-- only then is the applicant record marked `submitted`
-- failures return `502 Bad Gateway`
+- submission persistence is one transaction in the unified database
+- the same row transitions from `draft` to `submitted`
 
-University detail responses emit canonical application schema only:
+University detail responses emit one canonical application schema:
 
-- `application_schema.sections[*].fields[*]` is the supported read shape
-- legacy flat payloads like `{"fields":[...]}` are normalized on read and are not emitted anymore
-- canonical sections expose `id`, `title`, `order`, `visible`, and `fields`
-- canonical fields expose `id`, `type`, `label`, `required`, `dataKey`, `visibility`, and `order`
+- `application_schema.sections[*].fields[*]`
+- canonical visibility keys are `applicant|partner|staff`
 
 ## Partner routes
 
@@ -126,14 +112,7 @@ Examples:
 - `GET /v1.0/partner/applications/{id}/files`
 - `GET /v1.0/partner/applications/{id}/files/{fileId}/download`
 
-Partner submissions are read-only. Kallisto does not expose accept/reject/review endpoints anymore.
-
-Application-structure reads also return the canonical sectioned schema shape under `application_schema`.
-
-Implementation note:
-
-- schema visibility keys are still emitted in the existing compatibility shape from the builder layer
-- the supported route/role model is `applicant|partner|staff`, but some schema visibility payloads may still use `applicant|reviewer|admin`
+Partner submissions are read-only. Kallisto does not expose accept, reject, or review endpoints.
 
 ## Staff routes
 
@@ -167,17 +146,6 @@ Examples:
 - existing filters: `q`, `action`, `outcome`
 - additional filters: `request_id`, `actor_type`, `target_entity`, `from`, `to`
 - `actor_type` is normalized to `applicant|partner|staff|system|anonymous`
-- current action taxonomy includes:
-  - `auth.sign-in`
-  - `auth.sign-out`
-  - `security.access-denied`
-  - `management-account.create`
-  - `university.create`
-  - `university.update`
-  - `university.delete`
-  - `application-structure.update`
-  - `application-structure.publish`
-  - `settings.update`
 
 ## Removed surfaces
 
@@ -188,7 +156,7 @@ These are not part of the supported API anymore:
 - `/v1.0/global/*`
 - `GET /v1.0/auth/sign-out`
 - `/v1.0/staff/drafts*`
-- applicant decision/release endpoints
+- applicant decision or release endpoints
 - university-side staff subrole and invitation endpoints
 - old route namespaces such as `/student/*`, `/management/*`, and `/superuser/*`
 
@@ -200,7 +168,6 @@ These are not part of the supported API anymore:
 - `401` unauthorized
 - `403` forbidden
 - `404` not found
-- `409` duplicate/ambiguous account conflict
+- `409` duplicate or ambiguous account conflict
 - `429` too many sign-in attempts
-- `502` upstream persistence failure during applicant submission
 - `503` currently unavailable features such as password reset

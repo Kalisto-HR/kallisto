@@ -174,8 +174,8 @@ func isEssayLikeSchemaField(fieldName string) bool {
 func normalizeSchemaVisibility(raw any) map[string]any {
 	visibility := map[string]any{
 		"applicant": true,
-		"reviewer":  true,
-		"admin":     true,
+		"partner":   true,
+		"staff":     true,
 	}
 
 	current, ok := raw.(map[string]any)
@@ -189,7 +189,7 @@ func normalizeSchemaVisibility(raw any) map[string]any {
 		}
 	}
 
-	for _, key := range []string{"applicant", "reviewer", "admin"} {
+	for _, key := range []string{"applicant", "partner", "staff"} {
 		if _, ok := visibility[key].(bool); !ok {
 			visibility[key] = true
 		}

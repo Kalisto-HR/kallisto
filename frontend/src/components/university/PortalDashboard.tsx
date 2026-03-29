@@ -5,7 +5,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { routes } from "../../routes/routeConfig";
-import { useManagementDashboardData } from "../../hooks/useManagementDashboardData";
+import { usePartnerDashboardData } from "../../hooks/usePartnerDashboardData";
 
 interface PortalDashboardProps {
   onNavigate?: (page: string) => void;
@@ -14,7 +14,7 @@ interface PortalDashboardProps {
 export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
   const { universityId } = useParams();
   const navigate = useNavigate();
-  const { data, loading, error } = useManagementDashboardData(universityId);
+  const { data, loading, error } = usePartnerDashboardData(universityId);
   const submissionsRoute = universityId ? routes.partner.applications(universityId) : null;
 
   const openSubmissions = (applicationId?: string) => {

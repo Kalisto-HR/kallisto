@@ -109,4 +109,46 @@ describe("httpClient unauthorized raw handling", () => {
     expect(response.status).toBe(204);
     expect(authExpiredSpy).not.toHaveBeenCalled();
   });
+
+  it("does not dispatch auth-expired for sign-in credential failures", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ msg: "invalid credentials" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const response = await requestRaw("/api", "/v1.0/auth/sign-in", { method: "POST" });
+
+    expect(response.status).toBe(401);
+    expect(authExpiredSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("httpClient unauthorized json handling", () => {
+  const fetchMock = vi.fn<typeof fetch>();
+
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    fetchMock.mockReset();
+  });
+
+  it("preserves backend auth messages for 401 credential errors", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ msg: "invalid credentials" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const result = await requestJson<{ msg: string }>("/api", "/v1.0/auth/sign-in", { method: "POST" });
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(401);
+    expect(result.error).toBe("invalid credentials");
+  });
 });

@@ -5,7 +5,7 @@ import {
   fetchUniversities,
   searchUniversities,
   type UniversitySearchParams,
-} from "../services/client/universitiesService";
+} from "../services/applicant/universitiesService";
 
 interface UseUniversitySearchDataState {
   result: Pagination<UniversityListItem>;

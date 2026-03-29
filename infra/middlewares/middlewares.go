@@ -26,7 +26,6 @@ import (
 type CtxKey string
 
 const CtxPostgresKey CtxKey = "postgres"
-const CtxClientPostgresKey CtxKey = "client_postgres"
 const CtxClaimsKey CtxKey = "claims"
 const CtxSessionKey CtxKey = "session"
 const AccessTokenKey = utils.AccessTokenCookieName
@@ -80,21 +79,15 @@ func PassPgPoolConn(pool *pgxpool.Pool) mux.MiddlewareFunc {
 	}
 }
 
-func PassClientPgPoolConn(pool *pgxpool.Pool) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), CtxClientPostgresKey, pool)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
-}
-
 func RequireAuth(log *zap.Logger, sessionStore authsession.Store, auditLogger *observability.AuditLogger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			accessToken, err := r.Cookie(AccessTokenKey)
 			if err != nil {
-				log.Error("failed to acquire access_token cookie; ", zap.String("error_msg", err.Error()))
+				log.Debug("missing access_token cookie",
+					zap.String("path", r.URL.Path),
+					zap.String("method", r.Method),
+					zap.String("error_msg", err.Error()))
 				writeAccessDeniedAudit(r, auditLogger, nil, "security.access-denied", "missing access token")
 				utils.WriteJSONResponseWithMsg(w, "unauthorized", http.StatusUnauthorized)
 				return

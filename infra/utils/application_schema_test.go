@@ -53,7 +53,7 @@ func TestNormalizeApplicationSchemaPreservesSectionedSchemaAndFillsDefaults(t *t
 		t.Fatalf("expected field order default, got %#v", field["order"])
 	}
 	visibility := field["visibility"].(map[string]any)
-	if visibility["applicant"] != true || visibility["reviewer"] != true || visibility["admin"] != true {
+	if visibility["applicant"] != true || visibility["partner"] != true || visibility["staff"] != true {
 		t.Fatalf("unexpected default visibility: %#v", visibility)
 	}
 	if _, ok := field["conditional"]; !ok {

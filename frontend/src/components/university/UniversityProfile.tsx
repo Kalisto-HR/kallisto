@@ -1,187 +1,377 @@
-// @ts-nocheck
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
-import { Building2, Save, Plus, X, Mail, Globe, MapPin } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useParams } from 'react-router-dom';
-import { fetchAdminUniversity, updateAdminUniversity } from '../../services/admin/universitiesService';
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Building2, Globe, Mail, MapPin, Plus, Save, Trash2 } from "lucide-react";
+import { ErrorState, LoadingState, SuccessState } from "../common/PageState";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Textarea } from "../ui/textarea";
+import { useSession } from "../../hooks/useSession";
+import {
+  fetchPartnerUniversityProfile,
+  updatePartnerUniversityProfile,
+} from "../../services/partner/universityService";
+import type { University } from "../../types/domain";
+import { isValidUUID } from "../../utils/validation";
 
 interface UniversityProfileProps {
   onNavigate?: (page: string) => void;
 }
 
+interface ProfileDraft {
+  universityName: string;
+  description: string;
+  location: string;
+  website: string;
+  contactEmail: string;
+  foundedYear: string;
+  studentCount: string;
+  facultyCount: string;
+  acceptanceRate: string;
+  ranking: string;
+  accreditations: string[];
+}
+
+interface ProgramDraft {
+  id: string;
+  name: string;
+  level: "Undergraduate" | "Graduate" | "Doctorate";
+  duration: string;
+}
+
+interface IntakeTermDraft {
+  id: string;
+  term: string;
+  deadline: string;
+}
+
+interface TestRequirementsDraft {
+  satMin: string;
+  actMin: string;
+  ieltsMin: string;
+  toeflMin: string;
+}
+
+const EMPTY_PROFILE_DRAFT: ProfileDraft = {
+  universityName: "",
+  description: "",
+  location: "",
+  website: "",
+  contactEmail: "",
+  foundedYear: "",
+  studentCount: "",
+  facultyCount: "",
+  acceptanceRate: "",
+  ranking: "",
+  accreditations: [],
+};
+
+const EMPTY_TEST_REQUIREMENTS: TestRequirementsDraft = {
+  satMin: "",
+  actMin: "",
+  ieltsMin: "",
+  toeflMin: "",
+};
+
+function createId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function toString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+function toPrograms(value: unknown): ProgramDraft[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      const source = toRecord(item);
+      if (!source) {
+        return null;
+      }
+
+      const rawLevel = toString(source.level);
+      const level: ProgramDraft["level"] =
+        rawLevel === "Graduate" || rawLevel === "Doctorate" ? rawLevel : "Undergraduate";
+
+      return {
+        id: toString(source.id) || createId("program"),
+        name: toString(source.name),
+        level,
+        duration: toString(source.duration),
+      };
+    })
+    .filter((item): item is ProgramDraft => item !== null);
+}
+
+function toIntakeTerms(value: unknown): IntakeTermDraft[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      const source = toRecord(item);
+      if (!source) {
+        return null;
+      }
+
+      return {
+        id: toString(source.id) || createId("term"),
+        term: toString(source.term),
+        deadline: toString(source.deadline),
+      };
+    })
+    .filter((item): item is IntakeTermDraft => item !== null);
+}
+
+function buildProfileDraft(university: University): {
+  profile: ProfileDraft;
+  programs: ProgramDraft[];
+  intakeTerms: IntakeTermDraft[];
+  testRequirements: TestRequirementsDraft;
+} {
+  const universityProfile = toRecord(university.universityProfile) ?? {};
+  const testRequirements = toRecord(universityProfile.testRequirements) ?? {};
+
+  const location = [university.city, university.country].filter(Boolean).join(", ");
+
+  return {
+    profile: {
+      universityName: university.name,
+      description: university.description ?? "",
+      location,
+      website: toString(universityProfile.website),
+      contactEmail: toString(universityProfile.contactEmail),
+      foundedYear: toString(universityProfile.foundedYear),
+      studentCount: toString(universityProfile.studentCount),
+      facultyCount: toString(universityProfile.facultyCount),
+      acceptanceRate:
+        university.acceptanceRate !== null && university.acceptanceRate !== undefined
+          ? String(university.acceptanceRate)
+          : toString(universityProfile.acceptanceRate),
+      ranking: university.ranking !== null && university.ranking !== undefined ? String(university.ranking) : "",
+      accreditations: toStringArray(universityProfile.accreditations),
+    },
+    programs: toPrograms(universityProfile.programs),
+    intakeTerms: toIntakeTerms(universityProfile.intakeTerms),
+    testRequirements: {
+      satMin: toString(testRequirements.satMin),
+      actMin: toString(testRequirements.actMin),
+      ieltsMin:
+        university.ieltsMin !== null && university.ieltsMin !== undefined
+          ? String(university.ieltsMin)
+          : toString(testRequirements.ieltsMin),
+      toeflMin:
+        university.toeflMin !== null && university.toeflMin !== undefined
+          ? String(university.toeflMin)
+          : toString(testRequirements.toeflMin),
+    },
+  };
+}
+
+function parseNullableNumber(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
   const { universityId } = useParams();
+  const { user } = useSession();
+  const routeUniversityId = universityId && isValidUUID(universityId) ? universityId : null;
+  const linkedUniversityId =
+    user?.universityLinked && isValidUUID(user.universityLinked) ? user.universityLinked : null;
+  const resolvedUniversityId = routeUniversityId ?? linkedUniversityId;
+
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [profileDraft, setProfileDraft] = useState({
-    universityName: 'University of Excellence',
-    description: 'A leading institution dedicated to academic excellence and innovation. We offer world-class programs across multiple disciplines with a focus on research and practical learning.',
-    location: 'Boston, MA, USA',
-    website: 'https://www.universityofexcellence.edu',
-    contactEmail: 'admissions@universityofexcellence.edu',
-    foundedYear: '1890',
-    studentCount: '15000',
-    facultyCount: '850',
-    acceptanceRate: '15.5',
-    ranking: '42',
-    accreditations: ['AACSB', 'ABET', 'Regional Accreditation'],
-  });
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [profileDraft, setProfileDraft] = useState<ProfileDraft>(EMPTY_PROFILE_DRAFT);
+  const [programs, setPrograms] = useState<ProgramDraft[]>([]);
+  const [intakeTerms, setIntakeTerms] = useState<IntakeTermDraft[]>([]);
+  const [testRequirements, setTestRequirements] = useState<TestRequirementsDraft>(EMPTY_TEST_REQUIREMENTS);
+  const [newAccreditation, setNewAccreditation] = useState("");
 
-  const [programs, setPrograms] = useState([
-    { id: '1', name: 'Computer Science', level: 'Undergraduate', duration: '4 years' },
-    { id: '2', name: 'Business Administration', level: 'Undergraduate', duration: '4 years' },
-    { id: '3', name: 'Data Science', level: 'Graduate', duration: '2 years' },
-  ]);
+  const load = useCallback(async () => {
+    if (!resolvedUniversityId) {
+      setLoadError("Missing valid university context. Re-open this page from the partner dashboard.");
+      setLoading(false);
+      return;
+    }
 
-  const [intakeTerms, setIntakeTerms] = useState([
-    { id: '1', term: 'Fall 2025', deadline: '2025-05-01' },
-    { id: '2', term: 'Spring 2026', deadline: '2025-11-01' },
-  ]);
+    setLoading(true);
+    setLoadError(null);
+    setSaveError(null);
+    setSaveSuccess(null);
 
-  const [testRequirements, setTestRequirements] = useState({
-    satMin: '1200',
-    ieltsMin: '6.5',
-    toeflMin: '80',
-    actMin: '24',
-  });
+    try {
+      const university = await fetchPartnerUniversityProfile();
+      const loaded = buildProfileDraft(university);
+      setProfileDraft(loaded.profile);
+      setPrograms(loaded.programs);
+      setIntakeTerms(loaded.intakeTerms);
+      setTestRequirements(loaded.testRequirements);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load university profile");
+    } finally {
+      setLoading(false);
+    }
+  }, [resolvedUniversityId]);
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      if (!universityId) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const university = await fetchAdminUniversity(universityId);
-        if (!mounted) return;
-        const managementProfile = (university.managementProfile ?? {}) as Record<string, unknown>;
-        const loadedPrograms = Array.isArray(managementProfile.programs) ? managementProfile.programs : null;
-        const loadedIntakeTerms = Array.isArray(managementProfile.intakeTerms) ? managementProfile.intakeTerms : null;
-        const loadedTests = (managementProfile.testRequirements ?? {}) as Record<string, unknown>;
-        setProfileDraft({
-          universityName: university.name || 'University of Excellence',
-          description: university.description ?? profileDraft.description,
-          location: [university.city, university.country].filter(Boolean).join(', ') || profileDraft.location,
-          website: String(managementProfile.website ?? profileDraft.website),
-          contactEmail: String(managementProfile.contactEmail ?? profileDraft.contactEmail),
-          foundedYear: String(managementProfile.foundedYear ?? profileDraft.foundedYear),
-          studentCount: String(managementProfile.studentCount ?? profileDraft.studentCount),
-          facultyCount: String(managementProfile.facultyCount ?? profileDraft.facultyCount),
-          acceptanceRate: String(university.acceptanceRate ?? managementProfile.acceptanceRate ?? profileDraft.acceptanceRate),
-          ranking: String(university.ranking ?? profileDraft.ranking),
-          accreditations: Array.isArray(managementProfile.accreditations)
-            ? managementProfile.accreditations.filter((item): item is string => typeof item === 'string')
-            : profileDraft.accreditations,
-        });
-        if (loadedPrograms) {
-          setPrograms(loadedPrograms as any);
-        }
-        if (loadedIntakeTerms) {
-          setIntakeTerms(loadedIntakeTerms as any);
-        }
-        setTestRequirements({
-          satMin: String(loadedTests.satMin ?? testRequirements.satMin),
-          ieltsMin: String(university.ieltsMin ?? loadedTests.ieltsMin ?? testRequirements.ieltsMin),
-          toeflMin: String(university.toeflMin ?? loadedTests.toeflMin ?? testRequirements.toeflMin),
-          actMin: String(loadedTests.actMin ?? testRequirements.actMin),
-        });
-      } catch (err) {
-        if (!mounted) return;
-        setSaveError(err instanceof Error ? err.message : 'Failed to load profile');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
     void load();
-    return () => {
-      mounted = false;
-    };
-  }, [universityId]);
+  }, [load]);
 
-  const handleSave = async () => {
-    if (!universityId) return;
+  const handleSave = useCallback(async () => {
+    if (!resolvedUniversityId) {
+      return;
+    }
+
     setSaving(true);
     setSaveError(null);
-    const [cityPart, countryPart] = profileDraft.location.split(',').map((value) => value.trim());
+    setSaveSuccess(null);
+
+    const [cityPart, countryPart] = profileDraft.location
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
     try {
-      await updateAdminUniversity(universityId, {
-        name: profileDraft.universityName,
-        description: profileDraft.description,
+      await updatePartnerUniversityProfile({
+        name: profileDraft.universityName.trim(),
+        description: profileDraft.description.trim() || null,
         city: cityPart || null,
         country: countryPart || null,
-        acceptanceRate: Number(profileDraft.acceptanceRate) || null,
-        ranking: Number(profileDraft.ranking) || null,
-        ieltsMin: Number(testRequirements.ieltsMin) || null,
-        toeflMin: Number(testRequirements.toeflMin) || null,
-        managementProfile: {
-          website: profileDraft.website,
-          contactEmail: profileDraft.contactEmail,
-          foundedYear: profileDraft.foundedYear,
-          studentCount: profileDraft.studentCount,
-          facultyCount: profileDraft.facultyCount,
+        acceptanceRate: parseNullableNumber(profileDraft.acceptanceRate),
+        ranking: parseNullableNumber(profileDraft.ranking),
+        ieltsMin: parseNullableNumber(testRequirements.ieltsMin),
+        toeflMin: parseNullableNumber(testRequirements.toeflMin),
+        universityProfile: {
+          website: profileDraft.website.trim(),
+          contactEmail: profileDraft.contactEmail.trim(),
+          foundedYear: profileDraft.foundedYear.trim(),
+          studentCount: profileDraft.studentCount.trim(),
+          facultyCount: profileDraft.facultyCount.trim(),
           programs,
           intakeTerms,
-          testRequirements,
+          testRequirements: {
+            satMin: parseNullableNumber(testRequirements.satMin),
+            actMin: parseNullableNumber(testRequirements.actMin),
+            ieltsMin: parseNullableNumber(testRequirements.ieltsMin),
+            toeflMin: parseNullableNumber(testRequirements.toeflMin),
+          },
           accreditations: profileDraft.accreditations,
         },
       });
+      setSaveSuccess("Profile saved successfully.");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save profile');
+      setSaveError(err instanceof Error ? err.message : "Failed to save university profile");
     } finally {
       setSaving(false);
     }
-  };
+  }, [intakeTerms, profileDraft, programs, resolvedUniversityId, testRequirements]);
 
   const addProgram = () => {
-    setPrograms([...programs, { id: Date.now().toString(), name: '', level: 'Undergraduate', duration: '4 years' }]);
+    setPrograms((current) => [
+      ...current,
+      { id: createId("program"), name: "", level: "Undergraduate", duration: "" },
+    ]);
   };
 
-  const updateProgram = (id: string, patch: Partial<{ name: string; level: string; duration: string }>) => {
+  const updateProgram = (id: string, patch: Partial<ProgramDraft>) => {
     setPrograms((current) => current.map((program) => (program.id === id ? { ...program, ...patch } : program)));
   };
 
   const removeProgram = (id: string) => {
-    setPrograms(programs.filter((p) => p.id !== id));
+    setPrograms((current) => current.filter((program) => program.id !== id));
   };
 
   const addIntakeTerm = () => {
-    setIntakeTerms([...intakeTerms, { id: Date.now().toString(), term: '', deadline: '' }]);
+    setIntakeTerms((current) => [...current, { id: createId("term"), term: "", deadline: "" }]);
   };
 
-  const updateIntakeTerm = (id: string, patch: Partial<{ term: string; deadline: string }>) => {
+  const updateIntakeTerm = (id: string, patch: Partial<IntakeTermDraft>) => {
     setIntakeTerms((current) => current.map((term) => (term.id === id ? { ...term, ...patch } : term)));
   };
 
   const removeIntakeTerm = (id: string) => {
-    setIntakeTerms(intakeTerms.filter((t) => t.id !== id));
+    setIntakeTerms((current) => current.filter((term) => term.id !== id));
   };
+
+  const addAccreditation = () => {
+    const value = newAccreditation.trim();
+    if (!value) {
+      return;
+    }
+    setProfileDraft((current) => ({
+      ...current,
+      accreditations: current.accreditations.includes(value)
+        ? current.accreditations
+        : [...current.accreditations, value],
+    }));
+    setNewAccreditation("");
+  };
+
+  const removeAccreditation = (value: string) => {
+    setProfileDraft((current) => ({
+      ...current,
+      accreditations: current.accreditations.filter((item) => item !== value),
+    }));
+  };
+
+  if (loading) {
+    return <LoadingState label="Loading university profile..." />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => void load()} />;
+  }
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-8">
-        {/* Header */}
+      <div className="mx-auto max-w-5xl space-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold">University Profile</h1>
-            <p className="text-muted-foreground mt-1">Manage your institution's information and programs</p>
+            <p className="mt-1 text-muted-foreground">
+              Manage the live university profile shown to applicants and staff.
+            </p>
           </div>
-          <Button className="w-full md:w-auto" onClick={() => void handleSave()} disabled={saving || loading}>
+          <Button className="w-full md:w-auto" onClick={() => void handleSave()} disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
-        {saveError && <p className="text-sm text-red-600">{saveError}</p>}
 
-        {/* Basic Information */}
+        {saveError ? <ErrorState message={saveError} /> : null}
+        {saveSuccess ? <SuccessState message={saveSuccess} /> : null}
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -190,345 +380,324 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               </div>
               <div>
                 <CardTitle>Basic Information</CardTitle>
-                <CardDescription>Your university's public profile details</CardDescription>
+                <CardDescription>Your institution&apos;s public profile details.</CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="university-name">University Name</Label>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="university-name">University Name</Label>
+              <Input
+                id="university-name"
+                value={profileDraft.universityName}
+                onChange={(event) => setProfileDraft((current) => ({ ...current, universityName: event.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                rows={5}
+                value={profileDraft.description}
+                onChange={(event) => setProfileDraft((current) => ({ ...current, description: event.target.value }))}
+                placeholder="Describe your institution and its strengths."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="university-name"
-                  value={profileDraft.universityName}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, universityName: e.target.value })}
+                  id="location"
+                  className="pl-9"
+                  value={profileDraft.location}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, location: event.target.value }))}
+                  placeholder="City, Country"
                 />
               </div>
+            </div>
 
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  rows={4}
-                  value={profileDraft.description}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, description: e.target.value })}
-                  placeholder="Describe your university..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  This will be visible to prospective students
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="location"
-                    value={profileDraft.location}
-                    onChange={(e) => setProfileDraft({ ...profileDraft, location: e.target.value })}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="website"
-                    type="url"
-                    value={profileDraft.website}
-                    onChange={(e) => setProfileDraft({ ...profileDraft, website: e.target.value })}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contact-email">Contact Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="contact-email"
-                    type="email"
-                    value={profileDraft.contactEmail}
-                    onChange={(e) => setProfileDraft({ ...profileDraft, contactEmail: e.target.value })}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="founded-year">Founded Year</Label>
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="founded-year"
-                  type="number"
-                  value={profileDraft.foundedYear}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, foundedYear: e.target.value })}
+                  id="website"
+                  className="pl-9"
+                  value={profileDraft.website}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, website: event.target.value }))}
+                  placeholder="https://example.edu"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contact-email">Contact Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="contact-email"
+                  className="pl-9"
+                  value={profileDraft.contactEmail}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, contactEmail: event.target.value }))}
+                  placeholder="admissions@example.edu"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="founded-year">Founded Year</Label>
+              <Input
+                id="founded-year"
+                value={profileDraft.foundedYear}
+                onChange={(event) => setProfileDraft((current) => ({ ...current, foundedYear: event.target.value }))}
+                placeholder="1890"
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Programs Offered */}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle>Programs Offered</CardTitle>
-                <CardDescription>Manage your academic programs</CardDescription>
+                <CardDescription>List academic programs visible to applicants.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={addProgram}>
+              <Button variant="outline" size="sm" onClick={addProgram}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Program
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {programs.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No programs are configured yet. Add your first program to populate the profile.
+              </p>
+            ) : null}
             {programs.map((program, index) => (
-              <div key={program.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start">
-                <div className="grid flex-1 gap-3 sm:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor={`program-name-${index}`}>Program Name</Label>
-                    <Input
-                      id={`program-name-${index}`}
-                      value={program.name}
-                      onChange={(event) => updateProgram(program.id, { name: event.target.value })}
-                      placeholder="e.g., Computer Science"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`program-level-${index}`}>Level</Label>
-                    <Select value={program.level} onValueChange={(value) => updateProgram(program.id, { level: value })}>
-                      <SelectTrigger id={`program-level-${index}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Undergraduate">Undergraduate</SelectItem>
-                        <SelectItem value="Graduate">Graduate</SelectItem>
-                        <SelectItem value="Doctorate">Doctorate</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`program-duration-${index}`}>Duration</Label>
-                    <Input
-                      id={`program-duration-${index}`}
-                      value={program.duration}
-                      onChange={(event) => updateProgram(program.id, { duration: event.target.value })}
-                      placeholder="e.g., 4 years"
-                    />
-                  </div>
+              <div key={program.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_180px_180px_auto]">
+                <div className="space-y-2">
+                  <Label htmlFor={`program-name-${index}`}>Program Name</Label>
+                  <Input
+                    id={`program-name-${index}`}
+                    value={program.name}
+                    onChange={(event) => updateProgram(program.id, { name: event.target.value })}
+                    placeholder="Computer Science"
+                  />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="self-end sm:mt-7 sm:self-start"
-                  onClick={() => removeProgram(program.id)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor={`program-level-${index}`}>Level</Label>
+                  <Select value={program.level} onValueChange={(value: ProgramDraft["level"]) => updateProgram(program.id, { level: value })}>
+                    <SelectTrigger id={`program-level-${index}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Undergraduate">Undergraduate</SelectItem>
+                      <SelectItem value="Graduate">Graduate</SelectItem>
+                      <SelectItem value="Doctorate">Doctorate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`program-duration-${index}`}>Duration</Label>
+                  <Input
+                    id={`program-duration-${index}`}
+                    value={program.duration}
+                    onChange={(event) => updateProgram(program.id, { duration: event.target.value })}
+                    placeholder="4 years"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button variant="ghost" size="icon" onClick={() => removeProgram(program.id)} aria-label={`Remove ${program.name || "program"}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        {/* Intake Terms */}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Intake Terms & Deadlines</CardTitle>
-                <CardDescription>Set application periods and deadlines</CardDescription>
+                <CardTitle>Intake Terms</CardTitle>
+                <CardDescription>Set the application terms and deadlines.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={addIntakeTerm}>
+              <Button variant="outline" size="sm" onClick={addIntakeTerm}>
                 <Plus className="mr-2 h-4 w-4" />
-                Add Term
+                Add Intake
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {intakeTerms.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No intake terms are configured yet. Add one or more terms to guide applicants.
+              </p>
+            ) : null}
             {intakeTerms.map((term, index) => (
-              <div key={term.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start">
-                <div className="grid flex-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor={`term-name-${index}`}>Term Name</Label>
-                    <Input
-                      id={`term-name-${index}`}
-                      value={term.term}
-                      onChange={(event) => updateIntakeTerm(term.id, { term: event.target.value })}
-                      placeholder="e.g., Fall 2025"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`term-deadline-${index}`}>Application Deadline</Label>
-                    <Input
-                      id={`term-deadline-${index}`}
-                      type="date"
-                      value={term.deadline}
-                      onChange={(event) => updateIntakeTerm(term.id, { deadline: event.target.value })}
-                    />
-                  </div>
+              <div key={term.id} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_220px_auto]">
+                <div className="space-y-2">
+                  <Label htmlFor={`term-name-${index}`}>Term</Label>
+                  <Input
+                    id={`term-name-${index}`}
+                    value={term.term}
+                    onChange={(event) => updateIntakeTerm(term.id, { term: event.target.value })}
+                    placeholder="Fall 2027"
+                  />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="self-end sm:mt-7 sm:self-start"
-                  onClick={() => removeIntakeTerm(term.id)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor={`term-deadline-${index}`}>Deadline</Label>
+                  <Input
+                    id={`term-deadline-${index}`}
+                    type="date"
+                    value={term.deadline}
+                    onChange={(event) => updateIntakeTerm(term.id, { deadline: event.target.value })}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button variant="ghost" size="icon" onClick={() => removeIntakeTerm(term.id)} aria-label={`Remove ${term.term || "intake term"}`}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>
         </Card>
 
-        {/* Test Score Requirements */}
         <Card>
           <CardHeader>
-            <CardTitle>Minimum Test Score Requirements</CardTitle>
-            <CardDescription>Optional: Set recommended minimum scores for applicants</CardDescription>
+            <CardTitle>Test Score Requirements</CardTitle>
+            <CardDescription>Optional minimum score guidance for applicants.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sat-min">SAT (Minimum)</Label>
-                <Input
-                  id="sat-min"
-                  type="number"
-                  value={testRequirements.satMin}
-                  onChange={(e) => setTestRequirements({ ...testRequirements, satMin: e.target.value })}
-                  placeholder="e.g., 1200"
-                />
-                <p className="text-xs text-muted-foreground">Out of 1600</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="act-min">ACT (Minimum)</Label>
-                <Input
-                  id="act-min"
-                  type="number"
-                  value={testRequirements.actMin}
-                  onChange={(e) => setTestRequirements({ ...testRequirements, actMin: e.target.value })}
-                  placeholder="e.g., 24"
-                />
-                <p className="text-xs text-muted-foreground">Out of 36</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ielts-min">IELTS (Minimum)</Label>
-                <Input
-                  id="ielts-min"
-                  type="number"
-                  step="0.5"
-                  value={testRequirements.ieltsMin}
-                  onChange={(e) => setTestRequirements({ ...testRequirements, ieltsMin: e.target.value })}
-                  placeholder="e.g., 6.5"
-                />
-                <p className="text-xs text-muted-foreground">Out of 9.0</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="toefl-min">TOEFL (Minimum)</Label>
-                <Input
-                  id="toefl-min"
-                  type="number"
-                  value={testRequirements.toeflMin}
-                  onChange={(e) => setTestRequirements({ ...testRequirements, toeflMin: e.target.value })}
-                  placeholder="e.g., 80"
-                />
-                <p className="text-xs text-muted-foreground">Out of 120</p>
-              </div>
+          <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="sat-min">SAT</Label>
+              <Input
+                id="sat-min"
+                value={testRequirements.satMin}
+                onChange={(event) => setTestRequirements((current) => ({ ...current, satMin: event.target.value }))}
+                placeholder="1200"
+              />
             </div>
-
-            <div className="rounded-lg bg-accent p-4">
-              <p className="text-sm text-muted-foreground">
-                <strong>Note:</strong> These are recommended minimum scores. Applicants with lower scores may
-                still apply, but these thresholds help set expectations.
-              </p>
+            <div className="space-y-2">
+              <Label htmlFor="act-min">ACT</Label>
+              <Input
+                id="act-min"
+                value={testRequirements.actMin}
+                onChange={(event) => setTestRequirements((current) => ({ ...current, actMin: event.target.value }))}
+                placeholder="24"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ielts-min">IELTS</Label>
+              <Input
+                id="ielts-min"
+                value={testRequirements.ieltsMin}
+                onChange={(event) => setTestRequirements((current) => ({ ...current, ieltsMin: event.target.value }))}
+                placeholder="6.5"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="toefl-min">TOEFL</Label>
+              <Input
+                id="toefl-min"
+                value={testRequirements.toeflMin}
+                onChange={(event) => setTestRequirements((current) => ({ ...current, toeflMin: event.target.value }))}
+                placeholder="80"
+              />
             </div>
           </CardContent>
         </Card>
 
-        {/* Additional Settings */}
         <Card>
           <CardHeader>
             <CardTitle>Additional Information</CardTitle>
-            <CardDescription>Optional details about your institution</CardDescription>
+            <CardDescription>Enrollment, ranking, and accreditation details.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="student-count">Total Students</Label>
                 <Input
                   id="student-count"
-                  type="number"
                   value={profileDraft.studentCount}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, studentCount: e.target.value })}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, studentCount: event.target.value }))}
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="faculty-count">Faculty Members</Label>
                 <Input
                   id="faculty-count"
-                  type="number"
                   value={profileDraft.facultyCount}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, facultyCount: e.target.value })}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, facultyCount: event.target.value }))}
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="acceptance-rate">Acceptance Rate (%)</Label>
                 <Input
                   id="acceptance-rate"
-                  type="number"
-                  step="0.1"
                   value={profileDraft.acceptanceRate}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, acceptanceRate: e.target.value })}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, acceptanceRate: event.target.value }))}
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="ranking">QS World Ranking</Label>
+                <Label htmlFor="ranking">Ranking</Label>
                 <Input
                   id="ranking"
-                  type="number"
                   value={profileDraft.ranking}
-                  onChange={(e) => setProfileDraft({ ...profileDraft, ranking: e.target.value })}
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, ranking: event.target.value }))}
                 />
               </div>
             </div>
 
-            <Separator />
-
-            <div className="space-y-2">
-              <Label htmlFor="accreditations">Accreditations</Label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {profileDraft.accreditations.map((item) => (
-                  <Badge key={item} variant="secondary">{item}</Badge>
-                ))}
+            <div className="space-y-3">
+              <Label htmlFor="new-accreditation">Accreditations</Label>
+              <div className="flex flex-wrap gap-2">
+                {profileDraft.accreditations.length > 0 ? (
+                  profileDraft.accreditations.map((item) => (
+                    <Badge key={item} variant="secondary" className="gap-1">
+                      {item}
+                      <button type="button" onClick={() => removeAccreditation(item)} aria-label={`Remove ${item}`}>
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No accreditations have been added yet.</p>
+                )}
               </div>
-              <Input id="accreditations" placeholder="Add accreditation..." />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input
+                  id="new-accreditation"
+                  value={newAccreditation}
+                  onChange={(event) => setNewAccreditation(event.target.value)}
+                  placeholder="AACSB"
+                />
+                <Button variant="outline" onClick={addAccreditation}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Accreditation
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Save Actions */}
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onNavigate?.('university-dashboard')}>
+          <Button variant="outline" onClick={() => onNavigate?.("university-dashboard")}>
             Cancel
           </Button>
-          <Button onClick={() => void handleSave()} disabled={saving || loading}>
+          <Button onClick={() => void handleSave()} disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
-            {saving ? 'Saving...' : 'Save All Changes'}
+            {saving ? "Saving..." : "Save All Changes"}
           </Button>
         </div>
       </div>
     </div>
   );
 }
-

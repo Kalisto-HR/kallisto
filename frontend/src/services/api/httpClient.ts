@@ -1,4 +1,5 @@
 import { AUTH_EXPIRED_EVENT } from "../sessionEvents";
+import { isPublicAuthRoute } from "./routes";
 
 export interface HttpResult<T> {
   ok: boolean;
@@ -8,7 +9,7 @@ export interface HttpResult<T> {
 }
 
 type ApiBase = "/api";
-const UNAUTHORIZED_ERROR_MESSAGE = "Session expired. Please sign in again.";
+const UNAUTHORIZED_ERROR_MESSAGE = "Unauthorized. Please sign in again.";
 const CSRF_COOKIE_NAME = "csrf_token";
 
 function dispatchAuthExpired(base: ApiBase, path: string, reason?: string | null) {
@@ -44,7 +45,7 @@ export async function requestRaw(base: ApiBase, path: string, init: RequestInit 
     headers,
   });
 
-  if (response.status === 401) {
+  if (response.status === 401 && shouldDispatchAuthExpired(path)) {
     const data = await response
       .clone()
       .json()
@@ -73,11 +74,15 @@ export async function requestJson<T>(
 
     const data = (await response.json().catch(() => null)) as T | null;
     if (response.status === 401) {
+      const extractedError = extractErrorMessage(data);
       return {
         ok: false,
         status: response.status,
         data,
-        error: UNAUTHORIZED_ERROR_MESSAGE,
+        error:
+          extractedError && extractedError.trim().toLowerCase() !== "unauthorized"
+            ? extractedError
+            : UNAUTHORIZED_ERROR_MESSAGE,
       };
     }
 
@@ -140,8 +145,9 @@ export const api = {
   raw: (path: string, init: RequestInit = {}) => requestRaw("/api", path, init),
 };
 
-export const clientApi = api;
-export const adminApi = api;
+function shouldDispatchAuthExpired(path: string): boolean {
+  return !isPublicAuthRoute(path);
+}
 
 function attachCSRFHeader(headers: Headers, method?: string) {
   if (!requiresCSRF(method)) {

@@ -7,78 +7,65 @@
 - Runtime:
   - Frontend: `http://localhost:5173`
   - Backend API: `http://localhost:8081/v1.0`
-- Databases:
-  - `client_db` for applicants, drafts, applicant-side files and profile data
-  - `admin_db` for partner/staff users, university source-of-truth data, submissions, drafts, and logs
+- Database:
+  - `admin_db` for applicant, partner, staff, university, application, auth-session, and observability data
 
-## Current supported roles
+## Supported roles
 
 - `applicant`
 - `partner`
 - `staff`
 
-These are the only supported runtime roles. Older labels such as `student`, `superuser`, `university manager`, and university-side subroles are not part of the supported architecture.
+These are the only supported runtime roles.
 
 ## Repo layout
 
 - `frontend/` : React SPA
 - `services/backend/` : active backend entrypoint
-- `services/client/` : applicant-domain handlers/usecases used by the monolith
-- `services/admin/` : partner/staff-domain handlers/usecases used by the monolith
+- `services/backend/internal/auth` : auth and session endpoints
+- `services/backend/internal/applicant` : applicant-domain handlers/usecases/models
+- `services/backend/internal/partner` : partner-owned handlers
+- `services/backend/internal/staff` : staff-owned handlers
+- `services/backend/internal/shared` : shared partner/staff models and usecases
 - `infra/` : auth, middleware, utilities, logging, validation
 - `scripts/` : migrations and seed scripts
-- `docs/` : architecture, API, setup, migrations, handover
+- `docs/` : current architecture, API, setup, migrations, handover
 
 ## Core flows
 
-### 1. Auth
+### Auth
 
-- Unified auth endpoints live under `/v1.0/auth/*`
-- Sign-in checks `admin_db.users` first, then `client_db.users`
+- unified auth endpoints live under `/v1.0/auth/*`
+- sign-in reads the unified `admin_db.users` table
 - JWT is stored in `HttpOnly` cookie `access_token`
 - CSRF protection uses readable cookie `csrf_token`
-- Current identity is bootstrapped from `GET /v1.0/auth/session`
-- Sessions are server-backed in `admin_db.auth_sessions`
-- Sign-in throttling is DB-backed in `admin_db.auth_login_attempts`
-- JWT TTL is 15 minutes with extension during active sessions
+- current identity is bootstrapped from `GET /v1.0/auth/session`
+- sessions are server-backed in `admin_db.auth_sessions`
+- sign-in throttling is DB-backed in `admin_db.auth_login_attempts`
 
-### 2. Application lifecycle
+### Application lifecycle
 
-- Applicant creates and updates drafts in `client_db.applications`
-- Draft status is `draft`
-- Submit validates the draft and writes the management-side submission into `admin_db.submitted_applications`
-- Only after that succeeds does the applicant-side application become `submitted`
-- Kallisto does not release application verdicts anymore
+- applicant creates and updates drafts in `admin_db.applications`
+- submit validates the draft and marks the same row `submitted` inside one transaction
+- partner and staff read submitted applications from the same unified tables
+- Kallisto does not release application verdicts
 
-### 3. University data
+### University data
 
 - `admin_db.universities` is the source of truth
-- `client_db.universities` is the applicant-facing copy
-- Sync is implemented directly inside backend usecases
+- `universities.university_profile` is the canonical university profile JSON column
 
-### 4. Application schema
+### Application schema
 
-- The supported read contract is `application_schema.sections[*].fields[*]`
-- The backend normalizes legacy flat schema payloads on read
-- Applicant form rendering is strict about the canonical sectioned shape
+- supported read contract: `application_schema.sections[*].fields[*]`
+- canonical visibility keys: `applicant|partner|staff`
 
-## Setup (short)
+## Setup
 
-1. Create databases:
-   - `client_db`
-   - `admin_db`
-2. Run migrations:
-   - `powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432`
-3. Optional seeds:
-   - `powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432`
-4. Configure `.env`:
-   - `APP_ENV`
-   - `DB_CONNECTION_URL`
-   - `ADMIN_DB_CONNECTION_URL`
-   - `SECRET_KEY`
-   - `COOKIE_SECURE`
-   - `COOKIE_SAMESITE`
-   - `CORS_ALLOWED_ORIGINS`
+1. Create `admin_db`
+2. Run `scripts/db/apply_migrations.*`
+3. Optional: run `scripts/db/apply_seeds.*`
+4. Configure `.env`
 5. Run:
    - `go run services/backend/cmd/main.go`
    - `cd frontend && npm install && npm run dev`
@@ -89,37 +76,39 @@ These are the only supported runtime roles. Older labels such as `student`, `sup
 - Partner: `manager@kallisto.uz / admin123`
 - Applicant: create via `/auth/sign-up`
 
-## Frontend routing and restriction
+## Frontend routing
 
 - `/auth/*`
 - `/applicant/*`
 - `/partner/:universityId/*`
 - `/staff/*`
 
-Frontend route guards depend on session role and render a forbidden page for disallowed navigation. Backend middleware remains the real enforcement layer and returns `401` or `403`.
+Backend middleware remains the real enforcement layer and returns `401` or `403`.
 
 ## Operational notes
 
-- Password reset is intentionally disabled and returns `503`
+- password reset is intentionally disabled and returns `503`
 - `POST /v1.0/auth/sign-out` is the only supported sign-out route
-- Authenticated unsafe requests require `X-CSRF-Token`
-- The frontend dev proxy is `/api` only
-- Partner routes require a linked university in claims
-- Duplicate email creation is blocked by supported account-creation handlers across both user stores
+- authenticated unsafe requests require `X-CSRF-Token`
+- frontend dev proxy is `/api` only
+- partner routes require a linked university in claims
+- all role-scoped route groups now emit `service_logs` rows with `X-Request-Id`
+- audit logging remains focused on auth, security, and partner or staff administrative actions
 
-## Known gaps / cleanup debt
+## Verification baseline
 
-- Some internal filenames and modules still use older naming such as `student`, `management`, and `superuser`
-- Some historical review-era code remains in the repository even though the supported product flow is submit/read-only
-- Schema visibility keys still use older compatibility labels such as `reviewer` and `admin`
-- There is no real email delivery path yet
+- `go test ./...`
+- `cd frontend && npm run test -- --run`
+- `cd frontend && npm run test:coverage`
+- `cd frontend && npm run lint`
+- `cd frontend && npm run build`
 
 ## Handover checklist
 
-- Verify backend responds on `:8081`
-- Verify frontend proxy reaches backend through `/api`
-- Demo unified sign-in
-- Demo applicant draft -> submit flow
-- Demo partner read-only submissions view
-- Call out that verdict release is out of scope for Kallisto
-- Call out the two-database monolith model and university sync ownership
+- verify backend responds on `:8081`
+- verify frontend proxy reaches backend through `/api`
+- demo unified sign-in
+- demo applicant draft -> submit flow
+- demo partner read-only submissions view
+- confirm canonical schema visibility keys are `applicant|partner|staff`
+- confirm `universities.university_profile` is present on the deployed schema

@@ -4,8 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-CLIENT_DB="client_db"
-ADMIN_DB="admin_db"
+DATABASE="admin_db"
 DB_USER="postgres"
 DB_HOST="localhost"
 DB_PORT="5432"
@@ -16,8 +15,7 @@ SKIP_SEEDS="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --client-db) CLIENT_DB="$2"; shift 2 ;;
-    --admin-db) ADMIN_DB="$2"; shift 2 ;;
+    --database|--admin-db) DATABASE="$2"; shift 2 ;;
     --db-user) DB_USER="$2"; shift 2 ;;
     --db-host) DB_HOST="$2"; shift 2 ;;
     --db-port) DB_PORT="$2"; shift 2 ;;
@@ -46,13 +44,11 @@ ensure_db_exists() {
 }
 
 if [[ "$CREATE_DATABASES" == "true" ]]; then
-  ensure_db_exists "$CLIENT_DB"
-  ensure_db_exists "$ADMIN_DB"
+  ensure_db_exists "$DATABASE"
 fi
 
 "$SCRIPT_DIR/apply_migrations.sh" \
-  --client-db "$CLIENT_DB" \
-  --admin-db "$ADMIN_DB" \
+  --database "$DATABASE" \
   --db-user "$DB_USER" \
   --db-host "$DB_HOST" \
   --db-port "$DB_PORT" \
@@ -61,8 +57,7 @@ fi
 if [[ "$SKIP_SEEDS" != "true" ]]; then
   "$SCRIPT_DIR/apply_seeds.sh" \
     --seed-profile "$SEED_PROFILE" \
-    --client-db "$CLIENT_DB" \
-    --admin-db "$ADMIN_DB" \
+    --database "$DATABASE" \
     --db-user "$DB_USER" \
     --db-host "$DB_HOST" \
     --db-port "$DB_PORT" \

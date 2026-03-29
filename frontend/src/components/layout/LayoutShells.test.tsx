@@ -2,34 +2,38 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, vi } from "vitest";
 import { AuthShell } from "./AuthShell";
-import { StudentShell } from "./StudentShell";
-import { ManagementLiteralLayout } from "./ManagementLiteralLayout";
-import { fetchStudentApplications } from "../../services/client/applicationsService";
-import { fetchBasketState } from "../../services/client/basketService";
+import { ApplicantShell } from "./ApplicantShell";
+import { PortalShell } from "./PortalShell";
+import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
+import { fetchBasketState } from "../../services/applicant/basketService";
+import type { SessionContextValue } from "../../types/session";
 
 const signOutMock = vi.fn();
 
-let sessionState: any = {
+let sessionState: SessionContextValue = {
   user: {
+    id: "user-1",
     firstName: "Ava",
     lastName: "Li",
+    permissions: [],
     role: "applicant",
     universityLinked: null,
   },
+  loading: false,
   initialized: true,
-  isAuthenticated: true,
   signOut: signOutMock,
+  refreshSession: vi.fn(),
 };
 
 vi.mock("../../hooks/useSession", () => ({
   useSession: () => sessionState,
 }));
 
-vi.mock("../../services/client/applicationsService", () => ({
-  fetchStudentApplications: vi.fn(),
+vi.mock("../../services/applicant/applicationsService", () => ({
+  fetchApplicantApplications: vi.fn(),
 }));
 
-vi.mock("../../services/client/basketService", () => ({
+vi.mock("../../services/applicant/basketService", () => ({
   fetchBasketState: vi.fn(),
 }));
 
@@ -38,17 +42,20 @@ describe("layout shells", () => {
     signOutMock.mockReset();
     sessionState = {
       user: {
+        id: "user-1",
         firstName: "Ava",
         lastName: "Li",
+        permissions: [],
         role: "applicant",
         universityLinked: null,
       },
+      loading: false,
       initialized: true,
-      isAuthenticated: true,
       signOut: signOutMock,
+      refreshSession: vi.fn(),
     };
 
-    vi.mocked(fetchStudentApplications).mockResolvedValue([]);
+    vi.mocked(fetchApplicantApplications).mockResolvedValue([]);
     vi.mocked(fetchBasketState).mockResolvedValue({
       items: [],
       selectedPlanId: null,
@@ -74,9 +81,9 @@ describe("layout shells", () => {
   it("renders the applicant shell and child content", async () => {
     render(
       <MemoryRouter initialEntries={["/applicant/dashboard"]}>
-        <StudentShell>
+        <ApplicantShell>
           <div>Applicant child</div>
-        </StudentShell>
+        </ApplicantShell>
       </MemoryRouter>,
     );
 
@@ -84,17 +91,20 @@ describe("layout shells", () => {
     expect(screen.getByText("Find Universities")).toBeInTheDocument();
   });
 
-  it("renders the management shell and child content", async () => {
+  it("renders the portal shell and child content", async () => {
     sessionState = {
       user: {
+        id: "partner-1",
         firstName: "Pat",
         lastName: "Ner",
+        permissions: [],
         role: "partner",
         universityLinked: "11111111-1111-1111-1111-111111111111",
       },
+      loading: false,
       initialized: true,
-      isAuthenticated: true,
       signOut: signOutMock,
+      refreshSession: vi.fn(),
     };
 
     render(
@@ -103,16 +113,16 @@ describe("layout shells", () => {
           <Route
             path="/partner/:universityId/dashboard"
             element={(
-              <ManagementLiteralLayout>
-                <div>Management child</div>
-              </ManagementLiteralLayout>
+              <PortalShell>
+                <div>Portal child</div>
+              </PortalShell>
             )}
           />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("Management child")).toBeInTheDocument();
-    expect(screen.getByText("Management Console")).toBeInTheDocument();
+    expect(await screen.findByText("Portal child")).toBeInTheDocument();
+    expect(screen.getByText("Portal Console")).toBeInTheDocument();
   });
 });

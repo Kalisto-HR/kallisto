@@ -122,15 +122,11 @@ func main() {
 
 	defaultDataPath := filepath.Join("scripts", "seeds", "data", "universities.v1.json")
 	dataPath := flag.String("data", defaultDataPath, "path to universities JSON seed file")
-	adminURL := flag.String("admin-db-url", os.Getenv("ADMIN_DB_CONNECTION_URL"), "admin database connection URL")
-	clientURL := flag.String("client-db-url", os.Getenv("DB_CONNECTION_URL"), "client database connection URL")
+	databaseURL := flag.String("database-url", os.Getenv("DATABASE_URL"), "database connection URL")
 	flag.Parse()
 
-	if *adminURL == "" {
-		exitWithError(errors.New("ADMIN_DB_CONNECTION_URL is required (or pass -admin-db-url)"))
-	}
-	if *clientURL == "" {
-		exitWithError(errors.New("DB_CONNECTION_URL is required (or pass -client-db-url)"))
+	if *databaseURL == "" {
+		exitWithError(errors.New("DATABASE_URL is required (or pass -database-url)"))
 	}
 
 	universities, err := readSeedFile(*dataPath)
@@ -144,38 +140,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	adminPool, err := pgxpool.New(ctx, *adminURL)
+	pool, err := pgxpool.New(ctx, *databaseURL)
 	if err != nil {
-		exitWithError(fmt.Errorf("failed to connect admin DB: %w", err))
+		exitWithError(fmt.Errorf("failed to connect database: %w", err))
 	}
-	defer adminPool.Close()
+	defer pool.Close()
 
-	clientPool, err := pgxpool.New(ctx, *clientURL)
-	if err != nil {
-		exitWithError(fmt.Errorf("failed to connect client DB: %w", err))
-	}
-	defer clientPool.Close()
-
-	if err := ensureUniversitySchema(ctx, adminPool, "admin DB"); err != nil {
-		exitWithError(err)
-	}
-	if err := ensureUniversitySchema(ctx, clientPool, "client DB"); err != nil {
+	if err := ensureUniversitySchema(ctx, pool, "database"); err != nil {
 		exitWithError(err)
 	}
 
-	adminCount, err := upsertUniversities(ctx, adminPool, universities)
+	count, err := upsertUniversities(ctx, pool, universities)
 	if err != nil {
-		exitWithError(formatSeedError("admin DB", err))
-	}
-
-	clientCount, err := upsertUniversities(ctx, clientPool, universities)
-	if err != nil {
-		exitWithError(formatSeedError("client DB", err))
+		exitWithError(formatSeedError("database", err))
 	}
 
 	fmt.Printf("Seed import complete. universities.v1 records: %d\n", len(universities))
-	fmt.Printf("admin_db upserts: %d\n", adminCount)
-	fmt.Printf("client_db upserts: %d\n", clientCount)
+	fmt.Printf("database upserts: %d\n", count)
 }
 
 func readSeedFile(path string) ([]universitySeed, error) {

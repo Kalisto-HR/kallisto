@@ -50,7 +50,7 @@ export interface University {
   cityType: string | null;
   campusVibe: string | null;
   applicationSchema: Record<string, unknown> | null;
-  managementProfile: Record<string, unknown> | null;
+  universityProfile: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
   createdAt: string;
 }
@@ -67,7 +67,7 @@ export interface BasketPlan {
   priceCaption: string;
 }
 
-export interface StudentBasketState {
+export interface ApplicantBasketState {
   items: UniversityListItem[];
   selectedPlanId: string | null;
   recommendedPlanId: string | null;
@@ -94,12 +94,12 @@ export interface Profile {
   lastSeen: string | null;
 }
 
-export type StudentTestScoreType = "IELTS" | "SAT" | "TOEFL" | "ACT" | "OTHER";
+export type ApplicantTestScoreType = "IELTS" | "SAT" | "TOEFL" | "ACT" | "OTHER";
 
-export interface StudentTestScore {
+export interface ApplicantTestScore {
   id: string;
   userId: string;
-  testType: StudentTestScoreType;
+  testType: ApplicantTestScoreType;
   otherTestName: string | null;
   score: number;
   outOf: number;
@@ -110,7 +110,7 @@ export interface StudentTestScore {
 
 export type ApplicantApplicationStatus = "draft" | "submitted";
 
-export interface StudentApplicationListItem {
+export interface ApplicantApplicationListItem {
   universityId: string;
   universityName: string;
   applicationCycle: string;
@@ -119,7 +119,7 @@ export interface StudentApplicationListItem {
   submittedAt: string | null;
 }
 
-export interface StudentApplication {
+export interface ApplicantApplication {
   userId: string;
   universityId: string;
   applicationCycle: string;
@@ -133,7 +133,7 @@ export interface ApplicationTestScoreImportResult {
   importedCount: number;
   testScores: Array<{
     id: string;
-    testType: StudentTestScoreType;
+    testType: ApplicantTestScoreType;
     otherTestName: string | null;
     score: number;
     outOf: number;
@@ -144,7 +144,7 @@ export interface ApplicationTestScoreImportResult {
 
 export type SubmissionStatus = "submitted";
 
-export interface AdminSubmittedApplication {
+export interface SubmittedApplication {
   id: string;
   userId: string;
   universityId: string;
@@ -154,22 +154,9 @@ export interface AdminSubmittedApplication {
   submittedAt: string | null;
   receivedAt: string;
   status: SubmissionStatus;
-  reviewedBy: string | null;
-  reviewedAt: string | null;
-  notes: string | null;
 }
 
-export interface ManagementUser {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: "partner" | "staff";
-  university_linked: string | null;
-  created_at: string;
-}
-
-export interface ManagerDashboardRecentApplication {
+export interface PartnerDashboardRecentApplication {
   id: string;
   name: string;
   program: string;
@@ -178,7 +165,7 @@ export interface ManagerDashboardRecentApplication {
   submittedAt: string | null;
 }
 
-export interface ManagerDashboardNotification {
+export interface PartnerDashboardNotification {
   id: string;
   type: string;
   message: string;
@@ -186,51 +173,15 @@ export interface ManagerDashboardNotification {
   read: boolean;
 }
 
-export interface ManagerDashboardPayload {
+export interface PartnerDashboardPayload {
   newApplications: number;
   totalApplicants: number;
   avgSAT: number;
   avgIELTS: number;
   maleCount: number;
   femaleCount: number;
-  recentApplications: ManagerDashboardRecentApplication[];
-  notifications: ManagerDashboardNotification[];
-}
-
-export type ManagementStaffStatus = "active" | "suspended" | "pending" | "deactivated";
-export type ManagementStaffRole = "partner" | "staff";
-
-export interface ManagementStaffMember {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  staffRole: ManagementStaffRole;
-  status: ManagementStaffStatus;
-  lastActiveAt: string | null;
-  createdAt: string;
-}
-
-export interface ManagementStaffInvitation {
-  id: string;
-  email: string;
-  staffRole: ManagementStaffRole;
-  status: "pending" | "accepted" | "expired" | "cancelled";
-  createdAt: string;
-  expiresAt: string;
-}
-
-export interface ManagementStaffRoleDefinition {
-  id: string;
-  name: ManagementStaffRole;
-  description: string;
-  userCount: number;
-  permissions: string[];
-}
-
-export interface ManagementStaffPagePayload extends Pagination<ManagementStaffMember> {
-  invitations: ManagementStaffInvitation[];
-  roles: ManagementStaffRoleDefinition[];
+  recentApplications: PartnerDashboardRecentApplication[];
+  notifications: PartnerDashboardNotification[];
 }
 
 export interface ApplicationStructureVersion {

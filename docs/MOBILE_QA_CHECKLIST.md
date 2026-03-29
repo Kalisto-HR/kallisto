@@ -50,8 +50,6 @@ Tight viewport spot-check: `360x800`
 - Mobile filters open in sheet mode.
 - Result cards remain single-column and tap-friendly.
 
-Spot-check at `360x800`.
-
 ### `/applicant/universities/:id`
 
 - Hero section stacks.
@@ -64,20 +62,16 @@ Spot-check at `360x800`.
 - Plan selection and proceed actions remain visible.
 - Summary blocks do not create side scroll.
 
-Spot-check at `360x800`.
-
 ### `/applicant/applications`
 
 - List cards stack cleanly.
-- Draft/submitted action buttons stay reachable.
+- Draft and submitted action buttons stay reachable.
 
 ### `/applicant/applications/new/:universityId`
 
 - Step header remains readable.
 - Form rows collapse to one column.
 - Footer navigation and autosave status do not overlap.
-
-Spot-check at `360x800`.
 
 ### `/applicant/applications/:universityId/:cycle`
 
@@ -88,33 +82,13 @@ Spot-check at `360x800`.
 ### `/applicant/compare`
 
 - Mobile card comparison layout renders instead of desktop table.
-- Remove/compare actions remain reachable.
-
-Spot-check at `360x800`.
+- Remove and compare actions remain reachable.
 
 ### `/applicant/settings`
 
 - Tabs stay usable through horizontal scroll.
 - Test score form rows stack correctly.
 - Save actions remain visible.
-
-Spot-check at `360x800`.
-
-### `/applicant/help`
-
-- Help cards and CTA rows stack cleanly.
-- Long copy wraps without clipping.
-
-### `/applicant/billing`
-
-- Billing summary cards stack.
-- Invoice history is readable on mobile.
-
-### `/applicant/checkout`
-
-- Checkout form uses single-column layout.
-- Order summary stacks below content on phone.
-- CTA remains reachable without side scroll.
 
 ## Partner routes
 
@@ -132,27 +106,13 @@ Spot-check at `360x800`.
 
 - Sections list renders above active editor on phone.
 - Edit controls remain reachable.
-- Drawers/dialogs for field settings and templates remain usable.
-
-Spot-check at `360x800`.
+- Drawers and dialogs for field settings and templates remain usable.
 
 ### `/partner/:universityId/applications`
 
 - Mobile applicant cards render instead of desktop-only table.
 - Filter sheet works and detail drawer remains usable.
-- No review/decision actions are shown.
-
-Spot-check at `360x800`.
-
-### `/partner/:universityId/billing`
-
-- Package cards stack.
-- Invoice history remains readable.
-- Purchase modal fits and actions remain visible.
-
-### Access denied state
-
-- Error card and return action stay centered and readable.
+- No review or decision actions are shown.
 
 ## Staff routes
 
@@ -161,21 +121,15 @@ Spot-check at `360x800`.
 - Top metrics collapse to one column.
 - Secondary grids wrap without overflow.
 
-Spot-check at `360x800`.
-
 ### `/staff/universities`
 
 - Mobile university cards render cleanly.
 - Filters and actions wrap correctly.
 
-Spot-check at `360x800`.
-
 ### `/staff/service-logs`
 
 - Mobile log cards render cleanly.
 - Filters stay inside viewport.
-
-Spot-check at `360x800`.
 
 ### `/staff/audit-logs`
 
@@ -192,9 +146,9 @@ Spot-check at `360x800`.
 Verify these routes fail cleanly on mobile and do not flash protected content:
 
 - `/`
-- `/student/dashboard`
-- `/management/any/dashboard`
-- `/superuser/overview`
+- `/applicant/dashboard` while signed out
+- `/partner/any/dashboard` while signed in as `applicant` or `staff`
+- `/staff/dashboard` while signed in as `applicant` or `partner`
 - any applicant route while signed in as `partner` or `staff`
 - any partner route while signed in as `applicant` or `staff`
 - any staff route while signed in as `applicant` or `partner`

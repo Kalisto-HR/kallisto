@@ -1,8 +1,8 @@
 param(
     [ValidateSet("dev", "staging", "none")]
     [string]$SeedProfile = "dev",
-    [string]$ClientDb = "client_db",
-    [string]$AdminDb = "admin_db",
+    [Alias("AdminDb")]
+    [string]$Database = "admin_db",
     [string]$DbUser = "postgres",
     [string]$DbHost = "localhost",
     [int]$DbPort = 5432,
@@ -34,8 +34,7 @@ function Invoke-PsqlFile {
 
 function Invoke-UniversitySeed {
     param(
-        [Parameter(Mandatory = $true)][string]$ClientDbName,
-        [Parameter(Mandatory = $true)][string]$AdminDbName,
+        [Parameter(Mandatory = $true)][string]$DbName,
         [Parameter(Mandatory = $true)][string]$ResolvedPsqlPath
     )
 
@@ -45,8 +44,8 @@ function Invoke-UniversitySeed {
         throw "University seed script not found: $scriptPath"
     }
 
-    Write-Host "Seeding universities dataset into $ClientDbName and $AdminDbName"
-    & $scriptPath -ClientDb $ClientDbName -AdminDb $AdminDbName -DbUser $DbUser -DbHost $DbHost -DbPort $DbPort -PsqlPath $ResolvedPsqlPath
+    Write-Host "Seeding universities dataset into $DbName"
+    & $scriptPath -Database $DbName -DbUser $DbUser -DbHost $DbHost -DbPort $DbPort -PsqlPath $ResolvedPsqlPath
     if ($LASTEXITCODE -ne 0) {
         throw "University seed script failed."
     }
@@ -62,15 +61,15 @@ $seedRoot = Join-Path $PSScriptRoot "..\seeds"
 $seedRoot = [System.IO.Path]::GetFullPath($seedRoot)
 
 if (-not $SkipUniversities) {
-    Invoke-UniversitySeed -ClientDbName $ClientDb -AdminDbName $AdminDb -ResolvedPsqlPath $psqlPath
+    Invoke-UniversitySeed -DbName $Database -ResolvedPsqlPath $psqlPath
 }
 
 switch ($SeedProfile) {
     "dev" {
-        Invoke-PsqlFile -PsqlPath $psqlPath -Database $AdminDb -FilePath (Join-Path $seedRoot "admin_seed.sql")
+        Invoke-PsqlFile -PsqlPath $psqlPath -Database $Database -FilePath (Join-Path $seedRoot "admin_seed.sql")
     }
     "staging" {
-        Invoke-PsqlFile -PsqlPath $psqlPath -Database $AdminDb -FilePath (Join-Path $seedRoot "admin_seed_staging.sql")
+        Invoke-PsqlFile -PsqlPath $psqlPath -Database $Database -FilePath (Join-Path $seedRoot "admin_seed_staging.sql")
     }
 }
 

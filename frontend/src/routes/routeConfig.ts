@@ -35,20 +35,6 @@ export const routes = {
     auditLogs: "/staff/audit-logs",
     settings: "/staff/settings",
   },
-  student: {
-    dashboard: "/applicant/dashboard",
-    universities: "/applicant/universities",
-    universityDetail: (id: string) => `/applicant/universities/${id}`,
-    basket: "/applicant/basket",
-    applications: "/applicant/applications",
-    applicationDetail: (universityId: string, cycle: string) => `/applicant/applications/${universityId}/${cycle}`,
-    applicationCreate: (universityId: string) => `/applicant/applications/new/${universityId}`,
-    compare: "/applicant/compare",
-    settings: "/applicant/settings",
-    help: "/applicant/help",
-    billing: "/applicant/billing",
-    checkout: "/applicant/checkout",
-  },
 } as const;
 
 export function getDefaultRouteForRole(role: PortalRole, universityLinked?: string | null): string {

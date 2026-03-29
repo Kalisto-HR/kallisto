@@ -2,10 +2,13 @@ package session
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,11 +29,16 @@ type Throttle interface {
 }
 
 type DBThrottle struct {
-	db *pgxpool.Pool
+	db throttleDB
 }
 
 func NewThrottle(db *pgxpool.Pool) *DBThrottle {
 	return &DBThrottle{db: db}
+}
+
+type throttleDB interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
 func (throttle *DBThrottle) Evaluate(ctx context.Context, email string, ipAddress *string, now time.Time) (*ThrottleDecision, error) {
@@ -97,8 +105,9 @@ func (throttle *DBThrottle) RecordAttempt(ctx context.Context, email string, ipA
 
 func (throttle *DBThrottle) failedAttemptsSince(ctx context.Context, predicate string, value any, since time.Time) (int, *time.Time, error) {
 	var (
-		count  int
-		oldest *time.Time
+		count      int
+		oldest     *time.Time
+		oldestTime sql.NullTime
 	)
 
 	query := fmt.Sprintf(
@@ -106,12 +115,17 @@ func (throttle *DBThrottle) failedAttemptsSince(ctx context.Context, predicate s
 		FROM auth_login_attempts
 		WHERE %s
 		  AND succeeded = FALSE
+		  AND blocked = FALSE
 		  AND attempted_at >= $2`,
 		predicate,
 	)
 
-	if err := throttle.db.QueryRow(ctx, query, value, since.UTC()).Scan(&count, &oldest); err != nil {
+	if err := throttle.db.QueryRow(ctx, query, value, since.UTC()).Scan(&count, &oldestTime); err != nil {
 		return 0, nil, fmt.Errorf("failed to evaluate login attempts: %w", err)
+	}
+	if oldestTime.Valid {
+		value := oldestTime.Time.UTC()
+		oldest = &value
 	}
 
 	return count, oldest, nil

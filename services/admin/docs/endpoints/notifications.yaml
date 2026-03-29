@@ -1,5 +1,0 @@
-openapi: 3.0.3
-info:
-  title: Kallisto Backend API
-  version: 1.0.0
-  description: OpenAPI 3.0 documentation

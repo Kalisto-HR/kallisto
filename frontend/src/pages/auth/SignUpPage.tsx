@@ -5,7 +5,7 @@ import { ErrorState } from "../../components/common/PageState";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { signUpApplicant } from "../../services/authService";
+import { signUpApplicant } from "../../services/auth/service";
 import { routes } from "../../routes/routeConfig";
 
 export function SignUpPage() {

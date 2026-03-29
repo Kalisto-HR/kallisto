@@ -235,6 +235,39 @@ func TestObserveManagedRequestsPreservesIncomingRequestID(t *testing.T) {
 	}
 }
 
+func TestObserveManagedRequestsSupportsApplicantScope(t *testing.T) {
+	t.Parallel()
+
+	sink := &captureServiceLogSink{}
+	router := mux.NewRouter()
+	router.Use(ObserveManagedRequests(zap.NewNop(), sink, "applicant"))
+	router.HandleFunc("/v1.0/applicant/profile", func(w http.ResponseWriter, r *http.Request) {
+		observability.SetActor(r.Context(), "applicant-7", "applicant")
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1.0/applicant/profile", nil)
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusOK)
+	}
+	if strings.TrimSpace(rec.Header().Get(observability.RequestIDHeader)) == "" {
+		t.Fatal("expected applicant response to include request id header")
+	}
+	if len(sink.entries) != 1 {
+		t.Fatalf("unexpected log count: got %d want 1", len(sink.entries))
+	}
+	if sink.entries[0].Microservice != "applicant" {
+		t.Fatalf("unexpected microservice: got %s want applicant", sink.entries[0].Microservice)
+	}
+	if sink.entries[0].Role == nil || *sink.entries[0].Role != "applicant" {
+		t.Fatalf("unexpected role: got %+v want applicant", sink.entries[0].Role)
+	}
+}
+
 func TestRequireAuthUsesServerSessionClaims(t *testing.T) {
 	t.Setenv("SECRET_KEY", strings.Repeat("s", 32))
 	now := time.Now().UTC()
@@ -341,21 +374,41 @@ func TestRequireAuthReturnsRevocationReason(t *testing.T) {
 	}
 }
 
+func TestRequireAuthWithoutCookieReturnsUnauthorized(t *testing.T) {
+	t.Parallel()
+
+	handler := RequireAuth(zap.NewNop(), &stubSessionStore{}, nil)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/v1.0/auth/session", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusUnauthorized)
+	}
+	if !strings.Contains(rec.Body.String(), "unauthorized") {
+		t.Fatalf("expected unauthorized response body, got %s", rec.Body.String())
+	}
+}
+
 func TestRequireCSRFFailsClosed(t *testing.T) {
 	t.Setenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 	tests := []struct {
-		name         string
-		cookieToken  string
-		headerToken  string
-		origin       string
-		wantStatus   int
+		name        string
+		cookieToken string
+		headerToken string
+		origin      string
+		wantStatus  int
 	}{
 		{
-			name:       "missing header token",
+			name:        "missing header token",
 			cookieToken: "csrf-1",
-			origin:     "http://localhost:5173",
-			wantStatus: http.StatusForbidden,
+			origin:      "http://localhost:5173",
+			wantStatus:  http.StatusForbidden,
 		},
 		{
 			name:        "mismatched token",

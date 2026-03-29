@@ -1,40 +1,58 @@
 # Database Migrations and Seeds
 
-This file is the source of truth for DB bootstrap and schema rollout.
+This document describes the supported database bootstrap and rollout path for the current monolith runtime.
 
-## Canonical migration files
+## Current-state bootstrap
 
-Use only:
+Use these files for supported environments:
 
-- `scripts/migrations/client_db.sql`
 - `scripts/migrations/admin_db.sql`
+- `scripts/migrations/20260329_current_state_contracts.sql`
+- `scripts/migrations/20260329_drop_legacy_single_db_scaffolding.sql`
 
-Versioned migration fragments were consolidated into these canonical files.
+The supported runtime uses one PostgreSQL database: `admin_db`.
+
+## Migration order
+
+`scripts/db/apply_migrations.*` applies the migration set in this order:
+
+1. `admin_db.sql`
+2. `20260329_current_state_contracts.sql`
+3. `20260329_drop_legacy_single_db_scaffolding.sql`
+
+That order is intentional:
+
+- `admin_db.sql` defines the current canonical schema for fresh environments
+- `20260329_current_state_contracts.sql` upgrades existing environments to the current contracts
+- `20260329_drop_legacy_single_db_scaffolding.sql` removes retired legacy tables and compatibility artifacts after the contract rewrite is in place
+
+All three files are written to be idempotent for repeatable local bootstrap.
 
 ## Current schema invariants
 
-The supported runtime assumes these current invariants from the canonical files:
+The supported runtime assumes these invariants after migrations complete:
 
-- `client_db.users.role` is fixed to `applicant`
-- `admin_db.users.role` is limited to `partner|staff`
-- `client_db.applications.status` is limited to `draft|submitted`
-- `admin_db.submitted_applications.status` is limited to `submitted`
-- `submitted_applications.reviewed_by`, `reviewed_at`, and `notes` are no longer part of the supported schema
-- `university_staff_profiles`, `university_staff_invitations`, and `university_staff_status_events` are dropped from the supported schema
-- university application read payloads are expected to normalize to `application_schema.sections[*].fields[*]`
+- `users.role` is limited to `applicant|partner|staff`
+- `applications.status` is limited to `draft|submitted`
+- partner and staff read submissions from unified `applications` and `application_files`
+- `universities.university_profile` is the canonical profile JSON column
+- application-structure visibility keys use `applicant|partner|staff`
+- `admin_db` contains applicant, partner, staff, university, application, auth-session, and observability data
+
+Retired tables `submitted_applications` and `submitted_application_files` are not part of the supported schema.
 
 ## Apply migrations
 
 ### Linux/macOS
 
 ```bash
-bash scripts/db/apply_migrations.sh --client-db client_db --admin-db admin_db --db-user postgres --db-host localhost --db-port 5432
+bash scripts/db/apply_migrations.sh --database admin_db --db-user postgres --db-host localhost --db-port 5432
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -Database admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 
 ## Apply seeds
@@ -42,13 +60,13 @@ powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -Client
 ### Linux/macOS
 
 ```bash
-bash scripts/db/apply_seeds.sh --seed-profile dev --client-db client_db --admin-db admin_db --db-user postgres --db-host localhost --db-port 5432
+bash scripts/db/apply_seeds.sh --seed-profile dev --database admin_db --db-user postgres --db-host localhost --db-port 5432
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -ClientDb client_db -AdminDb admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile dev -Database admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 
 ## Full bootstrap
@@ -56,19 +74,19 @@ powershell -ExecutionPolicy Bypass -File scripts/db/apply_seeds.ps1 -SeedProfile
 ### Linux/macOS
 
 ```bash
-bash scripts/db/bootstrap.sh --create-databases --seed-profile dev --db-user postgres --db-host localhost --db-port 5432
+bash scripts/db/bootstrap.sh --create-databases --seed-profile dev --database admin_db --db-user postgres --db-host localhost --db-port 5432
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -DbUser postgres -DbHost localhost -DbPort 5432
+powershell -ExecutionPolicy Bypass -File scripts/db/bootstrap.ps1 -CreateDatabases -SeedProfile dev -Database admin_db -DbUser postgres -DbHost localhost -DbPort 5432
 ```
 
 ## Seed profiles
 
-- `dev`: demo data for local development
-- `staging`: minimal deterministic baseline
+- `dev`: demo baseline for local development
+- `staging`: minimal deterministic bootstrap
 - `none`: skip seeding
 
 ## Optional environment helpers
@@ -87,17 +105,26 @@ $env:PGPASSWORD='your_postgres_password'
 $env:PSQL_PATH='C:\Program Files\PostgreSQL\18\bin\psql.exe'
 ```
 
+## Forward-only cleanup for deployed environments
+
+Existing environments that were bootstrapped before the current-state cleanup should still run the same migration entrypoint. The forward migration files will:
+
+- rename `universities.management_profile` to `universities.university_profile`
+- rewrite application-structure visibility keys from `reviewer|admin` to `partner|staff`
+- drop retired tables such as `submitted_applications` and `submitted_application_files`
+
+No historical audit rows are rewritten. Existing `audit_logs.actor_type` normalization remains intact, and only active contracts are renamed.
+
 ## Troubleshooting
 
 ### `psql is not available in PATH`
 
-Set `PSQL_PATH` or pass `-PsqlPath`/`--psql-path`.
+Set `PSQL_PATH` or pass `-PsqlPath` / `--psql-path`.
 
 ### `relation ... already exists`
 
-Re-run using canonical migration scripts under `scripts/db/`.
+Re-run the canonical migration entrypoint under `scripts/db/`. The migration set is designed to be re-applied safely.
 
-### Seed BOM issues (`BOM bytes`)
+### Seed BOM issues
 
-Use the current seed importers in `scripts/seeds/` (UTF-8 without BOM).
-
+Use the current seed importers and SQL files under `scripts/seeds/` only.

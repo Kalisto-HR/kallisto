@@ -1,27 +1,31 @@
-# Staff Observability
+# Observability
 
 ## Scope
 
-`service_logs` records one structured row per completed request for:
+`service_logs` stores one structured row per completed request for all role-scoped runtime surfaces:
 
 - `/v1.0/auth/*`
+- `/v1.0/applicant/*`
 - `/v1.0/partner/*`
 - `/v1.0/staff/*`
 
-`audit_logs` records:
+Those responses also include `X-Request-Id` so staff can trace a request from the browser or API client into `service_logs`.
+
+`audit_logs` stays narrower by design. It records security-sensitive and administrative events such as:
 
 - sign-in success and failure
 - sign-out
-- unauthorized or forbidden access to partner/staff routes
-- management account creation
+- unauthorized or forbidden partner/staff access
+- partner/staff account creation
 - university create, import, update, and delete
 - application-structure update and publish
-- draft approve and reject
-- global settings update
+- settings updates
 
-Ordinary reads, request/response bodies, cookies, JWTs, passwords, and uploaded file contents are intentionally excluded.
+Applicant request traffic now has service-log parity, but applicant reads and writes are still not expanded into broad audit logging in this pass.
 
-## Stored Fields
+Ordinary response bodies, request bodies, cookies, JWTs, passwords, and uploaded file contents are intentionally excluded.
+
+## Stored fields
 
 `service_logs` stores:
 

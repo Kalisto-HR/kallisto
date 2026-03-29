@@ -1,5 +1,5 @@
--- Admin Service Database Schema
--- PostgreSQL Migration for Kallisto Admin Service
+-- Kallisto canonical admin_db schema
+-- Current-state bootstrap for the monolith runtime
 
 -- =============================================================================
 -- EXTENSIONS
@@ -8,7 +8,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =============================================================================
--- USERS TABLE (Admin Users - Staff and Partners)
+-- USERS TABLE
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS users (
@@ -20,10 +20,21 @@ CREATE TABLE IF NOT EXISTS users (
     last_seen TIMESTAMP,
     role TEXT NOT NULL CHECK (role IN ('staff', 'partner')),
     university_linked UUID,
+    data JSONB,
+    photo BYTEA,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS data JSONB;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS photo BYTEA;
+
+ALTER TABLE users
+    DROP CONSTRAINT IF EXISTS users_role_check;
+
+ALTER TABLE users
+    ADD CONSTRAINT users_role_check CHECK (role IN ('applicant', 'partner', 'staff'));
 
 -- =============================================================================
 -- UNIVERSITIES TABLE (Source of Truth)
@@ -63,6 +74,131 @@ CREATE INDEX IF NOT EXISTS idx_universities_ielts_min ON universities(ielts_min)
 CREATE INDEX IF NOT EXISTS idx_universities_toefl_min ON universities(toefl_min);
 CREATE INDEX IF NOT EXISTS idx_universities_scholarship_available ON universities(scholarship_available);
 
+-- =============================================================================
+-- APPLICANT FEATURE TABLES
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS user_compare (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, university_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_compare_user_id ON user_compare(user_id);
+
+CREATE TABLE IF NOT EXISTS applications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    application_cycle TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted')),
+    data JSONB,
+    applicant_info JSONB,
+    submitted_at TIMESTAMPTZ,
+    received_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, university_id, application_cycle)
+);
+
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS applicant_info JSONB;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS received_at TIMESTAMPTZ;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
+CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
+CREATE INDEX IF NOT EXISTS idx_applications_university_id ON applications(university_id);
+CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_applications_created_at ON applications(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS application_transcripts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    university_id UUID NOT NULL,
+    application_cycle TEXT NOT NULL,
+    sequence_no INT NOT NULL,
+    institution_name TEXT NOT NULL,
+    country TEXT,
+    degree_awarded TEXT,
+    gpa TEXT,
+    graduation_year INT,
+    transcript_files JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_admin_application_transcripts_application FOREIGN KEY (user_id, university_id, application_cycle)
+        REFERENCES applications (user_id, university_id, application_cycle) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_application_transcripts_application ON application_transcripts(user_id, university_id, application_cycle);
+CREATE INDEX IF NOT EXISTS idx_admin_application_transcripts_institution_name ON application_transcripts(institution_name);
+
+CREATE TABLE IF NOT EXISTS application_files (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
+    application_cycle TEXT NOT NULL,
+    field_key TEXT,
+    file_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    file_size BIGINT NOT NULL,
+    file_data BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_admin_application_files_application FOREIGN KEY (user_id, university_id, application_cycle)
+        REFERENCES applications (user_id, university_id, application_cycle) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_application_files_application ON application_files(user_id, university_id, application_cycle);
+CREATE INDEX IF NOT EXISTS idx_admin_application_files_created_at ON application_files(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS profile_test_scores (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    test_type TEXT NOT NULL CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'OTHER')),
+    other_test_name TEXT,
+    score NUMERIC(8,2) NOT NULL CHECK (score >= 0),
+    out_of NUMERIC(8,2) NOT NULL CHECK (out_of > 0),
+    taken_on DATE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_admin_profile_test_scores_other_name
+        CHECK (
+            (test_type = 'OTHER' AND other_test_name IS NOT NULL AND length(trim(other_test_name)) > 0)
+            OR (test_type <> 'OTHER' AND (other_test_name IS NULL OR length(trim(other_test_name)) = 0))
+        )
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_profile_test_scores_user_id ON profile_test_scores(user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_profile_test_scores_user_created_at ON profile_test_scores(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_profile_test_scores_user_type ON profile_test_scores(user_id, test_type);
+
+CREATE TABLE IF NOT EXISTS application_test_scores (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    university_id UUID NOT NULL,
+    application_cycle TEXT NOT NULL,
+    profile_test_score_id UUID REFERENCES profile_test_scores(id) ON DELETE SET NULL,
+    test_type TEXT NOT NULL CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'OTHER')),
+    other_test_name TEXT,
+    score NUMERIC(8,2) NOT NULL CHECK (score >= 0),
+    out_of NUMERIC(8,2) NOT NULL CHECK (out_of > 0),
+    taken_on DATE,
+    imported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_admin_application_test_scores_application
+        FOREIGN KEY (user_id, university_id, application_cycle)
+        REFERENCES applications (user_id, university_id, application_cycle) ON DELETE CASCADE,
+    CONSTRAINT chk_admin_application_test_scores_other_name
+        CHECK (
+            (test_type = 'OTHER' AND other_test_name IS NOT NULL AND length(trim(other_test_name)) > 0)
+            OR (test_type <> 'OTHER' AND (other_test_name IS NULL OR length(trim(other_test_name)) = 0))
+        )
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_application_test_scores_application ON application_test_scores(user_id, university_id, application_cycle);
+CREATE INDEX IF NOT EXISTS idx_admin_application_test_scores_profile_link ON application_test_scores(profile_test_score_id);
+CREATE INDEX IF NOT EXISTS idx_admin_application_test_scores_imported_at ON application_test_scores(imported_at DESC);
+
 -- Add foreign key constraint for university_linked after universities table exists
 DO $$
 BEGIN
@@ -96,43 +232,6 @@ ALTER TABLE universities DROP COLUMN IF EXISTS total_cost;
 ALTER TABLE universities DROP COLUMN IF EXISTS competitiveness;
 ALTER TABLE universities DROP COLUMN IF EXISTS safety_level;
 ALTER TABLE universities DROP COLUMN IF EXISTS visa_required;
-
--- =============================================================================
--- SUBMITTED APPLICATIONS TABLE
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS submitted_applications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID NOT NULL,
-    university_id UUID REFERENCES universities(id) ON DELETE CASCADE,
-    application_cycle TEXT NOT NULL,
-    applicant_info JSONB,
-    application_data JSONB,
-    submitted_at TIMESTAMP WITH TIME ZONE,
-    received_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    status TEXT CHECK (status IN ('submitted')) DEFAULT 'submitted',
-    UNIQUE (user_id, university_id, application_cycle)
-);
-
-CREATE INDEX IF NOT EXISTS idx_submitted_applications_status ON submitted_applications(status);
-CREATE INDEX IF NOT EXISTS idx_submitted_applications_university_id ON submitted_applications(university_id);
-
-CREATE TABLE IF NOT EXISTS submitted_application_files (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    application_id UUID NOT NULL REFERENCES submitted_applications(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL,
-    university_id UUID NOT NULL,
-    application_cycle TEXT NOT NULL,
-    field_key TEXT,
-    file_name TEXT NOT NULL,
-    content_type TEXT NOT NULL,
-    file_size BIGINT NOT NULL,
-    file_data BYTEA NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_submitted_application_files_application_id ON submitted_application_files(application_id);
-CREATE INDEX IF NOT EXISTS idx_submitted_application_files_university_cycle ON submitted_application_files(university_id, application_cycle);
 
 -- =============================================================================
 -- BLACKLIST TABLE
@@ -184,7 +283,7 @@ CREATE INDEX IF NOT EXISTS idx_drafts_author_id ON drafts(author_id);
 CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(status);
 
 -- =============================================================================
--- SUPERUSER GLOBAL TABLES / EXTENSIONS
+-- GLOBAL TABLES / EXTENSIONS
 -- =============================================================================
 
 ALTER TABLE universities
@@ -192,7 +291,7 @@ ALTER TABLE universities
     ADD COLUMN IF NOT EXISTS university_type TEXT CHECK (university_type IN ('public', 'private', 'international')) DEFAULT 'public',
     ADD COLUMN IF NOT EXISTS management_accounts_count INT DEFAULT 0,
     ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP WITH TIME ZONE,
-    ADD COLUMN IF NOT EXISTS management_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
+    ADD COLUMN IF NOT EXISTS university_profile JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE drafts
     ADD COLUMN IF NOT EXISTS scope TEXT CHECK (scope IN ('global', 'university')) DEFAULT 'global',
@@ -342,23 +441,6 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
-
-ALTER TABLE submitted_applications
-    DROP CONSTRAINT IF EXISTS submitted_applications_status_check;
-
-UPDATE submitted_applications
-SET status = 'submitted'
-WHERE status IS DISTINCT FROM 'submitted';
-
-ALTER TABLE submitted_applications
-    ADD CONSTRAINT submitted_applications_status_check CHECK (status IN ('submitted'));
-
-ALTER TABLE submitted_applications
-    ALTER COLUMN status SET DEFAULT 'submitted';
-
-ALTER TABLE submitted_applications DROP COLUMN IF EXISTS reviewed_by;
-ALTER TABLE submitted_applications DROP COLUMN IF EXISTS reviewed_at;
-ALTER TABLE submitted_applications DROP COLUMN IF EXISTS notes;
 
 ALTER TABLE audit_logs
     DROP CONSTRAINT IF EXISTS audit_logs_actor_type_check;

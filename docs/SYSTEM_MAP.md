@@ -1,6 +1,6 @@
 # Kallisto System Map and Ports
 
-## System map (development)
+## System map
 
 ```text
 [Browser]
@@ -20,41 +20,37 @@
    |-- /partner/*
    |-- /staff/*
    |
-   |-- applicant reads/writes --> [client_db]
-   |-- management reads/writes -> [admin_db]
-   |
-   |-- university sync --------> [client_db.universities]
-   |-- submission copy --------> [admin_db.submitted_applications]
+   |-- all reads/writes -------> [admin_db]
 ```
 
 ## Current runtime notes
 
-- The supported backend is one Go process, not two separate services.
-- The frontend uses one API proxy: `/api`.
-- There is no supported `/adminapi` proxy.
-- There is no supported service-to-service submit hop like `POST /applications/receive`.
+- the supported backend is one Go process
+- the frontend uses one API proxy: `/api`
+- there is no supported `/adminapi` proxy
+- there is no supported service-to-service submit hop like `POST /applications/receive`
 
 ## Core flow map
 
 ### Auth
 
-- Unified sign-in hits `/v1.0/auth/sign-in`
-- Backend resolves the user from `admin_db.users` or `client_db.users`
-- JWT + session metadata cookies are issued
+- unified sign-in hits `/v1.0/auth/sign-in`
+- backend resolves the user from unified `admin_db.users`
+- JWT and CSRF cookies are issued
 
 ### Applicant application flow
 
-1. Applicant reads university data from `client_db.universities`
-2. Applicant stores drafts in `client_db.applications`
-3. On submit, backend writes management-side submission into `admin_db`
-4. Backend then marks the applicant row as `submitted`
+1. Applicant reads university data from `admin_db.universities`
+2. Applicant stores drafts in `admin_db.applications`
+3. On submit, the backend commits the same application row as `submitted`
+4. Partner and staff read submitted rows from the same table
 
-### Partner/staff flow
+### Partner and staff flow
 
-- Partners operate within the linked university context
-- Staff operate on platform-wide routes
-- Both read submitted applications from `admin_db`
-- Submitted applications and files are read-only in the supported flow
+- partners operate within linked university context
+- staff operate on platform-wide routes
+- both read submitted applications from `admin_db`
+- submitted applications and files are read-only in the supported flow
 
 ## Ports
 

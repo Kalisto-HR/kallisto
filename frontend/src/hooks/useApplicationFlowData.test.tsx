@@ -1,26 +1,26 @@
 import { act, renderHook } from "@testing-library/react";
 import { useApplicationFlowData } from "./useApplicationFlowData";
 import {
-  createStudentApplication,
-  submitStudentApplication,
-  updateStudentApplication,
-} from "../services/client/applicationsService";
+  createApplicantApplication,
+  submitApplicantApplication,
+  updateApplicantApplication,
+} from "../services/applicant/applicationsService";
 
-vi.mock("../services/client/applicationsService", () => ({
-  createStudentApplication: vi.fn(),
-  submitStudentApplication: vi.fn(),
-  updateStudentApplication: vi.fn(),
+vi.mock("../services/applicant/applicationsService", () => ({
+  createApplicantApplication: vi.fn(),
+  submitApplicantApplication: vi.fn(),
+  updateApplicantApplication: vi.fn(),
 }));
 
 describe("useApplicationFlowData", () => {
   beforeEach(() => {
-    vi.mocked(createStudentApplication).mockResolvedValue(undefined);
-    vi.mocked(updateStudentApplication).mockResolvedValue(undefined);
-    vi.mocked(submitStudentApplication).mockReset();
+    vi.mocked(createApplicantApplication).mockResolvedValue(undefined);
+    vi.mocked(updateApplicantApplication).mockResolvedValue(undefined);
+    vi.mocked(submitApplicantApplication).mockReset();
   });
 
   it("surfaces submit failures instead of advancing to success", async () => {
-    vi.mocked(submitStudentApplication).mockRejectedValue(new Error("failed to submit application to admin service"));
+    vi.mocked(submitApplicantApplication).mockRejectedValue(new Error("failed to submit application to staff service"));
 
     const { result } = renderHook(() => useApplicationFlowData("22222222-2222-2222-2222-222222222222"));
 
@@ -29,6 +29,6 @@ describe("useApplicationFlowData", () => {
     });
 
     expect(result.current.step).toBe("draft");
-    expect(result.current.error).toBe("failed to submit application to admin service");
+    expect(result.current.error).toBe("failed to submit application to staff service");
   });
 });

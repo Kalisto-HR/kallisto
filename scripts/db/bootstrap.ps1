@@ -1,6 +1,6 @@
 param(
-    [string]$ClientDb = "client_db",
-    [string]$AdminDb = "admin_db",
+    [Alias("AdminDb")]
+    [string]$Database = "admin_db",
     [string]$DbUser = "postgres",
     [string]$DbHost = "localhost",
     [int]$DbPort = 5432,
@@ -50,19 +50,18 @@ function Ensure-DatabaseExists {
 $psqlPath = Resolve-PsqlCommand -PsqlPath $PsqlPath
 
 if ($CreateDatabases) {
-    Ensure-DatabaseExists -PsqlPath $psqlPath -DbName $ClientDb
-    Ensure-DatabaseExists -PsqlPath $psqlPath -DbName $AdminDb
+    Ensure-DatabaseExists -PsqlPath $psqlPath -DbName $Database
 }
 
 $applyMigrations = Join-Path $PSScriptRoot "apply_migrations.ps1"
-& $applyMigrations -ClientDb $ClientDb -AdminDb $AdminDb -DbUser $DbUser -DbHost $DbHost -DbPort $DbPort -PsqlPath $PsqlPath
+& $applyMigrations -Database $Database -DbUser $DbUser -DbHost $DbHost -DbPort $DbPort -PsqlPath $PsqlPath
 if ($LASTEXITCODE -ne 0) {
     throw "Migration apply failed."
 }
 
 if (-not $SkipSeeds) {
     $applySeeds = Join-Path $PSScriptRoot "apply_seeds.ps1"
-    & $applySeeds -SeedProfile $SeedProfile -ClientDb $ClientDb -AdminDb $AdminDb -DbUser $DbUser -DbHost $DbHost -DbPort $DbPort -PsqlPath $PsqlPath
+    & $applySeeds -SeedProfile $SeedProfile -Database $Database -DbUser $DbUser -DbHost $DbHost -DbPort $DbPort -PsqlPath $PsqlPath
     if ($LASTEXITCODE -ne 0) {
         throw "Seed apply failed."
     }

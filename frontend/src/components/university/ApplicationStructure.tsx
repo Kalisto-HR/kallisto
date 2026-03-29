@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { useEffect, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -7,9 +7,9 @@ import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
 import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Upload,
-  FileCheck,
   Copy,
   Settings,
   Edit2,
@@ -69,10 +68,11 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 import { cn } from '../ui/utils';
+import { ErrorState, LoadingState } from '../common/PageState';
 import { useParams } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
-import { fetchAdminApplicationStructure, updateAdminApplicationStructure } from '../../services/admin/universitiesService';
-import { fetchApplicationStructureHistory, publishApplicationStructure } from '../../services/admin/managerService';
+import { fetchPartnerApplicationStructure, updatePartnerApplicationStructure } from '../../services/partner/universityService';
+import { fetchPartnerApplicationStructureHistory, publishPartnerApplicationStructure } from '../../services/partner/dashboardService';
 import { isValidUUID } from '../../utils/validation';
 
 interface ApplicationStructureProps {
@@ -144,8 +144,8 @@ interface Field {
   // Permissions
   visibility?: {
     applicant: boolean;
-    reviewer: boolean;
-    admin: boolean;
+    partner: boolean;
+    staff: boolean;
   };
 }
 
@@ -169,7 +169,7 @@ interface AuditEntry {
 type PublishStatus = 'draft' | 'published';
 
 // Field type metadata
-const fieldTypeInfo: Record<FieldType, { icon: any; label: string; description: string }> = {
+const fieldTypeInfo: Record<FieldType, { icon: LucideIcon; label: string; description: string }> = {
   'short-text': { icon: Type, label: 'Short Text', description: 'Single line text input' },
   'long-text': { icon: AlignLeft, label: 'Long Text', description: 'Multi-line text area' },
   'email': { icon: Mail, label: 'Email', description: 'Email address with validation' },
@@ -192,20 +192,45 @@ const fieldTypeInfo: Record<FieldType, { icon: any; label: string; description: 
 
 const defaultFieldVisibility = {
   applicant: true,
-  reviewer: true,
-  admin: true,
+  partner: true,
+  staff: true,
+};
+
+type TemplateFieldDescriptor = Omit<Partial<Field>, 'type' | 'label'> & Pick<Field, 'type' | 'label'>;
+
+type TemplateSectionDescriptor = {
+  name: string;
+  title: string;
+  description?: string;
+  fields: TemplateFieldDescriptor[];
+};
+
+type ApplicationStructureTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  sections: TemplateSectionDescriptor[];
 };
 
 function createBuilderId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function cloneTemplateSections(sectionDescriptors: Array<{
-  name: string;
-  title: string;
-  description?: string;
-  fields: Array<Partial<Field> & Pick<Field, 'type' | 'label'>>;
-}>): Section[] {
+function toRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function resolveFieldVisibility(visibility?: Field['visibility']) {
+  return {
+    ...defaultFieldVisibility,
+    ...visibility,
+  };
+}
+
+function cloneTemplateSections(sectionDescriptors: TemplateSectionDescriptor[]): Section[] {
   return sectionDescriptors.map((section, sectionIndex) => ({
     id: createBuilderId(`section_${sectionIndex + 1}`),
     name: section.name,
@@ -226,12 +251,12 @@ function cloneTemplateSections(sectionDescriptors: Array<{
       conditional: field.conditional,
       dataKey: field.dataKey ?? `field_${sectionIndex + 1}_${fieldIndex + 1}`,
       exportLabel: field.exportLabel ?? field.label,
-      visibility: field.visibility ?? { ...defaultFieldVisibility },
+      visibility: resolveFieldVisibility(field.visibility),
     })),
   }));
 }
 
-const APPLICATION_STRUCTURE_TEMPLATES = [
+const APPLICATION_STRUCTURE_TEMPLATES: ApplicationStructureTemplate[] = [
   {
     id: 'common-app',
     name: 'Common App Standard',
@@ -456,163 +481,40 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [showFieldSettingsDrawer, setShowFieldSettingsDrawer] = useState(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Sample data
-  const [sections, setSections] = useState<Section[]>([
-    {
-      id: '1',
-      name: 'Personal Information',
-      title: 'Personal Information',
-      description: 'Basic details about the applicant',
-      order: 1,
-      visible: true,
-      fields: [
-        {
-          id: 'f1',
-          type: 'short-text',
-          label: 'Full Name',
-          helperText: 'Enter your full legal name as it appears on official documents',
-          required: true,
-          order: 1,
-          dataKey: 'full_name',
-          exportLabel: 'Applicant Full Name',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-        {
-          id: 'f2',
-          type: 'email',
-          label: 'Email Address',
-          helperText: 'We will use this email for all communications',
-          required: true,
-          order: 2,
-          dataKey: 'email',
-          exportLabel: 'Email',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-        {
-          id: 'f3',
-          type: 'date',
-          label: 'Date of Birth',
-          required: true,
-          order: 3,
-          dataKey: 'dob',
-          exportLabel: 'Date of Birth',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-        {
-          id: 'f4',
-          type: 'country',
-          label: 'Country of Citizenship',
-          required: true,
-          order: 4,
-          dataKey: 'citizenship',
-          exportLabel: 'Citizenship',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-      ],
-    },
-    {
-      id: '2',
-      name: 'Education Background',
-      title: 'Educational Background',
-      description: 'Your previous education history',
-      order: 2,
-      visible: true,
-      fields: [
-        {
-          id: 'f5',
-          type: 'repeating-group',
-          label: 'Previous Education',
-          helperText: 'Add all your previous educational institutions',
-          required: true,
-          order: 1,
-          dataKey: 'education_history',
-          exportLabel: 'Education History',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-        {
-          id: 'f6',
-          type: 'number',
-          label: 'GPA (4.0 scale)',
-          helperText: 'Enter your cumulative GPA',
-          required: true,
-          order: 2,
-          validation: { min: 0, max: 4.0 },
-          dataKey: 'gpa',
-          exportLabel: 'GPA',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-      ],
-    },
-    {
-      id: '3',
-      name: 'Essays',
-      title: 'Essay Responses',
-      description: 'Please respond to the following prompts',
-      order: 3,
-      visible: true,
-      fields: [
-        {
-          id: 'f7',
-          type: 'essay',
-          label: 'Statement of Purpose',
-          helperText: 'Describe your academic interests, career goals, and reasons for applying to this program',
-          required: true,
-          order: 1,
-          validation: { wordLimit: 500 },
-          dataKey: 'statement_of_purpose',
-          exportLabel: 'Statement of Purpose',
-          visibility: { applicant: true, reviewer: true, admin: true },
-        },
-      ],
-    },
-  ]);
+  const [sections, setSections] = useState<Section[]>([]);
 
-  const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([
-    {
-      timestamp: '2025-01-20 14:32',
-      user: 'Sarah Chen',
-      action: 'Created',
-      details: 'Created new application structure',
-    },
-    {
-      timestamp: '2025-01-20 15:45',
-      user: 'Sarah Chen',
-      action: 'Modified',
-      details: 'Added Essay section with Statement of Purpose',
-    },
-    {
-      timestamp: '2025-01-19 11:20',
-      user: 'David Park',
-      action: 'Published',
-      details: 'Published version 1.2 of application structure',
-    },
-  ]);
+  const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([]);
 
   useEffect(() => {
     let mounted = true;
     const load = async () => {
+      if (!mounted) return;
+      setLoading(true);
+      setLoadError(null);
+      setSaveError(null);
       if (!resolvedUniversityId) {
-        setSaveError('Missing valid university context. Please re-open from the management dashboard.');
+        setLoadError('Missing valid university context. Please re-open from the partner dashboard.');
         setLoading(false);
         return;
       }
       try {
         const [schema, history] = await Promise.all([
-          fetchAdminApplicationStructure(resolvedUniversityId),
-          fetchApplicationStructureHistory(resolvedUniversityId, 20),
+            fetchPartnerApplicationStructure(),
+            fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20),
         ]);
         if (!mounted) return;
 
-        const schemaSections = Array.isArray((schema as any)?.sections)
-          ? ((schema as any).sections as Section[])
-          : null;
-        if (schemaSections && schemaSections.length > 0) {
-          setSections(schemaSections);
-        }
+        const schemaRecord = toRecord(schema);
+        const schemaSections = Array.isArray(schemaRecord?.sections)
+          ? (schemaRecord.sections as Section[])
+          : [];
+        setSections(schemaSections);
 
         setAuditTrail(history.map((item) => ({
           timestamp: new Date(item.createdAt).toLocaleString('en-US'),
@@ -625,7 +527,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
         setPublishStatus(hasPublished ? 'published' : 'draft');
       } catch (err) {
         if (!mounted) return;
-        setSaveError(err instanceof Error ? err.message : 'Failed to load application structure');
+        setLoadError(err instanceof Error ? err.message : 'Failed to load application structure');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -634,7 +536,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     return () => {
       mounted = false;
     };
-  }, [resolvedUniversityId]);
+  }, [reloadNonce, resolvedUniversityId]);
 
   useEffect(() => {
     if (sections.length === 0) {
@@ -711,7 +613,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
       order: section.fields.length + 1,
       dataKey: `field_${Date.now()}`,
       exportLabel: `New ${fieldTypeInfo[type].label}`,
-      visibility: { applicant: true, reviewer: true, admin: true },
+      visibility: { applicant: true, partner: true, staff: true },
     };
 
     // Add default options for choice fields
@@ -786,8 +688,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     setSaving(true);
     setSaveError(null);
     try {
-      await updateAdminApplicationStructure(resolvedUniversityId, { sections });
-      const history = await fetchApplicationStructureHistory(resolvedUniversityId, 20);
+      await updatePartnerApplicationStructure({ sections });
+      const history = await fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20);
       setAuditTrail(history.map((item) => ({
         timestamp: new Date(item.createdAt).toLocaleString('en-US'),
         user: item.changedBy ?? 'System',
@@ -807,9 +709,9 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     setSaving(true);
     setSaveError(null);
     try {
-      await updateAdminApplicationStructure(resolvedUniversityId, { sections });
-      await publishApplicationStructure(resolvedUniversityId, 'Published from manager application structure page');
-      const history = await fetchApplicationStructureHistory(resolvedUniversityId, 20);
+      await updatePartnerApplicationStructure({ sections });
+      await publishPartnerApplicationStructure(resolvedUniversityId, 'Published from manager application structure page');
+      const history = await fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20);
       setAuditTrail(history.map((item) => ({
         timestamp: new Date(item.createdAt).toLocaleString('en-US'),
         user: item.changedBy ?? 'System',
@@ -1554,7 +1456,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
                   checked={selectedField.visibility?.applicant !== false}
                   onCheckedChange={(checked) =>
                     handleUpdateField(selectedField.id, {
-                      visibility: { ...selectedField.visibility, applicant: checked },
+                      visibility: { ...resolveFieldVisibility(selectedField.visibility), applicant: checked },
                     })
                   }
                 />
@@ -1562,14 +1464,14 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="vis-reviewer">Reviewer</Label>
+                  <Label htmlFor="vis-partner">Partner</Label>
                 </div>
                 <Switch
-                  id="vis-reviewer"
-                  checked={selectedField.visibility?.reviewer !== false}
+                  id="vis-partner"
+                  checked={selectedField.visibility?.partner !== false}
                   onCheckedChange={(checked) =>
                     handleUpdateField(selectedField.id, {
-                      visibility: { ...selectedField.visibility, reviewer: checked },
+                      visibility: { ...resolveFieldVisibility(selectedField.visibility), partner: checked },
                     })
                   }
                 />
@@ -1577,14 +1479,14 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Lock className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="vis-admin">Admin</Label>
+                  <Label htmlFor="vis-staff">Staff</Label>
                 </div>
                 <Switch
-                  id="vis-admin"
-                  checked={selectedField.visibility?.admin !== false}
+                  id="vis-staff"
+                  checked={selectedField.visibility?.staff !== false}
                   onCheckedChange={(checked) =>
                     handleUpdateField(selectedField.id, {
-                      visibility: { ...selectedField.visibility, admin: checked },
+                      visibility: { ...resolveFieldVisibility(selectedField.visibility), staff: checked },
                     })
                   }
                 />
@@ -1787,6 +1689,14 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
 
   const pendingTemplate = APPLICATION_STRUCTURE_TEMPLATES.find((item) => item.id === pendingTemplateId) ?? null;
 
+  if (loading) {
+    return <LoadingState label="Loading application structure..." />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => setReloadNonce((current) => current + 1)} />;
+  }
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top Header */}
@@ -1831,6 +1741,11 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {onNavigate ? (
+              <Button variant="outline" size="sm" onClick={() => onNavigate('university-dashboard')}>
+                Back
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               size="sm"
@@ -2016,7 +1931,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             <DialogTitle>Replace current draft with template?</DialogTitle>
             <DialogDescription>
               {pendingTemplate
-                ? `${pendingTemplate.name} will replace the current draft structure. Save and publish afterwards to make it live for students.`
+                ? `${pendingTemplate.name} will replace the current draft structure. Save and publish afterwards to make it live for applicants.`
                 : 'This template will replace the current draft structure.'}
             </DialogDescription>
           </DialogHeader>
@@ -2099,7 +2014,11 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
           </DialogHeader>
 
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-            {auditTrail.map((entry, index) => (
+            {auditTrail.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                No draft saves or publishes have been recorded yet.
+              </div>
+            ) : auditTrail.map((entry, index) => (
               <div key={index} className="flex gap-4 pb-4 border-b last:border-0">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary flex-shrink-0">
                   <User className="h-5 w-5" />

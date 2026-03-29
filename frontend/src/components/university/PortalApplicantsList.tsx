@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Input } from "../ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
-import { useManagementApplicantsData } from "../../hooks/useManagementApplicantsData";
+import { usePartnerApplicantsData } from "../../hooks/usePartnerApplicantsData";
+import { buildPartnerApplicationFileDownloadUrl } from "../../services/partner/submissionsService";
 
 interface PortalApplicantsListProps {
   onNavigate?: (page: string) => void;
@@ -75,7 +76,7 @@ function renderValue(value: unknown, applicationId: string): ReactNode {
       typeof value.download_url === "string"
         ? value.download_url
         : fileId
-          ? `/api/v1.0/partner/applications/${applicationId}/files/${fileId}/download`
+          ? buildPartnerApplicationFileDownloadUrl(applicationId, fileId)
           : "";
 
     return (
@@ -118,7 +119,7 @@ export function PortalApplicantsList({ onNavigate }: PortalApplicantsListProps) 
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const { items, loading, error } = useManagementApplicantsData();
+  const { items, loading, error } = usePartnerApplicantsData();
 
   const rows = useMemo(() => items.map((item) => {
     const applicantInfo = item.applicantInfo ?? {};

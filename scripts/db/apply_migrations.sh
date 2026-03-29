@@ -4,25 +4,19 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-CLIENT_DB="client_db"
-ADMIN_DB="admin_db"
+DATABASE="admin_db"
 DB_USER="postgres"
 DB_HOST="localhost"
 DB_PORT="5432"
 PSQL_PATH=""
-SKIP_CLIENT="false"
-SKIP_ADMIN="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --client-db) CLIENT_DB="$2"; shift 2 ;;
-    --admin-db) ADMIN_DB="$2"; shift 2 ;;
+    --database|--admin-db) DATABASE="$2"; shift 2 ;;
     --db-user) DB_USER="$2"; shift 2 ;;
     --db-host) DB_HOST="$2"; shift 2 ;;
     --db-port) DB_PORT="$2"; shift 2 ;;
     --psql-path) PSQL_PATH="$2"; shift 2 ;;
-    --skip-client) SKIP_CLIENT="true"; shift ;;
-    --skip-admin) SKIP_ADMIN="true"; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -42,12 +36,14 @@ run_migration() {
   "$PSQL_BIN" -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$db" -f "$path"
 }
 
-if [[ "$SKIP_CLIENT" == "false" ]]; then
-  run_migration "$CLIENT_DB" "client_db.sql"
-fi
+MIGRATION_FILES=(
+  "admin_db.sql"
+  "20260329_current_state_contracts.sql"
+  "20260329_drop_legacy_single_db_scaffolding.sql"
+)
 
-if [[ "$SKIP_ADMIN" == "false" ]]; then
-  run_migration "$ADMIN_DB" "admin_db.sql"
-fi
+for migration_file in "${MIGRATION_FILES[@]}"; do
+  run_migration "$DATABASE" "$migration_file"
+done
 
 echo "Migration apply complete."

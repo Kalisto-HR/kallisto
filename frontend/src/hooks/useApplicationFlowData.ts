@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createStudentApplication, submitStudentApplication, updateStudentApplication } from "../services/client/applicationsService";
+import { createApplicantApplication, submitApplicantApplication, updateApplicantApplication } from "../services/applicant/applicationsService";
 
 export type FlowStep = "draft" | "review" | "success";
 
@@ -56,7 +56,7 @@ export function useApplicationFlowData(universityId: string) {
     try {
       if (!knownDraftCyclesRef.current.has(cycleKey)) {
         try {
-          await createStudentApplication({ universityId, cycle, data: formData });
+          await createApplicantApplication({ universityId, cycle, data: formData });
         } catch (err) {
           const message = err instanceof Error ? err.message.toLowerCase() : "";
           const isExistingDraft =
@@ -70,7 +70,7 @@ export function useApplicationFlowData(universityId: string) {
         knownDraftCyclesRef.current.add(cycleKey);
       }
 
-      await updateStudentApplication(universityId, cycle, formData);
+      await updateApplicantApplication(universityId, cycle, formData);
       knownDraftCyclesRef.current.add(cycleKey);
       if (advanceStep) {
         setStep("review");
@@ -90,7 +90,7 @@ export function useApplicationFlowData(universityId: string) {
     setLoading(true);
     setError(null);
     try {
-      await submitStudentApplication(universityId, cycle);
+      await submitApplicantApplication(universityId, cycle);
       setStep("success");
     } catch (err) {
       setError(normalizeApplicationFlowError(err, cycle));

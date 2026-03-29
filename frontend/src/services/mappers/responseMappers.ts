@@ -1,15 +1,15 @@
 import type {
-  AdminSubmittedApplication,
+  SubmittedApplication,
   ApiEnvelope,
   ApplicationTestScoreImportResult,
   BasketCheckoutPreview,
   BasketPlan,
   Pagination,
   Profile,
-  StudentBasketState,
-  StudentApplication,
-  StudentApplicationListItem,
-  StudentTestScore,
+  ApplicantBasketState,
+  ApplicantApplication,
+  ApplicantApplicationListItem,
+  ApplicantTestScore,
   University,
   UniversityListItem,
 } from "../../types/domain";
@@ -101,7 +101,7 @@ export function normalizeUniversity(value: unknown): University {
     cityType: toNullableString(source.city_type ?? source.cityType),
     campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
     applicationSchema: toRecord(source.application_schema ?? source.applicationSchema),
-    managementProfile: toRecord(source.management_profile ?? source.managementProfile),
+    universityProfile: toRecord(source.university_profile ?? source.universityProfile),
     metadata: toRecord(source.metadata),
     createdAt: toString(source.created_at ?? source.createdAt),
   };
@@ -122,7 +122,7 @@ export function normalizeBasketPlan(value: unknown): BasketPlan {
   };
 }
 
-export function normalizeStudentBasketState(value: unknown): StudentBasketState {
+export function normalizeApplicantBasketState(value: unknown): ApplicantBasketState {
   const source = (value ?? {}) as Record<string, unknown>;
   const rawItems = Array.isArray(source.items) ? source.items : [];
   return {
@@ -162,37 +162,37 @@ export function normalizeProfile(value: unknown): Profile {
   };
 }
 
-export function normalizeStudentApplicationListItem(value: unknown): StudentApplicationListItem {
+export function normalizeApplicantApplicationListItem(value: unknown): ApplicantApplicationListItem {
   const source = (value ?? {}) as Record<string, unknown>;
   return {
     universityId: toString(source.university_id ?? source.universityId),
     universityName: toString(source.university_name ?? source.universityName),
     applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
-    status: toString(source.status) as StudentApplicationListItem["status"],
+    status: toString(source.status) as ApplicantApplicationListItem["status"],
     createdAt: toString(source.created_at ?? source.createdAt),
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
   };
 }
 
-export function normalizeStudentApplication(value: unknown): StudentApplication {
+export function normalizeApplicantApplication(value: unknown): ApplicantApplication {
   const source = (value ?? {}) as Record<string, unknown>;
   return {
     userId: toString(source.user_id ?? source.userId),
     universityId: toString(source.university_id ?? source.universityId),
     applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
-    status: toString(source.status) as StudentApplication["status"],
+    status: toString(source.status) as ApplicantApplication["status"],
     data: toRecord(source.data),
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
     createdAt: toString(source.created_at ?? source.createdAt),
   };
 }
 
-export function normalizeStudentTestScore(value: unknown): StudentTestScore {
+export function normalizeApplicantTestScore(value: unknown): ApplicantTestScore {
   const source = (value ?? {}) as Record<string, unknown>;
   return {
     id: toString(source.id),
     userId: toString(source.user_id ?? source.userId),
-    testType: toString(source.test_type ?? source.testType) as StudentTestScore["testType"],
+    testType: toString(source.test_type ?? source.testType) as ApplicantTestScore["testType"],
     otherTestName: toNullableString(source.other_test_name ?? source.otherTestName),
     score: toNumber(source.score),
     outOf: toNumber(source.out_of ?? source.outOf),
@@ -214,7 +214,7 @@ export function normalizeApplicationTestScoreImportResult(value: unknown): Appli
       const item = (row ?? {}) as Record<string, unknown>;
       return {
         id: toString(item.id),
-        testType: toString(item.test_type ?? item.testType) as StudentTestScore["testType"],
+        testType: toString(item.test_type ?? item.testType) as ApplicantTestScore["testType"],
         otherTestName: toNullableString(item.other_test_name ?? item.otherTestName),
         score: toNumber(item.score),
         outOf: toNumber(item.out_of ?? item.outOf),
@@ -225,7 +225,7 @@ export function normalizeApplicationTestScoreImportResult(value: unknown): Appli
   };
 }
 
-export function normalizeAdminSubmittedApplication(value: unknown): AdminSubmittedApplication {
+export function normalizeSubmittedApplication(value: unknown): SubmittedApplication {
   const source = (value ?? {}) as Record<string, unknown>;
   return {
     id: toString(source.id),
@@ -236,10 +236,7 @@ export function normalizeAdminSubmittedApplication(value: unknown): AdminSubmitt
     applicationData: toRecord(source.application_data ?? source.applicationData) ?? {},
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
     receivedAt: toString(source.received_at ?? source.receivedAt),
-    status: toString(source.status) as AdminSubmittedApplication["status"],
-    reviewedBy: toNullableString(source.reviewed_by ?? source.reviewedBy),
-    reviewedAt: toNullableString(source.reviewed_at ?? source.reviewedAt),
-    notes: toNullableString(source.notes),
+    status: toString(source.status) as SubmittedApplication["status"],
   };
 }
 

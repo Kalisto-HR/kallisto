@@ -7,7 +7,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { useSession } from "../../hooks/useSession";
 import { getDefaultRouteForRole, routes } from "../../routes/routeConfig";
-import { getSessionUser, signIn } from "../../services/authService";
+import { getSessionUser, signIn } from "../../services/auth/service";
 import {
   ACCOUNT_UPDATED_REASON,
   PASSWORD_CHANGED_REASON,
