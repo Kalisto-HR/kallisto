@@ -3,6 +3,8 @@ package usecases_impl
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
@@ -58,7 +60,13 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		`SELECT id, manager_id, name, logo, description, province, city, country,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
-		        city_type, campus_vibe, application_schema, university_profile, ranking,
+		        city_type, campus_vibe, application_schema,
+		        EXISTS(
+		            SELECT 1
+		            FROM university_application_structure_versions
+		            WHERE university_id = universities.id AND published = TRUE
+		        ) AS application_structure_published,
+		        university_profile, ranking,
 		        created_at, metadata, application_fee
 		 FROM universities
 		 WHERE id=$1`,
@@ -77,9 +85,111 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		return nil, fmt.Errorf("failed to convert database results to struct: %s", err.Error())
 	}
 
-	university.ApplicationSchema = utils.NormalizeApplicationSchema(university.ApplicationSchema)
+	applicationSchema, published, err := loadApplicantVisibleApplicationSchema(ctx, conn, id)
+	if err != nil {
+		return nil, err
+	}
+	university.ApplicationSchema = applicationSchema
+	university.ApplicationStructurePublished = published
 
 	return &university, nil
+}
+
+func loadApplicantVisibleApplicationSchema(ctx context.Context, conn middlewares.DB, universityId string) (json.RawMessage, bool, error) {
+	var schemaRaw json.RawMessage
+	err := conn.QueryRow(ctx, `
+		SELECT schema
+		FROM university_application_structure_versions
+		WHERE university_id = $1 AND published = TRUE
+		ORDER BY version_no DESC
+		LIMIT 1
+	`, universityId).Scan(&schemaRaw)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return applicantFallbackApplicationSchema(), false, nil
+		}
+		return nil, false, fmt.Errorf("failed to load published application structure: %s", err.Error())
+	}
+
+	trimmed := strings.TrimSpace(string(schemaRaw))
+	if trimmed == "" || trimmed == "null" {
+		return applicantFallbackApplicationSchema(), false, nil
+	}
+
+	return utils.NormalizeApplicationSchema(schemaRaw), true, nil
+}
+
+func applicantFallbackApplicationSchema() json.RawMessage {
+	raw, err := json.Marshal(map[string]any{
+		"sections": []any{
+			map[string]any{
+				"id":          "personal-info",
+				"name":        "Personal Information",
+				"title":       "Personal Information",
+				"description": "Basic applicant details",
+				"order":       1,
+				"visible":     true,
+				"fields": []any{
+					map[string]any{
+						"id":       "full_name",
+						"type":     "short-text",
+						"label":    "Full Name",
+						"required": true,
+						"dataKey":  "full_name",
+						"order":    1,
+						"visibility": map[string]any{
+							"applicant": true,
+							"partner":   true,
+							"staff":     true,
+						},
+					},
+					map[string]any{
+						"id":       "email",
+						"type":     "email",
+						"label":    "Email",
+						"required": true,
+						"dataKey":  "email",
+						"order":    2,
+						"visibility": map[string]any{
+							"applicant": true,
+							"partner":   true,
+							"staff":     true,
+						},
+					},
+					map[string]any{
+						"id":       "dob",
+						"type":     "date",
+						"label":    "Date of Birth",
+						"required": true,
+						"dataKey":  "dob",
+						"order":    3,
+						"visibility": map[string]any{
+							"applicant": true,
+							"partner":   true,
+							"staff":     true,
+						},
+					},
+					map[string]any{
+						"id":       "citizenship",
+						"type":     "country",
+						"label":    "Country of Citizenship",
+						"required": true,
+						"dataKey":  "citizenship",
+						"order":    4,
+						"visibility": map[string]any{
+							"applicant": true,
+							"partner":   true,
+							"staff":     true,
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return json.RawMessage(`{"sections":[]}`)
+	}
+	return utils.NormalizeApplicationSchema(raw)
 }
 
 func SearchUniversities(ctx context.Context, params *models.UniversitySearchParams) ([]models.UniversityListItem, int, error) {

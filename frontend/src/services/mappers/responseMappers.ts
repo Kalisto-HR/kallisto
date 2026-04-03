@@ -101,6 +101,9 @@ export function normalizeUniversity(value: unknown): University {
     cityType: toNullableString(source.city_type ?? source.cityType),
     campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
     applicationSchema: toRecord(source.application_schema ?? source.applicationSchema),
+    applicationStructurePublished: toNullableBool(
+      source.application_structure_published ?? source.applicationStructurePublished,
+    ) ?? false,
     universityProfile: toRecord(source.university_profile ?? source.universityProfile),
     metadata: toRecord(source.metadata),
     createdAt: toString(source.created_at ?? source.createdAt),

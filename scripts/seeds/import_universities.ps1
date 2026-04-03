@@ -18,7 +18,7 @@ function Resolve-ConnectionString {
         [string]$ExplicitUrl,
         [string]$DbName,
         [string]$User,
-        [string]$Host,
+        [string]$DbHostName,
         [int]$Port
     )
 
@@ -31,7 +31,7 @@ function Resolve-ConnectionString {
     }
 
     $parts = @(
-        "host=$Host",
+        "host=$DbHostName",
         "port=$Port",
         "user=$User",
         "dbname=$DbName"
@@ -52,7 +52,7 @@ if (-not (Test-Path -LiteralPath $resolvedDataFile)) {
     throw "Seed data file not found: $resolvedDataFile"
 }
 
-$resolvedDatabaseUrl = Resolve-ConnectionString -ExplicitUrl $DatabaseUrl -DbName $Database -User $DbUser -Host $DbHost -Port $DbPort
+$resolvedDatabaseUrl = Resolve-ConnectionString -ExplicitUrl $DatabaseUrl -DbName $Database -User $DbUser -DbHostName $DbHost -Port $DbPort
 if ([string]::IsNullOrWhiteSpace($resolvedDatabaseUrl)) {
     throw "A database connection string is required. Set DATABASE_URL or pass -DatabaseUrl."
 }

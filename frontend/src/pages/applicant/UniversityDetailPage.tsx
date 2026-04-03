@@ -66,6 +66,77 @@ function toDisplayValue(value: unknown): string | null {
   return toStringValue(value);
 }
 
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+      if (item && typeof item === "object") {
+        const row = item as Record<string, unknown>;
+        return (
+          toStringValue(row.name) ??
+          toStringValue(row.title) ??
+          toStringValue(row.label) ??
+          toStringValue(row.value) ??
+          ""
+        );
+      }
+      return "";
+    })
+    .filter((item) => item.length > 0);
+}
+
+interface UniversityProfileSummary {
+  website: string | null;
+  contactEmail: string | null;
+  foundedYear: string | null;
+  studentCount: string | null;
+  facultyCount: string | null;
+  accreditations: string[];
+}
+
+function summarizeUniversityProfile(profile: Record<string, unknown> | null): UniversityProfileSummary {
+  if (!profile) {
+    return {
+      website: null,
+      contactEmail: null,
+      foundedYear: null,
+      studentCount: null,
+      facultyCount: null,
+      accreditations: [],
+    };
+  }
+
+  return {
+    website:
+      toStringValue(profile.website) ??
+      toStringValue(profile.websiteUrl) ??
+      toStringValue(profile.site),
+    contactEmail:
+      toStringValue(profile.contactEmail) ??
+      toStringValue(profile.contact_email) ??
+      toStringValue(profile.email),
+    foundedYear:
+      toDisplayValue(profile.foundedYear) ??
+      toDisplayValue(profile.founded_year) ??
+      toDisplayValue(profile.establishedYear) ??
+      toDisplayValue(profile.established_year),
+    studentCount:
+      toDisplayValue(profile.studentCount) ??
+      toDisplayValue(profile.student_count) ??
+      toDisplayValue(profile.students),
+    facultyCount:
+      toDisplayValue(profile.facultyCount) ??
+      toDisplayValue(profile.faculty_count) ??
+      toDisplayValue(profile.faculty),
+    accreditations: toStringArray(profile.accreditations),
+  };
+}
+
 function formatFieldLabel(value: string): string {
   return value
     .replace(/[_-]+/g, " ")
@@ -230,6 +301,7 @@ export function UniversityDetailPage() {
   const [compareCount, setCompareCount] = useState(0);
   const [compareFeedback, setCompareFeedback] = useState<string | null>(null);
   const [isInBasket, setIsInBasket] = useState(false);
+  const [basketFeedback, setBasketFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -248,6 +320,7 @@ export function UniversityDetailPage() {
         setCompareCount(compareList.length);
         setIsInCompare(compareList.some((item) => item.id === id));
         setCompareFeedback(null);
+        setBasketFeedback(null);
         setIsInBasket(basketState?.items.some((item) => item.id === id) ?? false);
         setExistingApplications(applications.filter((item) => item.universityId === id));
       } catch (err) {
@@ -292,8 +365,9 @@ export function UniversityDetailPage() {
         await addBasketItem(university.id);
         setIsInBasket(true);
       }
+      setBasketFeedback(null);
     } catch {
-      // Keep the view stable if basket update fails.
+      setBasketFeedback("Unable to update your basket right now. Please try again.");
     }
   };
 
@@ -309,6 +383,7 @@ export function UniversityDetailPage() {
   }
 
   const universityProfile = toRecord(university.universityProfile);
+  const universityProfileSummary = summarizeUniversityProfile(universityProfile);
   const programs = toProgramList(university);
   const intakeTerms = toIntakeTerms(universityProfile);
   const minimumScores = buildMinimumScoreRows(university);
@@ -414,6 +489,13 @@ export function UniversityDetailPage() {
             <AlertDescription>{compareFeedback}</AlertDescription>
           </Alert>
         ) : null}
+        {basketFeedback ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Basket update failed</AlertTitle>
+            <AlertDescription>{basketFeedback}</AlertDescription>
+          </Alert>
+        ) : null}
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -459,11 +541,74 @@ export function UniversityDetailPage() {
             <CardHeader>
               <CardTitle>Overview</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
               <p>
                 {university.description ??
                   "No detailed overview has been published for this university yet."}
               </p>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {universityProfileSummary.website ? (
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Website</div>
+                    <a
+                      href={universityProfileSummary.website.startsWith("http") ? universityProfileSummary.website : `https://${universityProfileSummary.website}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 block break-all font-medium text-slate-900 underline-offset-4 hover:underline"
+                    >
+                      {universityProfileSummary.website}
+                    </a>
+                  </div>
+                ) : null}
+                {universityProfileSummary.contactEmail ? (
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Contact Email</div>
+                    <a
+                      href={`mailto:${universityProfileSummary.contactEmail}`}
+                      className="mt-1 block break-all font-medium text-slate-900 underline-offset-4 hover:underline"
+                    >
+                      {universityProfileSummary.contactEmail}
+                    </a>
+                  </div>
+                ) : null}
+                {universityProfileSummary.foundedYear ? (
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Founded</div>
+                    <div className="mt-1 font-medium text-slate-900">{universityProfileSummary.foundedYear}</div>
+                  </div>
+                ) : null}
+                {universityProfileSummary.studentCount ? (
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Students</div>
+                    <div className="mt-1 font-medium text-slate-900">{universityProfileSummary.studentCount}</div>
+                  </div>
+                ) : null}
+                {universityProfileSummary.facultyCount ? (
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Faculty</div>
+                    <div className="mt-1 font-medium text-slate-900">{universityProfileSummary.facultyCount}</div>
+                  </div>
+                ) : null}
+              </div>
+
+              {universityProfileSummary.accreditations.length > 0 ? (
+                <div className="space-y-3 rounded-lg border border-slate-200 p-4 text-slate-700">
+                  <div className="flex items-center gap-2 font-medium text-slate-900">
+                    <Badge variant="secondary" className="px-2 py-0 text-xs">
+                      Accreditations
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {universityProfileSummary.accreditations.map((accreditation) => (
+                      <Badge key={accreditation} variant="outline" className="border-slate-300 text-slate-700">
+                        {accreditation}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               {intakeTerms.length > 0 ? (
                 <div className="space-y-3 rounded-lg border border-slate-200 p-4 text-slate-700">
                   <div className="flex items-center gap-2 font-medium text-slate-900">

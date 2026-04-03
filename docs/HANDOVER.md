@@ -63,7 +63,7 @@ These are the only supported runtime roles.
 ## Setup
 
 1. Create `admin_db`
-2. Run `scripts/db/apply_migrations.*`
+2. Run `psql -U postgres -d admin_db -f scripts/migrations/deploy_admin_db.sql`
 3. Optional: run `scripts/db/apply_seeds.*`
 4. Configure `.env`
 5. Run:

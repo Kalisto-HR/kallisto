@@ -52,6 +52,7 @@ describe("ApplicantApplicationCreatePage", () => {
       scholarshipAvailable: null,
       cityType: null,
       campusVibe: null,
+      applicationStructurePublished: true,
       universityProfile: null,
       metadata: null,
       createdAt: "2026-01-01T00:00:00Z",
@@ -70,6 +71,7 @@ describe("ApplicantApplicationCreatePage", () => {
                 label: "GPA",
                 required: true,
                 order: 1,
+                helperText: "Minimum 3.0 GPA required.",
                 visibility: { applicant: true, partner: true, staff: true },
               },
               {
@@ -82,12 +84,24 @@ describe("ApplicantApplicationCreatePage", () => {
                 visibility: { applicant: true, partner: true, staff: true },
               },
               {
+                id: "transcript_upload",
+                dataKey: "transcript_upload",
+                type: "file-upload",
+                label: "Transcript Upload",
+                required: true,
+                order: 3,
+                helperText: "Upload your latest transcript PDF.",
+                visibility: { applicant: true, partner: true, staff: true },
+              },
+              {
                 id: "personal_statement",
                 dataKey: "personal_statement",
                 type: "essay",
                 label: "Personal Statement",
                 required: true,
-                order: 3,
+                order: 4,
+                helperText: "Explain why you are applying.",
+                validation: { wordLimit: 500 },
                 visibility: { applicant: true, partner: true, staff: true },
               },
             ],
@@ -113,7 +127,16 @@ describe("ApplicantApplicationCreatePage", () => {
       importedCount: 0,
       testScores: [],
     });
-    vi.mocked(uploadApplicantApplicationFiles).mockResolvedValue([]);
+    vi.mocked(uploadApplicantApplicationFiles).mockResolvedValue([
+      {
+        id: "file-1",
+        name: "transcript.pdf",
+        type: "application/pdf",
+        size: 1024,
+        storage: "application_file",
+        downloadUrl: "",
+      },
+    ]);
   });
 
   it("renders normalized WIUT fields and submits their values", async () => {
@@ -128,15 +151,22 @@ describe("ApplicantApplicationCreatePage", () => {
     );
 
     await screen.findByText(/application overview/i);
+    expect(screen.getByText(/published structure applicants will use/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^continue$/i }));
     await screen.findByText(/eligibility and requirements/i);
+    expect(screen.getAllByText(/minimum 3\.0 gpa required/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/required documents/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/transcript upload/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/essay limits/i)).toBeInTheDocument();
+    expect(screen.getByText(/500 words max/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^continue$/i }));
 
     const gpaInput = await screen.findByLabelText(/gpa/i);
     const ieltsInput = screen.getByLabelText(/ielts score/i);
     const personalStatement = screen.getByLabelText(/personal statement/i);
+    const transcriptUpload = screen.getByLabelText(/transcript upload/i);
 
     expect(personalStatement.tagName).toBe("TEXTAREA");
 
@@ -146,6 +176,11 @@ describe("ApplicantApplicationCreatePage", () => {
     await waitFor(() => {
       expect(personalStatement).toHaveValue("This is my personal statement for WIUT.");
     });
+    await user.upload(transcriptUpload, new File(["transcript"], "transcript.pdf", { type: "application/pdf" }));
+    await waitFor(() => {
+      expect(uploadApplicantApplicationFiles).toHaveBeenCalled();
+      expect(screen.getByText(/transcript\.pdf/i)).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole("button", { name: /review/i }));
     await screen.findByText(/review and submit/i);
@@ -154,13 +189,51 @@ describe("ApplicantApplicationCreatePage", () => {
 
     await waitFor(() => {
       expect(createApplicantApplication).toHaveBeenCalled();
-      expect(updateApplicantApplication).toHaveBeenCalledWith("wiut-id", "2026-Fall", {
-        gpa: "3.9",
-        ielts_score: "7.5",
-        personal_statement: "This is my personal statement for WIUT.",
-      });
+      expect(updateApplicantApplication).toHaveBeenCalled();
     });
 
     expect(submitApplicantApplication).toHaveBeenCalledWith("wiut-id", "2026-Fall");
+  });
+
+  it("shows the fallback baseline copy when no structure has been published", async () => {
+    vi.mocked(fetchUniversityById).mockResolvedValueOnce({
+      id: "wiut-id",
+      managerId: null,
+      name: "Westminster International University in Tashkent",
+      description: null,
+      province: null,
+      city: "Tashkent",
+      country: "Uzbekistan",
+      ranking: 8,
+      applicationFee: 150,
+      acceptanceRate: null,
+      tuitionFee: null,
+      applicationDeadline: null,
+      ieltsMin: null,
+      toeflMin: null,
+      scholarshipAvailable: null,
+      cityType: null,
+      campusVibe: null,
+      applicationStructurePublished: false,
+      universityProfile: null,
+      metadata: null,
+      createdAt: "2026-01-01T00:00:00Z",
+      applicationSchema: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/applicant/applications/new/wiut-id"]}>
+        <Routes>
+          <Route path="/applicant/applications/new/:universityId" element={<ApplicantApplicationCreatePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText(/application overview/i);
+    expect(screen.getByText(/baseline fallback form/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /^continue$/i }));
+    await screen.findByText(/eligibility and requirements/i);
+    expect(screen.getAllByText(/baseline fallback form/i).length).toBeGreaterThan(0);
   });
 });

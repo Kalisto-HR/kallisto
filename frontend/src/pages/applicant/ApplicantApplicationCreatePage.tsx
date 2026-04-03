@@ -104,6 +104,24 @@ function formatTestScoreLabel(item: ApplicantTestScore): string {
   return item.takenOn ? `${title} - ${score} (${item.takenOn})` : `${title} - ${score}`;
 }
 
+function collectRequirementSummary(section: SchemaSection) {
+  const requiredFields = section.fields.filter((field) => field.required);
+  const requiredDocuments = section.fields.filter(
+    (field) => field.required && (field.type === "document" || field.type === "file-upload"),
+  );
+  const essayLimits = section.fields.filter(
+    (field) => field.type === "essay" && typeof field.validation?.wordLimit === "number",
+  );
+  const helperTexts = section.fields.filter((field) => typeof field.helperText === "string" && field.helperText.trim().length > 0);
+
+  return {
+    requiredFields,
+    requiredDocuments,
+    essayLimits,
+    helperTexts,
+  };
+}
+
 function buildDraftSignature(cycle: string, data: Record<string, unknown>): string {
   return JSON.stringify({ cycle: cycle.trim(), data });
 }
@@ -303,6 +321,7 @@ export function ApplicantApplicationCreatePage() {
   const [schemaSections, setSchemaSections] = useState<SchemaSection[]>([]);
   const [schemaLoading, setSchemaLoading] = useState(true);
   const [schemaError, setSchemaError] = useState<string | null>(null);
+  const [applicationStructurePublished, setApplicationStructurePublished] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [universityName, setUniversityName] = useState("Selected University");
@@ -337,6 +356,7 @@ export function ApplicantApplicationCreatePage() {
         }
         setUniversityName(university.name || "Selected University");
         setUniversityMeta([university.city, university.country].filter(Boolean).join(", "));
+        setApplicationStructurePublished(university.applicationStructurePublished);
 
         const sections = getApplicantSchemaSections(university.applicationSchema);
         setSchemaSections(sections.length > 0 ? sections : [fallbackApplicantSchemaSection]);
@@ -533,6 +553,9 @@ export function ApplicantApplicationCreatePage() {
   const duplicateApplicationHref = duplicateApplication
     ? routes.applicant.applicationDetail(duplicateApplication.universityId, duplicateApplication.applicationCycle)
     : null;
+  const schemaSourceMessage = applicationStructurePublished
+    ? "This is the published structure applicants will use."
+    : "This university has not published a structure yet, so applicants use the baseline fallback form below.";
 
   useEffect(() => {
     if (!draftHydrated || !hasFormContent || flowLoading || duplicateApplication) {
@@ -1507,7 +1530,7 @@ export function ApplicantApplicationCreatePage() {
             </div>
             <Alert>
               <Info className="h-4 w-4" />
-              <AlertDescription>This flow follows the application structure published by the university.</AlertDescription>
+              <AlertDescription>{schemaSourceMessage}</AlertDescription>
             </Alert>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link to={routes.applicant.universities} className="flex-1">
@@ -1530,15 +1553,94 @@ export function ApplicantApplicationCreatePage() {
           <CardHeader>
             <CardTitle>Eligibility and Requirements</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            {schemaLoading ? <p>Loading requirements...</p> : null}
-            {schemaError ? <p className="text-red-600">{schemaError}</p> : null}
-            <p>{schemaSections.length} section(s) configured.</p>
-            <p>{schemaSections.reduce((acc, section) => acc + section.fields.length, 0)} total field(s).</p>
-            <p>
-              {schemaSections.reduce((acc, section) => acc + section.fields.filter((field) => field.required).length, 0)}
-              {" "}required field(s).
-            </p>
+          <CardContent className="space-y-4">
+            <Alert className={applicationStructurePublished ? "border-primary/20 bg-primary/6" : "border-amber-200 bg-amber-50"}>
+              <Info className="h-4 w-4" />
+              <AlertDescription>{schemaSourceMessage}</AlertDescription>
+            </Alert>
+
+            {schemaLoading ? <p className="text-sm text-muted-foreground">Loading requirements...</p> : null}
+            {schemaError ? <p className="text-sm text-red-600">{schemaError}</p> : null}
+
+            <div className="space-y-4">
+              {schemaSections.map((section) => {
+                const summary = collectRequirementSummary(section);
+                return (
+                  <div key={section.id} className="space-y-4 rounded-lg border p-4">
+                    <div>
+                      <h3 className="font-medium">{section.title ?? section.name ?? "Section"}</h3>
+                      {section.description ? <p className="text-xs text-muted-foreground">{section.description}</p> : null}
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Required fields</div>
+                        {summary.requiredFields.length > 0 ? (
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {summary.requiredFields.map((field) => (
+                              <li key={field.id} className="flex items-start gap-2">
+                                <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                                <span>{field.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No required fields are listed in this section.</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Required documents</div>
+                        {summary.requiredDocuments.length > 0 ? (
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {summary.requiredDocuments.map((field) => (
+                              <li key={field.id} className="flex items-start gap-2">
+                                <FileText className="mt-0.5 h-4 w-4 text-primary" />
+                                <span>{field.label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No required documents are listed in this section.</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Essay limits</div>
+                        {summary.essayLimits.length > 0 ? (
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {summary.essayLimits.map((field) => (
+                              <li key={field.id} className="flex items-start gap-2">
+                                <AlertCircle className="mt-0.5 h-4 w-4 text-primary" />
+                                <span>
+                                  {field.label}
+                                  {typeof field.validation?.wordLimit === "number" ? ` - ${field.validation.wordLimit} words max` : ""}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No essay limits are listed in this section.</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Helper text</div>
+                        {summary.helperTexts.length > 0 ? (
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {summary.helperTexts.map((field) => (
+                              <li key={field.id} className="space-y-1">
+                                <div className="font-medium text-foreground">{field.label}</div>
+                                <div>{field.helperText}</div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No helper text has been published for this section.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(1)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />

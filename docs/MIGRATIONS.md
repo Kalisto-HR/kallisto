@@ -4,29 +4,23 @@ This document describes the supported database bootstrap and rollout path for th
 
 ## Current-state bootstrap
 
-Use these files for supported environments:
+The supported deployment entrypoint is:
 
-- `scripts/migrations/admin_db.sql`
-- `scripts/migrations/20260329_current_state_contracts.sql`
-- `scripts/migrations/20260329_drop_legacy_single_db_scaffolding.sql`
+- `scripts/migrations/deploy_admin_db.sql`
 
 The supported runtime uses one PostgreSQL database: `admin_db`.
 
 ## Migration order
 
-`scripts/db/apply_migrations.*` applies the migration set in this order:
+`deploy_admin_db.sql` is the deployment-facing artifact. It composes the canonical schema, current-state contract upgrades, legacy cleanup, and the defensive compare-orphan cleanup in one idempotent script.
 
-1. `admin_db.sql`
-2. `20260329_current_state_contracts.sql`
-3. `20260329_drop_legacy_single_db_scaffolding.sql`
+The split SQL files remain in the repository as local composition inputs for developers and for auditability:
 
-That order is intentional:
+- `scripts/migrations/admin_db.sql`
+- `scripts/migrations/20260329_current_state_contracts.sql`
+- `scripts/migrations/20260329_drop_legacy_single_db_scaffolding.sql`
 
-- `admin_db.sql` defines the current canonical schema for fresh environments
-- `20260329_current_state_contracts.sql` upgrades existing environments to the current contracts
-- `20260329_drop_legacy_single_db_scaffolding.sql` removes retired legacy tables and compatibility artifacts after the contract rewrite is in place
-
-All three files are written to be idempotent for repeatable local bootstrap.
+`scripts/db/apply_migrations.*` remains local tooling only and should not be treated as the production deployment contract.
 
 ## Current schema invariants
 
@@ -46,13 +40,14 @@ Retired tables `submitted_applications` and `submitted_application_files` are no
 ### Linux/macOS
 
 ```bash
-bash scripts/db/apply_migrations.sh --database admin_db --db-user postgres --db-host localhost --db-port 5432
+psql -U postgres -d admin_db -f scripts/migrations/deploy_admin_db.sql
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -Database admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+$env:PSQL_PATH='C:\Program Files\PostgreSQL\18\bin\psql.exe'
+& $env:PSQL_PATH -U postgres -d admin_db -f scripts/migrations/deploy_admin_db.sql
 ```
 
 ## Apply seeds
@@ -107,7 +102,7 @@ $env:PSQL_PATH='C:\Program Files\PostgreSQL\18\bin\psql.exe'
 
 ## Forward-only cleanup for deployed environments
 
-Existing environments that were bootstrapped before the current-state cleanup should still run the same migration entrypoint. The forward migration files will:
+Existing environments that were bootstrapped before the current-state cleanup should still run the same deployment entrypoint. The forward migration files included by `deploy_admin_db.sql` will:
 
 - rename `universities.management_profile` to `universities.university_profile`
 - rewrite application-structure visibility keys from `reviewer|admin` to `partner|staff`

@@ -419,22 +419,14 @@ func validateApplicationEssayLimits(
 		return nil
 	}
 
-	var schemaRaw json.RawMessage
-	if err := conn.QueryRow(ctx, "SELECT application_schema FROM universities WHERE id = $1", universityId).Scan(&schemaRaw); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
-		}
-		return fmt.Errorf("failed to load application schema: %s", err.Error())
-	}
-
-	trimmedSchema := strings.TrimSpace(string(schemaRaw))
-	if trimmedSchema == "" || trimmedSchema == "null" {
-		return nil
-	}
-
 	var payload map[string]any
 	if err := json.Unmarshal(applicationData, &payload); err != nil {
 		return utils.NewHandlerFuncErr(http.StatusBadRequest, "application data must be valid json")
+	}
+
+	schemaRaw, _, err := loadApplicantVisibleApplicationSchema(ctx, conn, universityId)
+	if err != nil {
+		return err
 	}
 
 	var schema essayValidationSchema

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -73,6 +73,7 @@ import { useParams } from 'react-router-dom';
 import { useSession } from '../../hooks/useSession';
 import { fetchPartnerApplicationStructure, updatePartnerApplicationStructure } from '../../services/partner/universityService';
 import { fetchPartnerApplicationStructureHistory, publishPartnerApplicationStructure } from '../../services/partner/dashboardService';
+import type { ApplicationStructureVersion } from '../../types/domain';
 import { isValidUUID } from '../../utils/validation';
 
 interface ApplicationStructureProps {
@@ -166,7 +167,7 @@ interface AuditEntry {
   details: string;
 }
 
-type PublishStatus = 'draft' | 'published';
+type PublishStatus = 'never-published' | 'published' | 'draft-changes-not-published';
 
 // Field type metadata
 const fieldTypeInfo: Record<FieldType, { icon: LucideIcon; label: string; description: string }> = {
@@ -221,6 +222,111 @@ function toRecord(value: unknown): Record<string, unknown> | null {
     return value as Record<string, unknown>;
   }
   return null;
+}
+
+function normalizeStructureSections(rawSchema: unknown): Section[] {
+  const schemaRecord = toRecord(rawSchema);
+  const rawSections = Array.isArray(schemaRecord?.sections) ? schemaRecord.sections : [];
+
+  return rawSections
+    .filter((section): section is Record<string, unknown> => Boolean(section) && typeof section === 'object' && !Array.isArray(section))
+    .map((section, sectionIndex) => {
+      const rawFields = Array.isArray(section.fields) ? section.fields : [];
+      return {
+        id: typeof section.id === 'string' && section.id.trim() ? section.id : `section-${sectionIndex + 1}`,
+        name: typeof section.name === 'string' && section.name.trim() ? section.name : `Section ${sectionIndex + 1}`,
+        title:
+          typeof section.title === 'string' && section.title.trim()
+            ? section.title
+            : typeof section.name === 'string' && section.name.trim()
+              ? section.name
+              : `Section ${sectionIndex + 1}`,
+        description: typeof section.description === 'string' && section.description.trim() ? section.description : undefined,
+        order: typeof section.order === 'number' ? section.order : sectionIndex + 1,
+        visible: section.visible !== false,
+        fields: rawFields
+          .filter((field): field is Record<string, unknown> => Boolean(field) && typeof field === 'object' && !Array.isArray(field))
+          .map((field, fieldIndex) => {
+            const visibility = toRecord(field.visibility);
+            return {
+              id: typeof field.id === 'string' && field.id.trim() ? field.id : `field-${sectionIndex + 1}-${fieldIndex + 1}`,
+              type: (typeof field.type === 'string' && field.type.trim() ? field.type : 'short-text') as FieldType,
+              label: typeof field.label === 'string' && field.label.trim() ? field.label : 'Field',
+              helperText: typeof field.helperText === 'string' && field.helperText.trim() ? field.helperText : undefined,
+              placeholder: typeof field.placeholder === 'string' && field.placeholder.trim() ? field.placeholder : undefined,
+              required: field.required === true,
+              order: typeof field.order === 'number' ? field.order : fieldIndex + 1,
+              validation: toRecord(field.validation) ?? undefined,
+              options: Array.isArray(field.options)
+                ? field.options.filter((option): option is string => typeof option === 'string')
+                : undefined,
+              conditional: toRecord(field.conditional) ?? undefined,
+              dataKey: typeof field.dataKey === 'string' && field.dataKey.trim() ? field.dataKey : undefined,
+              exportLabel: typeof field.exportLabel === 'string' && field.exportLabel.trim() ? field.exportLabel : undefined,
+              visibility: visibility
+                ? {
+                    applicant: visibility.applicant !== false,
+                    partner: visibility.partner !== false,
+                    staff: visibility.staff !== false,
+                  }
+                : undefined,
+            } as Field;
+          }),
+      } as Section;
+    })
+    .filter((section) => section.visible !== false);
+}
+
+function buildAuditTrail(history: ApplicationStructureVersion[]): AuditEntry[] {
+  return history.map((item) => ({
+    timestamp: new Date(item.createdAt).toLocaleString('en-US'),
+    user: item.changedBy ?? 'System',
+    action: item.published ? 'Published' : 'Saved',
+    details: item.changeNote ?? `Version ${item.versionNo}`,
+  }));
+}
+
+function getLatestPublishedVersion(history: ApplicationStructureVersion[]): ApplicationStructureVersion | null {
+  const publishedVersions = [...history]
+    .filter((item) => item.published)
+    .sort((left, right) => {
+      if (right.versionNo !== left.versionNo) {
+        return right.versionNo - left.versionNo;
+      }
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+    });
+  return publishedVersions[0] ?? null;
+}
+
+function getPublishStatus(sections: Section[], latestPublished: ApplicationStructureVersion | null): PublishStatus {
+  if (!latestPublished) {
+    return 'never-published';
+  }
+
+  const liveSignature = JSON.stringify(normalizeStructureSections({ sections }));
+  const publishedSignature = JSON.stringify(normalizeStructureSections(latestPublished.schema));
+  return liveSignature === publishedSignature ? 'published' : 'draft-changes-not-published';
+}
+
+function getPublishStatusCopy(status: PublishStatus) {
+  switch (status) {
+    case 'published':
+      return {
+        label: 'Published',
+        description: 'Applicants see the current published structure.',
+      };
+    case 'draft-changes-not-published':
+      return {
+        label: 'Draft changes not published',
+        description: 'Applicants still see the last published structure until you publish these draft changes.',
+      };
+    case 'never-published':
+    default:
+      return {
+        label: 'Never published',
+        description: 'Applicants see the fallback baseline until you publish a structure for the first time.',
+      };
+  }
 }
 
 function resolveFieldVisibility(visibility?: Field['visibility']) {
@@ -470,7 +576,6 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
   const linkedUniversityId = user?.universityLinked && isValidUUID(user.universityLinked) ? user.universityLinked : null;
   const resolvedUniversityId = routeUniversityId ?? linkedUniversityId;
   // State management
-  const [publishStatus, setPublishStatus] = useState<PublishStatus>('draft');
   const [previewMode, setPreviewMode] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
@@ -488,6 +593,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const [sections, setSections] = useState<Section[]>([]);
+  const [historyEntries, setHistoryEntries] = useState<ApplicationStructureVersion[]>([]);
 
   const [auditTrail, setAuditTrail] = useState<AuditEntry[]>([]);
 
@@ -505,26 +611,15 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
       }
       try {
         const [schema, history] = await Promise.all([
-            fetchPartnerApplicationStructure(),
-            fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20),
+          fetchPartnerApplicationStructure(),
+          fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20),
         ]);
         if (!mounted) return;
 
-        const schemaRecord = toRecord(schema);
-        const schemaSections = Array.isArray(schemaRecord?.sections)
-          ? (schemaRecord.sections as Section[])
-          : [];
+        const schemaSections = normalizeStructureSections(schema);
         setSections(schemaSections);
-
-        setAuditTrail(history.map((item) => ({
-          timestamp: new Date(item.createdAt).toLocaleString('en-US'),
-          user: item.changedBy ?? 'System',
-          action: item.published ? 'Published' : 'Saved',
-          details: item.changeNote ?? `Version ${item.versionNo}`,
-        })));
-
-        const hasPublished = history.some((item) => item.published);
-        setPublishStatus(hasPublished ? 'published' : 'draft');
+        setHistoryEntries(history);
+        setAuditTrail(buildAuditTrail(history));
       } catch (err) {
         if (!mounted) return;
         setLoadError(err instanceof Error ? err.message : 'Failed to load application structure');
@@ -690,12 +785,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     try {
       await updatePartnerApplicationStructure({ sections });
       const history = await fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20);
-      setAuditTrail(history.map((item) => ({
-        timestamp: new Date(item.createdAt).toLocaleString('en-US'),
-        user: item.changedBy ?? 'System',
-        action: item.published ? 'Published' : 'Saved',
-        details: item.changeNote ?? `Version ${item.versionNo}`,
-      })));
+      setHistoryEntries(history);
+      setAuditTrail(buildAuditTrail(history));
       setUnsavedChanges(false);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to save draft');
@@ -712,13 +803,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
       await updatePartnerApplicationStructure({ sections });
       await publishPartnerApplicationStructure(resolvedUniversityId, 'Published from manager application structure page');
       const history = await fetchPartnerApplicationStructureHistory(resolvedUniversityId, 20);
-      setAuditTrail(history.map((item) => ({
-        timestamp: new Date(item.createdAt).toLocaleString('en-US'),
-        user: item.changedBy ?? 'System',
-        action: item.published ? 'Published' : 'Saved',
-        details: item.changeNote ?? `Version ${item.versionNo}`,
-      })));
-      setPublishStatus('published');
+      setHistoryEntries(history);
+      setAuditTrail(buildAuditTrail(history));
       setUnsavedChanges(false);
       setShowPublishWarning(false);
     } catch (err) {
@@ -746,9 +832,21 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
     setShowTemplatesDrawer(false);
     setPendingTemplateId(null);
     setUnsavedChanges(true);
-    setPublishStatus('draft');
     setSaveError(null);
   };
+
+  const latestPublishedVersion = useMemo(
+    () => getLatestPublishedVersion(historyEntries),
+    [historyEntries],
+  );
+  const publishStatus = useMemo(
+    () => getPublishStatus(sections, latestPublishedVersion),
+    [latestPublishedVersion, sections],
+  );
+  const publishStatusCopy = useMemo(
+    () => getPublishStatusCopy(publishStatus),
+    [publishStatus],
+  );
 
   // Render functions
   const renderLeftPanel = () => (
@@ -1519,7 +1617,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-semibold">Application Form Preview</h1>
             <p className="text-sm text-muted-foreground">
-              This is how applicants will see your application form
+              This preview reflects the current draft. Applicants see the last published structure until you publish these changes.
             </p>
           </div>
 
@@ -1715,22 +1813,32 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
               </div>
             </div>
             
-            <Badge
-              variant={publishStatus === 'published' ? 'default' : 'secondary'}
-              className="gap-1.5"
-            >
-              {publishStatus === 'published' ? (
-                <>
-                  <CheckCircle2 className="h-3 w-3" />
-                  Published
-                </>
-              ) : (
-                <>
-                  <Clock className="h-3 w-3" />
-                  Draft
-                </>
-              )}
-            </Badge>
+            <div className="space-y-1">
+              <Badge
+                variant={publishStatus === 'published' ? 'default' : 'secondary'}
+                className="gap-1.5"
+              >
+                {publishStatus === 'published' ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3" />
+                    {publishStatusCopy.label}
+                  </>
+                ) : publishStatus === 'draft-changes-not-published' ? (
+                  <>
+                    <EyeOff className="h-3 w-3" />
+                    {publishStatusCopy.label}
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-3 w-3" />
+                    {publishStatusCopy.label}
+                  </>
+                )}
+              </Badge>
+              <p className="max-w-[42rem] text-xs text-muted-foreground">
+                {publishStatusCopy.description}
+              </p>
+            </div>
 
             {unsavedChanges && (
               <Badge variant="outline" className="gap-1.5">
@@ -1931,8 +2039,8 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
             <DialogTitle>Replace current draft with template?</DialogTitle>
             <DialogDescription>
               {pendingTemplate
-                ? `${pendingTemplate.name} will replace the current draft structure. Save and publish afterwards to make it live for applicants.`
-                : 'This template will replace the current draft structure.'}
+                ? `${pendingTemplate.name} will replace the current draft structure. Applicants will still see the last published version until you save and publish this draft.`
+                : 'This template will replace the current draft structure. Applicants will still see the last published version until you publish the new draft.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -1968,14 +2076,14 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
               Publish Application Structure
             </DialogTitle>
             <DialogDescription>
-              Publishing will make these changes live for new applicants
+              Publishing will make this draft the structure applicants see next.
             </DialogDescription>
           </DialogHeader>
 
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Important:</strong> Publishing will affect all future applicants. Existing applications will continue to use the previous version.
+              <strong>Important:</strong> Applicants see the last published version, not the current draft. Existing applications will continue to use the previous version.
             </AlertDescription>
           </Alert>
 

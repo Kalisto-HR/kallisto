@@ -7,28 +7,29 @@ import (
 )
 
 type University struct {
-	Id                   string          `json:"id" db:"id"`
-	ManagerId            *string         `json:"manager_id,omitempty" db:"manager_id"`
-	Name                 string          `json:"name" db:"name"`
-	Logo                 []byte          `json:"logo,omitempty" db:"logo"`
-	Description          *string         `json:"description,omitempty" db:"description"`
-	Province             *string         `json:"province,omitempty" db:"province"`
-	City                 *string         `json:"city,omitempty" db:"city"`
-	Country              *string         `json:"country,omitempty" db:"country"`
-	AcceptanceRate       *float64        `json:"acceptance_rate,omitempty" db:"acceptance_rate"`
-	TuitionFee           *float64        `json:"tuition_fee,omitempty" db:"tuition_fee"`
-	ApplicationDeadline  *time.Time      `json:"application_deadline,omitempty" db:"application_deadline"`
-	IeltsMin             *float64        `json:"ielts_min,omitempty" db:"ielts_min"`
-	ToeflMin             *int            `json:"toefl_min,omitempty" db:"toefl_min"`
-	ScholarshipAvailable *bool           `json:"scholarship_available,omitempty" db:"scholarship_available"`
-	CityType             *string         `json:"city_type,omitempty" db:"city_type"`
-	CampusVibe           *string         `json:"campus_vibe,omitempty" db:"campus_vibe"`
-	ApplicationSchema    json.RawMessage `json:"application_schema,omitempty" db:"application_schema"`
-	UniversityProfile    json.RawMessage `json:"university_profile,omitempty" db:"university_profile"`
-	Ranking              *int            `json:"ranking,omitempty" db:"ranking"`
-	CreatedAt            time.Time       `json:"created_at" db:"created_at"`
-	Metadata             json.RawMessage `json:"metadata,omitempty" db:"metadata"`
-	ApplicationFee       *float64        `json:"application_fee,omitempty" db:"application_fee"`
+	Id                            string          `json:"id" db:"id"`
+	ManagerId                     *string         `json:"manager_id,omitempty" db:"manager_id"`
+	Name                          string          `json:"name" db:"name"`
+	Logo                          []byte          `json:"logo,omitempty" db:"logo"`
+	Description                   *string         `json:"description,omitempty" db:"description"`
+	Province                      *string         `json:"province,omitempty" db:"province"`
+	City                          *string         `json:"city,omitempty" db:"city"`
+	Country                       *string         `json:"country,omitempty" db:"country"`
+	AcceptanceRate                *float64        `json:"acceptance_rate,omitempty" db:"acceptance_rate"`
+	TuitionFee                    *float64        `json:"tuition_fee,omitempty" db:"tuition_fee"`
+	ApplicationDeadline           *time.Time      `json:"application_deadline,omitempty" db:"application_deadline"`
+	IeltsMin                      *float64        `json:"ielts_min,omitempty" db:"ielts_min"`
+	ToeflMin                      *int            `json:"toefl_min,omitempty" db:"toefl_min"`
+	ScholarshipAvailable          *bool           `json:"scholarship_available,omitempty" db:"scholarship_available"`
+	CityType                      *string         `json:"city_type,omitempty" db:"city_type"`
+	CampusVibe                    *string         `json:"campus_vibe,omitempty" db:"campus_vibe"`
+	ApplicationSchema             json.RawMessage `json:"application_schema,omitempty" db:"application_schema"`
+	ApplicationStructurePublished bool            `json:"application_structure_published" db:"application_structure_published"`
+	UniversityProfile             json.RawMessage `json:"university_profile,omitempty" db:"university_profile"`
+	Ranking                       *int            `json:"ranking,omitempty" db:"ranking"`
+	CreatedAt                     time.Time       `json:"created_at" db:"created_at"`
+	Metadata                      json.RawMessage `json:"metadata,omitempty" db:"metadata"`
+	ApplicationFee                *float64        `json:"application_fee,omitempty" db:"application_fee"`
 }
 
 type UniversityListItem struct {

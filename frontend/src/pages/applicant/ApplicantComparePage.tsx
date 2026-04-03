@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Award, DollarSign, GitCompare, MapPin, X } from "lucide-react";
+import { AlertCircle, Award, DollarSign, GitCompare, MapPin, X } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
 import { clearCompareList, fetchCompareList, removeCompareItem } from "../../services/applicant/compareService";
 import { addBasketItem, fetchBasketState, removeBasketItem } from "../../services/applicant/basketService";
+import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import type { UniversityListItem } from "../../types/domain";
 import { routes } from "../../routes/routeConfig";
 import { formatRmb } from "../../utils/currency";
@@ -15,6 +16,7 @@ import { formatRmb } from "../../utils/currency";
 export function ApplicantComparePage() {
   const [items, setItems] = useState<UniversityListItem[]>([]);
   const [basketIds, setBasketIds] = useState<Set<string>>(new Set());
+  const [basketFeedback, setBasketFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +31,7 @@ export function ApplicantComparePage() {
       setItems(compareList);
       const nextBasketIds = new Set((basket?.items ?? []).map((item) => item.id));
       setBasketIds(nextBasketIds);
+      setBasketFeedback(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load compare list");
     } finally {
@@ -78,8 +81,9 @@ export function ApplicantComparePage() {
           return next;
         });
       }
+      setBasketFeedback(null);
     } catch {
-      // Keep page stable if basket update fails.
+      setBasketFeedback("Unable to update your basket right now. Please try again.");
     }
   };
 
@@ -112,6 +116,14 @@ export function ApplicantComparePage() {
           </Button>
         </div>
       </section>
+
+      {basketFeedback ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Basket update failed</AlertTitle>
+          <AlertDescription>{basketFeedback}</AlertDescription>
+        </Alert>
+      ) : null}
 
       <Card>
         <CardHeader>

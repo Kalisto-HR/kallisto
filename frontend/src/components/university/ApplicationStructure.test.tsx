@@ -22,6 +22,46 @@ vi.mock("../../services/partner/dashboardService", () => ({
   publishPartnerApplicationStructure: vi.fn(),
 }));
 
+const baseSchema = {
+  sections: [
+    {
+      id: "section-1",
+      name: "Section 1",
+      title: "Section 1",
+      description: "Section description",
+      order: 1,
+      visible: true,
+      fields: [
+        {
+          id: "field-1",
+          type: "short-text",
+          label: "Full Name",
+          required: true,
+          order: 1,
+          visibility: {
+            applicant: true,
+            partner: true,
+            staff: true,
+          },
+        },
+      ],
+    },
+  ],
+};
+
+function renderStructure() {
+  return render(
+    <MemoryRouter initialEntries={["/partner/university/application-structure/e1f2a3b4-c5d6-7890-4567-901234567890"]}>
+      <Routes>
+        <Route
+          path="/partner/university/application-structure/:universityId"
+          element={<ApplicationStructure />}
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe("ApplicationStructure", () => {
   beforeEach(() => {
     vi.mocked(useSession).mockReturnValue({
@@ -47,16 +87,7 @@ describe("ApplicationStructure", () => {
     vi.mocked(fetchPartnerApplicationStructure).mockRejectedValue(new Error("Structure load failed"));
     vi.mocked(fetchPartnerApplicationStructureHistory).mockResolvedValue([]);
 
-    render(
-      <MemoryRouter initialEntries={["/partner/university/application-structure/e1f2a3b4-c5d6-7890-4567-901234567890"]}>
-        <Routes>
-          <Route
-            path="/partner/university/application-structure/:universityId"
-            element={<ApplicationStructure />}
-          />
-        </Routes>
-      </MemoryRouter>,
-    );
+    renderStructure();
 
     expect(await screen.findByText(/structure load failed/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /save draft/i })).not.toBeInTheDocument();
@@ -67,18 +98,71 @@ describe("ApplicationStructure", () => {
     vi.mocked(fetchPartnerApplicationStructure).mockResolvedValue(null);
     vi.mocked(fetchPartnerApplicationStructureHistory).mockResolvedValue([]);
 
-    render(
-      <MemoryRouter initialEntries={["/partner/university/application-structure/e1f2a3b4-c5d6-7890-4567-901234567890"]}>
-        <Routes>
-          <Route
-            path="/partner/university/application-structure/:universityId"
-            element={<ApplicationStructure />}
-          />
-        </Routes>
-      </MemoryRouter>,
-    );
+    renderStructure();
 
     expect(await screen.findByText(/no sections yet/i)).toBeInTheDocument();
     expect(screen.queryByText(/statement of purpose/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/never published/i)).toBeInTheDocument();
+    expect(screen.getByText(/fallback baseline/i)).toBeInTheDocument();
+  });
+
+  it("shows published when the live draft matches the latest published version", async () => {
+    vi.mocked(fetchPartnerApplicationStructure).mockResolvedValue(baseSchema);
+    vi.mocked(fetchPartnerApplicationStructureHistory).mockResolvedValue([
+      {
+        id: "version-2",
+        universityId: "e1f2a3b4-c5d6-7890-4567-901234567890",
+        versionNo: 2,
+        schema: baseSchema,
+        published: true,
+        changedBy: "Partner User",
+        changeNote: "Published",
+        createdAt: "2026-04-02T00:00:00Z",
+      },
+      {
+        id: "version-1",
+        universityId: "e1f2a3b4-c5d6-7890-4567-901234567890",
+        versionNo: 1,
+        schema: baseSchema,
+        published: false,
+        changedBy: "Partner User",
+        changeNote: "Draft",
+        createdAt: "2026-04-01T00:00:00Z",
+      },
+    ]);
+
+    renderStructure();
+
+    expect(await screen.findByText(/^Published$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Applicants see the current published structure/i)).toBeInTheDocument();
+  });
+
+  it("shows draft changes not published when the draft differs from the latest published version", async () => {
+    vi.mocked(fetchPartnerApplicationStructure).mockResolvedValue({
+      ...baseSchema,
+      sections: [
+        {
+          ...baseSchema.sections[0],
+          title: "Section 1 Updated",
+        },
+      ],
+    });
+    vi.mocked(fetchPartnerApplicationStructureHistory).mockResolvedValue([
+      {
+        id: "version-2",
+        universityId: "e1f2a3b4-c5d6-7890-4567-901234567890",
+        versionNo: 2,
+        schema: baseSchema,
+        published: true,
+        changedBy: "Partner User",
+        changeNote: "Published",
+        createdAt: "2026-04-02T00:00:00Z",
+      },
+    ]);
+
+    renderStructure();
+
+    expect(await screen.findByText(/^Draft changes not published$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Applicants still see the last published structure/i)).toBeInTheDocument();
   });
 });

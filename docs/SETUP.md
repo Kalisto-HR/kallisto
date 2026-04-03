@@ -24,16 +24,17 @@ psql -U postgres -c "CREATE DATABASE admin_db;"
 Linux/macOS:
 
 ```bash
-bash scripts/db/apply_migrations.sh --database admin_db --db-user postgres --db-host localhost --db-port 5432
+psql -U postgres -d admin_db -f scripts/migrations/deploy_admin_db.sql
 ```
 
 Windows (PowerShell):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/db/apply_migrations.ps1 -Database admin_db -DbUser postgres -DbHost localhost -DbPort 5432
+$env:PSQL_PATH='C:\Program Files\PostgreSQL\18\bin\psql.exe'
+& $env:PSQL_PATH -U postgres -d admin_db -f scripts/migrations/deploy_admin_db.sql
 ```
 
-The migration entrypoint applies the canonical bootstrap schema plus the current-state forward migrations.
+The deployment entrypoint is `scripts/migrations/deploy_admin_db.sql`. The wrapper scripts under `scripts/db/` remain local tooling only.
 
 ## 4. Optional seeds
 

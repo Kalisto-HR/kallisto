@@ -50,6 +50,7 @@ export interface University {
   cityType: string | null;
   campusVibe: string | null;
   applicationSchema: Record<string, unknown> | null;
+  applicationStructurePublished: boolean;
   universityProfile: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
   createdAt: string;
