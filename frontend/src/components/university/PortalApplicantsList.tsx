@@ -10,10 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { usePartnerApplicantsData } from "../../hooks/usePartnerApplicantsData";
 import { buildPartnerApplicationFileDownloadUrl } from "../../services/partner/submissionsService";
 
-interface PortalApplicantsListProps {
-  onNavigate?: (page: string) => void;
-}
-
 function getDisplayName(source: Record<string, unknown>): string {
   const explicit = typeof source.name === "string" ? source.name.trim() : "";
   if (explicit) {
@@ -115,7 +111,12 @@ function renderValue(value: unknown, applicationId: string): ReactNode {
   return String(value);
 }
 
-export function PortalApplicantsList({ onNavigate }: PortalApplicantsListProps) {
+function createDownloadFileName(name: string, applicationId: string) {
+  const normalizedName = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `${normalizedName || "application"}-${applicationId}.json`;
+}
+
+export function PortalApplicantsList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -152,6 +153,37 @@ export function PortalApplicantsList({ onNavigate }: PortalApplicantsListProps) 
   const requestedApplicationId = searchParams.get("applicationId");
   const selectedRow = filteredRows.find((row) => row.id === requestedApplicationId) ?? rows.find((row) => row.id === requestedApplicationId) ?? null;
 
+  const downloadSelectedApplication = () => {
+    if (!selectedRow) {
+      return;
+    }
+
+    const snapshot = {
+      exported_at: new Date().toISOString(),
+      application: {
+        id: selectedRow.id,
+        name: selectedRow.name,
+        email: selectedRow.email,
+        citizenship: selectedRow.citizenship,
+        program: selectedRow.program,
+        submitted_at: selectedRow.submittedAt,
+        applicant_info: selectedRow.applicantInfo,
+        application_data: selectedRow.applicationData,
+      },
+    };
+
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = createDownloadFileName(selectedRow.name, selectedRow.id);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const openDetails = (applicationId: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("applicationId", applicationId);
@@ -178,9 +210,9 @@ export function PortalApplicantsList({ onNavigate }: PortalApplicantsListProps) 
               Review submitted applicant records without in-product verdict actions.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => onNavigate?.("partner-dashboard")}>
+          <Button variant="outline" size="sm" onClick={downloadSelectedApplication} disabled={!selectedRow}>
             <Download className="mr-2 h-4 w-4" />
-            Return to dashboard
+            Download application
           </Button>
         </div>
 

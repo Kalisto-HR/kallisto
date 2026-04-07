@@ -82,6 +82,8 @@ These are the only supported runtime roles.
 - `/applicant/*`
 - `/partner/:universityId/*`
 - `/staff/*`
+- `/staff/universities/:id`
+- `/staff/universities/:id/edit`
 
 Backend middleware remains the real enforcement layer and returns `401` or `403`.
 
@@ -92,8 +94,11 @@ Backend middleware remains the real enforcement layer and returns `401` or `403`
 - authenticated unsafe requests require `X-CSRF-Token`
 - frontend dev proxy is `/api` only
 - partner routes require a linked university in claims
+- `global_settings.maintenance_mode.enabled` blocks non-staff sign-in, session bootstrap, and applicant or partner protected routes with `503`
+- staff sign-in and staff routes stay available during maintenance mode
 - all role-scoped route groups now emit `service_logs` rows with `X-Request-Id`
 - audit logging remains focused on auth, security, and partner or staff administrative actions
+- the partner submissions screen downloads the currently selected submission as a client-side JSON snapshot; attachment files still use the backend file download endpoints
 
 ## Verification baseline
 
@@ -110,5 +115,7 @@ Backend middleware remains the real enforcement layer and returns `401` or `403`
 - demo unified sign-in
 - demo applicant draft -> submit flow
 - demo partner read-only submissions view
+- demo partner submission JSON download and attachment links
+- demo staff university detail and edit routes
 - confirm canonical schema visibility keys are `applicant|partner|staff`
 - confirm `universities.university_profile` is present on the deployed schema

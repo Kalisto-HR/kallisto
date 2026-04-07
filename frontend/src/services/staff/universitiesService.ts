@@ -1,7 +1,8 @@
 import { apiRoutes } from "../api/routes";
 import { api } from "../api/httpClient";
-import { normalizePagination } from "../mappers/responseMappers";
-import type { Pagination } from "../../types/domain";
+import { normalizePagination, normalizeUniversity } from "../mappers/responseMappers";
+import { buildUniversityProfileUpdateBody, type UniversityProfileUpdatePayload } from "../universityProfileUpdate";
+import type { Pagination, University } from "../../types/domain";
 
 export interface StaffUniversityItem {
   id: string;
@@ -155,4 +156,22 @@ export async function fetchStaffUniversities(params?: {
     ...page,
     items: page.items.map(normalizeStaffUniversityItem),
   };
+}
+
+export async function fetchStaffUniversityById(id: string): Promise<University> {
+  const result = await api.get<unknown>(apiRoutes.staff.universities.detail(id));
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to load university");
+  }
+  return normalizeUniversity(result.data);
+}
+
+export async function updateStaffUniversity(id: string, payload: UniversityProfileUpdatePayload): Promise<void> {
+  const result = await api.put<{ msg: string }>(
+    apiRoutes.staff.universities.detail(id),
+    buildUniversityProfileUpdateBody(payload),
+  );
+  if (!result.ok) {
+    throw new Error(result.error ?? "Failed to update university");
+  }
 }

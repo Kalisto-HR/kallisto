@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ErrorState, LoadingState } from "../../components/common/PageState";
 import StaffUniversities, { type StaffUniversityView } from "../../components/staff/StaffUniversities";
 import { fetchStaffUniversities, type StaffUniversityItem } from "../../services/staff/universitiesService";
+import { routes } from "../../routes/routeConfig";
 
 export function StaffUniversitiesPage() {
+  const navigate = useNavigate();
   const [universities, setUniversities] = useState<StaffUniversityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,5 +52,11 @@ export function StaffUniversitiesPage() {
     lastActive: item.last_active,
   }));
 
-  return <StaffUniversities universitiesData={mapped} />;
+  return (
+    <StaffUniversities
+      universitiesData={mapped}
+      onViewDetails={(universityId) => navigate(routes.staff.universityDetail(universityId))}
+      onEditProfile={(universityId) => navigate(routes.staff.universityEdit(universityId))}
+    />
+  );
 }

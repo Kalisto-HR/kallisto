@@ -236,4 +236,74 @@ describe("ApplicantApplicationCreatePage", () => {
     await screen.findByText(/eligibility and requirements/i);
     expect(screen.getAllByText(/baseline fallback form/i).length).toBeGreaterThan(0);
   });
+
+  it("keeps a newly added repeating-group entry visible and editable", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(fetchUniversityById).mockResolvedValueOnce({
+      id: "wiut-id",
+      managerId: null,
+      name: "Westminster International University in Tashkent",
+      description: null,
+      province: null,
+      city: "Tashkent",
+      country: "Uzbekistan",
+      ranking: 8,
+      applicationFee: 150,
+      acceptanceRate: null,
+      tuitionFee: null,
+      applicationDeadline: null,
+      ieltsMin: null,
+      toeflMin: null,
+      scholarshipAvailable: null,
+      cityType: null,
+      campusVibe: null,
+      applicationStructurePublished: true,
+      universityProfile: null,
+      metadata: null,
+      createdAt: "2026-01-01T00:00:00Z",
+      applicationSchema: {
+        sections: [
+          {
+            id: "activities",
+            title: "Activities and Honors",
+            order: 1,
+            visible: true,
+            fields: [
+              {
+                id: "activities_and_honors",
+                dataKey: "activities_and_honors",
+                type: "repeating-group",
+                label: "Activities and Honors",
+                required: false,
+                order: 1,
+                visibility: { applicant: true, partner: true, staff: true },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/applicant/applications/new/wiut-id"]}>
+        <Routes>
+          <Route path="/applicant/applications/new/:universityId" element={<ApplicantApplicationCreatePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText(/application overview/i);
+    await user.click(screen.getByRole("button", { name: /^continue$/i }));
+    await screen.findByText(/eligibility and requirements/i);
+    await user.click(screen.getByRole("button", { name: /^continue$/i }));
+
+    expect((await screen.findAllByText(/activities and honors/i)).length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: /add entry/i }));
+
+    const entryInput = screen.getByPlaceholderText(/entry 1/i);
+    await user.type(entryInput, "Dean's List");
+
+    expect(entryInput).toHaveValue("Dean's List");
+  });
 });

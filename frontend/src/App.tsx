@@ -29,6 +29,8 @@ import { StaffUniversitiesPage } from "./pages/staff/StaffUniversitiesPage";
 import { StaffServiceLogsPage } from "./pages/staff/StaffServiceLogsPage";
 import { StaffAuditLogsPage } from "./pages/staff/StaffAuditLogsPage";
 import { StaffSettingsPage } from "./pages/staff/StaffSettingsPage";
+import { StaffUniversityDetailPage } from "./pages/staff/StaffUniversityDetailPage";
+import { StaffUniversityEditPage } from "./pages/staff/StaffUniversityEditPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
@@ -93,6 +95,8 @@ export default function App() {
           <Route path="/staff" element={<PartnerOrStaffLayout />}>
             <Route path="dashboard" element={<StaffOverviewPage />} />
             <Route path="universities" element={<StaffUniversitiesPage />} />
+            <Route path="universities/:id" element={<StaffUniversityDetailPage />} />
+            <Route path="universities/:id/edit" element={<StaffUniversityEditPage />} />
             <Route path="service-logs" element={<StaffServiceLogsPage />} />
             <Route path="audit-logs" element={<StaffAuditLogsPage />} />
             <Route path="settings" element={<StaffSettingsPage />} />

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import { Building2, Globe, Mail, MapPin, Plus, Save, Trash2 } from "lucide-react";
 import { ErrorState, LoadingState, SuccessState } from "../common/PageState";
 import { Badge } from "../ui/badge";
@@ -9,16 +8,23 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
-import { useSession } from "../../hooks/useSession";
-import {
-  fetchPartnerUniversityProfile,
-  updatePartnerUniversityProfile,
-} from "../../services/partner/universityService";
 import type { University } from "../../types/domain";
-import { isValidUUID } from "../../utils/validation";
+import type { UniversityProfileUpdatePayload } from "../../services/universityProfileUpdate";
+
+export type UniversityProfileMode = "view" | "edit";
 
 interface UniversityProfileProps {
-  onNavigate?: (page: string) => void;
+  universityId: string | null;
+  loadUniversity: (universityId: string) => Promise<University>;
+  saveUniversity?: (universityId: string, payload: UniversityProfileUpdatePayload) => Promise<void>;
+  mode?: UniversityProfileMode;
+  pageTitle?: string;
+  pageDescription?: string;
+  missingContextMessage?: string;
+  cancelLabel?: string;
+  editLabel?: string;
+  onCancel?: () => void;
+  onEdit?: () => void;
 }
 
 interface ProfileDraft {
@@ -199,14 +205,20 @@ function parseNullableNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
-  const { universityId } = useParams();
-  const { user } = useSession();
-  const routeUniversityId = universityId && isValidUUID(universityId) ? universityId : null;
-  const linkedUniversityId =
-    user?.universityLinked && isValidUUID(user.universityLinked) ? user.universityLinked : null;
-  const resolvedUniversityId = routeUniversityId ?? linkedUniversityId;
-
+export function UniversityProfile({
+  universityId,
+  loadUniversity,
+  saveUniversity,
+  mode = "edit",
+  pageTitle = "University Profile",
+  pageDescription = "Manage the live university profile shown to applicants and staff.",
+  missingContextMessage = "Missing valid university context.",
+  cancelLabel,
+  editLabel = "Edit Profile",
+  onCancel,
+  onEdit,
+}: UniversityProfileProps) {
+  const isReadOnly = mode === "view";
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -219,8 +231,8 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
   const [newAccreditation, setNewAccreditation] = useState("");
 
   const load = useCallback(async () => {
-    if (!resolvedUniversityId) {
-      setLoadError("Missing valid university context. Re-open this page from the partner dashboard.");
+    if (!universityId) {
+      setLoadError(missingContextMessage);
       setLoading(false);
       return;
     }
@@ -231,7 +243,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
     setSaveSuccess(null);
 
     try {
-      const university = await fetchPartnerUniversityProfile();
+      const university = await loadUniversity(universityId);
       const loaded = buildProfileDraft(university);
       setProfileDraft(loaded.profile);
       setPrograms(loaded.programs);
@@ -242,14 +254,14 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
     } finally {
       setLoading(false);
     }
-  }, [resolvedUniversityId]);
+  }, [loadUniversity, missingContextMessage, universityId]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   const handleSave = useCallback(async () => {
-    if (!resolvedUniversityId) {
+    if (isReadOnly || !saveUniversity || !universityId) {
       return;
     }
 
@@ -263,7 +275,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
       .filter(Boolean);
 
     try {
-      await updatePartnerUniversityProfile({
+      await saveUniversity(universityId, {
         name: profileDraft.universityName.trim(),
         description: profileDraft.description.trim() || null,
         city: cityPart || null,
@@ -295,9 +307,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
     } finally {
       setSaving(false);
     }
-  }, [intakeTerms, profileDraft, programs, resolvedUniversityId, testRequirements]);
+  }, [intakeTerms, isReadOnly, profileDraft, programs, saveUniversity, testRequirements, universityId]);
 
   const addProgram = () => {
+    if (isReadOnly) {
+      return;
+    }
     setPrograms((current) => [
       ...current,
       { id: createId("program"), name: "", level: "Undergraduate", duration: "" },
@@ -305,26 +320,44 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
   };
 
   const updateProgram = (id: string, patch: Partial<ProgramDraft>) => {
+    if (isReadOnly) {
+      return;
+    }
     setPrograms((current) => current.map((program) => (program.id === id ? { ...program, ...patch } : program)));
   };
 
   const removeProgram = (id: string) => {
+    if (isReadOnly) {
+      return;
+    }
     setPrograms((current) => current.filter((program) => program.id !== id));
   };
 
   const addIntakeTerm = () => {
+    if (isReadOnly) {
+      return;
+    }
     setIntakeTerms((current) => [...current, { id: createId("term"), term: "", deadline: "" }]);
   };
 
   const updateIntakeTerm = (id: string, patch: Partial<IntakeTermDraft>) => {
+    if (isReadOnly) {
+      return;
+    }
     setIntakeTerms((current) => current.map((term) => (term.id === id ? { ...term, ...patch } : term)));
   };
 
   const removeIntakeTerm = (id: string) => {
+    if (isReadOnly) {
+      return;
+    }
     setIntakeTerms((current) => current.filter((term) => term.id !== id));
   };
 
   const addAccreditation = () => {
+    if (isReadOnly) {
+      return;
+    }
     const value = newAccreditation.trim();
     if (!value) {
       return;
@@ -339,6 +372,9 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
   };
 
   const removeAccreditation = (value: string) => {
+    if (isReadOnly) {
+      return;
+    }
     setProfileDraft((current) => ({
       ...current,
       accreditations: current.accreditations.filter((item) => item !== value),
@@ -358,15 +394,9 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
       <div className="mx-auto max-w-5xl space-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold">University Profile</h1>
-            <p className="mt-1 text-muted-foreground">
-              Manage the live university profile shown to applicants and staff.
-            </p>
+            <h1 className="text-3xl font-semibold">{pageTitle}</h1>
+            <p className="mt-1 text-muted-foreground">{pageDescription}</p>
           </div>
-          <Button className="w-full md:w-auto" onClick={() => void handleSave()} disabled={saving}>
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
         </div>
 
         {saveError ? <ErrorState message={saveError} /> : null}
@@ -390,6 +420,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               <Input
                 id="university-name"
                 value={profileDraft.universityName}
+                disabled={isReadOnly}
                 onChange={(event) => setProfileDraft((current) => ({ ...current, universityName: event.target.value }))}
               />
             </div>
@@ -400,6 +431,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 id="description"
                 rows={5}
                 value={profileDraft.description}
+                disabled={isReadOnly}
                 onChange={(event) => setProfileDraft((current) => ({ ...current, description: event.target.value }))}
                 placeholder="Describe your institution and its strengths."
               />
@@ -413,6 +445,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   id="location"
                   className="pl-9"
                   value={profileDraft.location}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, location: event.target.value }))}
                   placeholder="City, Country"
                 />
@@ -427,6 +460,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   id="website"
                   className="pl-9"
                   value={profileDraft.website}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, website: event.target.value }))}
                   placeholder="https://example.edu"
                 />
@@ -441,6 +475,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   id="contact-email"
                   className="pl-9"
                   value={profileDraft.contactEmail}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, contactEmail: event.target.value }))}
                   placeholder="admissions@example.edu"
                 />
@@ -452,6 +487,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               <Input
                 id="founded-year"
                 value={profileDraft.foundedYear}
+                disabled={isReadOnly}
                 onChange={(event) => setProfileDraft((current) => ({ ...current, foundedYear: event.target.value }))}
                 placeholder="1890"
               />
@@ -466,10 +502,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <CardTitle>Programs Offered</CardTitle>
                 <CardDescription>List academic programs visible to applicants.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={addProgram}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Program
-              </Button>
+              {!isReadOnly ? (
+                <Button variant="outline" size="sm" onClick={addProgram}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Program
+                </Button>
+              ) : null}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -485,13 +523,18 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   <Input
                     id={`program-name-${index}`}
                     value={program.name}
+                    disabled={isReadOnly}
                     onChange={(event) => updateProgram(program.id, { name: event.target.value })}
                     placeholder="Computer Science"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`program-level-${index}`}>Level</Label>
-                  <Select value={program.level} onValueChange={(value: ProgramDraft["level"]) => updateProgram(program.id, { level: value })}>
+                  <Select
+                    value={program.level}
+                    disabled={isReadOnly}
+                    onValueChange={(value: ProgramDraft["level"]) => updateProgram(program.id, { level: value })}
+                  >
                     <SelectTrigger id={`program-level-${index}`}>
                       <SelectValue />
                     </SelectTrigger>
@@ -507,14 +550,22 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   <Input
                     id={`program-duration-${index}`}
                     value={program.duration}
+                    disabled={isReadOnly}
                     onChange={(event) => updateProgram(program.id, { duration: event.target.value })}
                     placeholder="4 years"
                   />
                 </div>
                 <div className="flex items-end">
-                  <Button variant="ghost" size="icon" onClick={() => removeProgram(program.id)} aria-label={`Remove ${program.name || "program"}`}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {!isReadOnly ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeProgram(program.id)}
+                      aria-label={`Remove ${program.name || "program"}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -528,10 +579,12 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <CardTitle>Intake Terms</CardTitle>
                 <CardDescription>Set the application terms and deadlines.</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={addIntakeTerm}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Intake
-              </Button>
+              {!isReadOnly ? (
+                <Button variant="outline" size="sm" onClick={addIntakeTerm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Intake
+                </Button>
+              ) : null}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -547,6 +600,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   <Input
                     id={`term-name-${index}`}
                     value={term.term}
+                    disabled={isReadOnly}
                     onChange={(event) => updateIntakeTerm(term.id, { term: event.target.value })}
                     placeholder="Fall 2027"
                   />
@@ -557,13 +611,21 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                     id={`term-deadline-${index}`}
                     type="date"
                     value={term.deadline}
+                    disabled={isReadOnly}
                     onChange={(event) => updateIntakeTerm(term.id, { deadline: event.target.value })}
                   />
                 </div>
                 <div className="flex items-end">
-                  <Button variant="ghost" size="icon" onClick={() => removeIntakeTerm(term.id)} aria-label={`Remove ${term.term || "intake term"}`}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {!isReadOnly ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeIntakeTerm(term.id)}
+                      aria-label={`Remove ${term.term || "intake term"}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -581,6 +643,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               <Input
                 id="sat-min"
                 value={testRequirements.satMin}
+                disabled={isReadOnly}
                 onChange={(event) => setTestRequirements((current) => ({ ...current, satMin: event.target.value }))}
                 placeholder="1200"
               />
@@ -590,6 +653,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               <Input
                 id="act-min"
                 value={testRequirements.actMin}
+                disabled={isReadOnly}
                 onChange={(event) => setTestRequirements((current) => ({ ...current, actMin: event.target.value }))}
                 placeholder="24"
               />
@@ -599,6 +663,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               <Input
                 id="ielts-min"
                 value={testRequirements.ieltsMin}
+                disabled={isReadOnly}
                 onChange={(event) => setTestRequirements((current) => ({ ...current, ieltsMin: event.target.value }))}
                 placeholder="6.5"
               />
@@ -608,6 +673,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
               <Input
                 id="toefl-min"
                 value={testRequirements.toeflMin}
+                disabled={isReadOnly}
                 onChange={(event) => setTestRequirements((current) => ({ ...current, toeflMin: event.target.value }))}
                 placeholder="80"
               />
@@ -627,6 +693,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Input
                   id="student-count"
                   value={profileDraft.studentCount}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, studentCount: event.target.value }))}
                 />
               </div>
@@ -635,6 +702,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Input
                   id="faculty-count"
                   value={profileDraft.facultyCount}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, facultyCount: event.target.value }))}
                 />
               </div>
@@ -643,6 +711,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Input
                   id="acceptance-rate"
                   value={profileDraft.acceptanceRate}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, acceptanceRate: event.target.value }))}
                 />
               </div>
@@ -651,6 +720,7 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                 <Input
                   id="ranking"
                   value={profileDraft.ranking}
+                  disabled={isReadOnly}
                   onChange={(event) => setProfileDraft((current) => ({ ...current, ranking: event.target.value }))}
                 />
               </div>
@@ -663,39 +733,49 @@ export function UniversityProfile({ onNavigate }: UniversityProfileProps) {
                   profileDraft.accreditations.map((item) => (
                     <Badge key={item} variant="secondary" className="gap-1">
                       {item}
-                      <button type="button" onClick={() => removeAccreditation(item)} aria-label={`Remove ${item}`}>
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      {!isReadOnly ? (
+                        <button type="button" onClick={() => removeAccreditation(item)} aria-label={`Remove ${item}`}>
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      ) : null}
                     </Badge>
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground">No accreditations have been added yet.</p>
                 )}
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  id="new-accreditation"
-                  value={newAccreditation}
-                  onChange={(event) => setNewAccreditation(event.target.value)}
-                  placeholder="AACSB"
-                />
-                <Button variant="outline" onClick={addAccreditation}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Accreditation
-                </Button>
-              </div>
+              {!isReadOnly ? (
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input
+                    id="new-accreditation"
+                    value={newAccreditation}
+                    onChange={(event) => setNewAccreditation(event.target.value)}
+                    placeholder="AACSB"
+                  />
+                  <Button variant="outline" onClick={addAccreditation}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Accreditation
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => onNavigate?.("university-dashboard")}>
-            Cancel
-          </Button>
-          <Button onClick={() => void handleSave()} disabled={saving}>
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : "Save All Changes"}
-          </Button>
+          {onCancel ? (
+            <Button variant="outline" onClick={onCancel}>
+              {cancelLabel ?? (isReadOnly ? "Back" : "Cancel")}
+            </Button>
+          ) : null}
+          {isReadOnly ? (
+            onEdit ? <Button onClick={onEdit}>{editLabel}</Button> : null
+          ) : (
+            <Button onClick={() => void handleSave()} disabled={saving || !saveUniversity}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Saving..." : "Save All Changes"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

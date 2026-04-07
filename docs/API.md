@@ -19,6 +19,7 @@ Kallisto runs as one backend service with role-scoped routes.
 
 Unauthorized requests return `401`.
 Authenticated but disallowed requests return `403`.
+When `global_settings.maintenance_mode.enabled` is true, non-staff sign-in, `GET /v1.0/auth/session`, and protected applicant or partner routes return `503`.
 
 Session-related `401` responses may include:
 
@@ -47,10 +48,12 @@ Behavior:
 - reads the unified `admin_db.users` table
 - applies DB-backed sign-in throttling by email and IP
 - may return `429 Too Many Requests` with `Retry-After`
+- returns `503 Service Unavailable` for `applicant` and `partner` accounts while maintenance mode is enabled
 
 ### `GET /v1.0/auth/session`
 
 Returns the current server-backed session payload for the SPA.
+Returns `503 Service Unavailable` for non-staff sessions while maintenance mode is enabled.
 
 ### `POST /v1.0/auth/sign-up`
 
@@ -113,6 +116,7 @@ Examples:
 - `GET /v1.0/partner/applications/{id}/files/{fileId}/download`
 
 Partner submissions are read-only. Kallisto does not expose accept, reject, or review endpoints.
+The partner submissions page now exports the currently selected application as a client-side JSON snapshot; attachment binaries still come from the file download endpoints above.
 
 ## Staff routes
 
@@ -132,6 +136,7 @@ Examples:
 - `GET|PUT /v1.0/staff/settings`
 
 `POST /v1.0/staff/accounts` creates `partner` or `staff` accounts only.
+The staff frontend now uses `GET|PUT /v1.0/staff/universities/{id}` for dedicated read-only detail and edit views.
 
 ### Staff observability filters
 
@@ -170,4 +175,4 @@ These are not part of the supported API anymore:
 - `404` not found
 - `409` duplicate or ambiguous account conflict
 - `429` too many sign-in attempts
-- `503` currently unavailable features such as password reset
+- `503` maintenance mode for non-staff auth, applicant routes, and partner routes, plus currently unavailable features such as password reset

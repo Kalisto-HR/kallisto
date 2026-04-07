@@ -1,50 +1,59 @@
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { UniversityProfile } from "./UniversityProfile";
-import { useSession } from "../../hooks/useSession";
-import { fetchPartnerUniversityProfile, updatePartnerUniversityProfile } from "../../services/partner/universityService";
+import type { University } from "../../types/domain";
 
-vi.mock("../../hooks/useSession", () => ({
-  useSession: vi.fn(),
-}));
-
-vi.mock("../../services/partner/universityService", () => ({
-  fetchPartnerUniversityProfile: vi.fn(),
-  updatePartnerUniversityProfile: vi.fn(),
-}));
+const university: University = {
+  id: "uni-1",
+  managerId: null,
+  name: "Example University",
+  description: "A test university",
+  province: null,
+  city: "Tashkent",
+  country: "Uzbekistan",
+  ranking: 12,
+  applicationFee: 100,
+  acceptanceRate: 45,
+  tuitionFee: 12000,
+  applicationDeadline: null,
+  ieltsMin: 6.5,
+  toeflMin: 80,
+  scholarshipAvailable: true,
+  cityType: null,
+  campusVibe: null,
+  applicationSchema: null,
+  applicationStructurePublished: true,
+  universityProfile: null,
+  metadata: null,
+  createdAt: "2026-01-01T00:00:00Z",
+};
 
 describe("UniversityProfile", () => {
-  beforeEach(() => {
-    vi.mocked(useSession).mockReturnValue({
-      user: {
-        id: "partner-1",
-        firstName: "Partner",
-        lastName: "User",
-        role: "partner",
-        permissions: [],
-        universityLinked: "e1f2a3b4-c5d6-7890-4567-901234567890",
-      },
-      loading: false,
-      initialized: true,
-      refreshSession: vi.fn(),
-      signOut: vi.fn(),
-      isAuthenticated: true,
-    });
-    vi.mocked(updatePartnerUniversityProfile).mockResolvedValue(undefined);
-  });
-
   it("fails closed when the live profile fetch fails", async () => {
-    vi.mocked(fetchPartnerUniversityProfile).mockRejectedValue(new Error("Profile load failed"));
-
     render(
-      <MemoryRouter initialEntries={["/partner/university/profile/e1f2a3b4-c5d6-7890-4567-901234567890"]}>
-        <Routes>
-          <Route path="/partner/university/profile/:universityId" element={<UniversityProfile />} />
-        </Routes>
-      </MemoryRouter>,
+      <UniversityProfile
+        universityId="uni-1"
+        loadUniversity={async () => {
+          throw new Error("Profile load failed");
+        }}
+      />,
     );
 
     expect(await screen.findByText(/profile load failed/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /save changes/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /save all changes/i })).not.toBeInTheDocument();
+  });
+
+  it("renders a single page-level save action in edit mode", async () => {
+    render(
+      <UniversityProfile
+        universityId="uni-1"
+        mode="edit"
+        loadUniversity={async () => university}
+        saveUniversity={async () => undefined}
+      />,
+    );
+
+    expect(await screen.findByRole("button", { name: /save all changes/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /save all changes/i })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /^save changes$/i })).not.toBeInTheDocument();
   });
 });

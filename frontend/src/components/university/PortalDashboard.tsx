@@ -55,6 +55,15 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
 
   const recentApplications = data?.recentApplications ?? [];
   const notifications = data?.notifications ?? [];
+  const maleCount = data?.maleCount ?? 0;
+  const femaleCount = data?.femaleCount ?? 0;
+  const totalApplicants = data?.totalApplicants ?? 0;
+  const unknownCount = Math.max(totalApplicants - maleCount - femaleCount, 0);
+  const genderDistribution = [
+    { label: "Male", count: maleCount },
+    { label: "Female", count: femaleCount },
+    { label: "Unknown", count: unknownCount },
+  ];
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -94,6 +103,33 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
             );
           })}
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Gender Distribution</CardTitle>
+            <CardDescription>Based on submitted applicant profiles for this university.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading gender distribution...</p>
+            ) : totalApplicants === 0 ? (
+              <p className="text-sm text-muted-foreground">No submitted applicants are available yet.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-3">
+                {genderDistribution.map((item) => {
+                  const percentage = totalApplicants > 0 ? Math.round((item.count / totalApplicants) * 100) : 0;
+                  return (
+                    <div key={item.label} className="rounded-lg border bg-card p-4">
+                      <p className="text-sm text-muted-foreground">{item.label}</p>
+                      <p className="mt-2 text-3xl font-semibold">{item.count}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{percentage}% of submitted applicants</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">

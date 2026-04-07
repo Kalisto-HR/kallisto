@@ -15,6 +15,7 @@ import (
 	"kallisto/infra/utils"
 
 	"github.com/gorilla/mux"
+	"github.com/pashagolub/pgxmock/v4"
 	"go.uber.org/zap"
 )
 
@@ -62,6 +63,22 @@ func (store *stubSessionStore) RevokeAllForUser(_ context.Context, _ string, _ s
 	return nil
 }
 
+func mustNewMiddlewareDBMock(t *testing.T) pgxmock.PgxPoolIface {
+	t.Helper()
+
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatalf("failed to create pgx mock: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Fatalf("unmet db expectations: %v", err)
+		}
+		mock.Close()
+	})
+	return mock
+}
+
 func TestRequireRoles(t *testing.T) {
 	t.Parallel()
 
@@ -97,6 +114,56 @@ func TestRequireRoles(t *testing.T) {
 				t.Fatalf("unexpected status: got %d want %d", rec.Code, tt.wantStatus)
 			}
 		})
+	}
+}
+
+func TestRequireMaintenanceModeOffBlocksNonStaffWhenEnabled(t *testing.T) {
+	t.Parallel()
+
+	mock := mustNewMiddlewareDBMock(t)
+	mock.ExpectQuery("FROM global_settings").
+		WithArgs("maintenance_mode").
+		WillReturnRows(pgxmock.NewRows([]string{"setting_value"}).AddRow([]byte(`{"enabled":true}`)))
+
+	handler := RequireMaintenanceModeOff(zap.NewNop())(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/v1.0/applicant/profile", nil).WithContext(context.WithValue(
+		context.WithValue(context.Background(), CtxClaimsKey, &auth.Claims{Role: "applicant"}),
+		CtxPostgresKey,
+		mock,
+	))
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusServiceUnavailable)
+	}
+	if !strings.Contains(rec.Body.String(), "maintenance mode") {
+		t.Fatalf("expected maintenance mode response body, got %s", rec.Body.String())
+	}
+}
+
+func TestRequireMaintenanceModeOffAllowsStaffDuringMaintenance(t *testing.T) {
+	t.Parallel()
+
+	handler := RequireMaintenanceModeOff(zap.NewNop())(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/v1.0/staff/settings", nil).WithContext(context.WithValue(
+		context.Background(),
+		CtxClaimsKey,
+		&auth.Claims{Role: "staff"},
+	))
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("unexpected status: got %d want %d", rec.Code, http.StatusNoContent)
 	}
 }
 

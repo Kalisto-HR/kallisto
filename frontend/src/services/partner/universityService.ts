@@ -2,18 +2,10 @@ import { apiRoutes } from "../api/routes";
 import { api } from "../api/httpClient";
 import { normalizeUniversity } from "../mappers/responseMappers";
 import type { University } from "../../types/domain";
-
-export interface UpdatePartnerUniversityPayload {
-  name?: string;
-  description?: string | null;
-  city?: string | null;
-  country?: string | null;
-  ieltsMin?: number | null;
-  toeflMin?: number | null;
-  acceptanceRate?: number | null;
-  ranking?: number | null;
-  universityProfile?: Record<string, unknown> | null;
-}
+import {
+  buildUniversityProfileUpdateBody,
+  type UniversityProfileUpdatePayload,
+} from "../universityProfileUpdate";
 
 export async function fetchPartnerUniversityProfile(): Promise<University> {
   const result = await api.get<unknown>(apiRoutes.partner.university.profile());
@@ -44,18 +36,8 @@ export async function updatePartnerApplicationStructure(
   }
 }
 
-export async function updatePartnerUniversityProfile(payload: UpdatePartnerUniversityPayload): Promise<void> {
-  const body = {
-    ...(payload.name !== undefined ? { name: payload.name } : {}),
-    ...(payload.description !== undefined ? { description: payload.description } : {}),
-    ...(payload.city !== undefined ? { city: payload.city } : {}),
-    ...(payload.country !== undefined ? { country: payload.country } : {}),
-    ...(payload.ieltsMin !== undefined ? { ielts_min: payload.ieltsMin } : {}),
-    ...(payload.toeflMin !== undefined ? { toefl_min: payload.toeflMin } : {}),
-    ...(payload.acceptanceRate !== undefined ? { acceptance_rate: payload.acceptanceRate } : {}),
-    ...(payload.ranking !== undefined ? { ranking: payload.ranking } : {}),
-    ...(payload.universityProfile !== undefined ? { university_profile: payload.universityProfile } : {}),
-  };
+export async function updatePartnerUniversityProfile(payload: UniversityProfileUpdatePayload): Promise<void> {
+  const body = buildUniversityProfileUpdateBody(payload);
   const result = await api.put<{ msg: string }>(apiRoutes.partner.university.profile(), body);
   if (!result.ok) {
     throw new Error(result.error ?? "Failed to update university");

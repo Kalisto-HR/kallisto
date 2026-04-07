@@ -247,7 +247,7 @@ function coerceRepeatingGroupItems(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value.map((item) => coerceString(item)).filter((item) => item.trim().length > 0);
+  return value.map((item) => coerceString(item));
 }
 
 function coerceRecommenderEntries(value: unknown): RecommenderEntry[] {

@@ -25,7 +25,7 @@ import (
 )
 
 type AuthHandler struct {
-	db           *pgxpool.Pool
+	db           middlewares.DB
 	auditLogger  *observability.AuditLogger
 	sessionStore authsession.Store
 	throttle     authsession.Throttle
@@ -121,6 +121,19 @@ func (h *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		h.auditSignInFailure(r.Context(), req.Email, "invalid credentials")
 		utils.WriteJSONResponseWithMsg(w, "invalid credentials", http.StatusUnauthorized)
 		return
+	}
+
+	if strings.TrimSpace(user.Role) != authz.RoleStaff {
+		enabled, err := middlewares.IsMaintenanceModeEnabled(r.Context(), h.db)
+		if err != nil {
+			utils.WriteJSONResponseWithMsg(w, "failed to evaluate maintenance mode", http.StatusInternalServerError)
+			return
+		}
+		if enabled {
+			h.auditSignInFailure(r.Context(), req.Email, "maintenance mode")
+			middlewares.WriteMaintenanceModeUnavailable(w)
+			return
+		}
 	}
 
 	if _, recordErr := h.issueSession(r.Context(), w, user, ipAddress, strings.TrimSpace(r.UserAgent()), now); recordErr != nil {
@@ -227,6 +240,18 @@ func (h *AuthHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 	if err != nil || session == nil {
 		utils.WriteJSONResponseWithMsg(w, "unauthorized", http.StatusUnauthorized)
 		return
+	}
+
+	if strings.TrimSpace(session.Role) != authz.RoleStaff {
+		enabled, err := middlewares.IsMaintenanceModeEnabled(r.Context(), h.db)
+		if err != nil {
+			utils.WriteJSONResponseWithMsg(w, "failed to evaluate maintenance mode", http.StatusInternalServerError)
+			return
+		}
+		if enabled {
+			middlewares.WriteMaintenanceModeUnavailable(w)
+			return
+		}
 	}
 
 	utils.WriteJSONResponse(w, map[string]any{
@@ -361,7 +386,7 @@ func (h *AuthHandler) resolveUserForSignIn(ctx context.Context, email string) (*
 	return nil, utils.NewHandlerFuncErr(http.StatusUnauthorized, "invalid credentials")
 }
 
-func findUserByEmail(ctx context.Context, db *pgxpool.Pool, email string) (*resolvedUser, bool, error) {
+func findUserByEmail(ctx context.Context, db middlewares.DB, email string) (*resolvedUser, bool, error) {
 	if db == nil {
 		return nil, false, errors.New("database is not configured")
 	}
@@ -393,7 +418,7 @@ func findUserByEmail(ctx context.Context, db *pgxpool.Pool, email string) (*reso
 	return &user, true, nil
 }
 
-func emailExists(ctx context.Context, db *pgxpool.Pool, email string) (bool, error) {
+func emailExists(ctx context.Context, db middlewares.DB, email string) (bool, error) {
 	if db == nil {
 		return false, errors.New("database is not configured")
 	}

@@ -31,6 +31,8 @@ export const routes = {
   staff: {
     dashboard: "/staff/dashboard",
     universities: "/staff/universities",
+    universityDetail: (id: string) => `/staff/universities/${id}`,
+    universityEdit: (id: string) => `/staff/universities/${id}/edit`,
     serviceLogs: "/staff/service-logs",
     auditLogs: "/staff/audit-logs",
     settings: "/staff/settings",

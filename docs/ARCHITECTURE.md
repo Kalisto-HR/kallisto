@@ -31,6 +31,7 @@ Each route group is protected by shared middleware from `infra/`:
 
 - DB pool injection
 - JWT authentication
+- maintenance-mode gating for applicant and partner traffic
 - CSRF enforcement
 - role and permission checks
 - request logging and CORS
@@ -109,6 +110,8 @@ Authorization is fail-closed:
 
 - unauthenticated requests return `401`
 - authenticated but unauthorized requests return `403`
+- authenticated applicant and partner traffic returns `503` while `global_settings.maintenance_mode.enabled` is true
+- staff sign-in and staff routes stay available during maintenance mode so maintenance can be disabled
 
 ## Frontend architecture
 
@@ -118,6 +121,12 @@ The React SPA routes users into these public namespaces:
 - `/applicant/*`
 - `/partner/:universityId/*`
 - `/staff/*`
+
+Notable role-owned views include:
+
+- `/partner/:universityId/applications` for read-only submissions with client-side JSON export of the selected application payload
+- `/staff/universities/:id` for read-only university detail
+- `/staff/universities/:id/edit` for staff-driven university profile updates using the shared university profile form
 
 Frontend restriction is implemented through:
 

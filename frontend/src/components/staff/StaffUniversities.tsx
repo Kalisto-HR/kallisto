@@ -31,9 +31,15 @@ export interface StaffUniversityView {
 
 interface StaffUniversitiesProps {
   universitiesData?: StaffUniversityView[];
+  onViewDetails?: (universityId: string) => void;
+  onEditProfile?: (universityId: string) => void;
 }
 
-export default function StaffUniversities({ universitiesData = [] }: StaffUniversitiesProps) {
+export default function StaffUniversities({
+  universitiesData = [],
+  onViewDetails,
+  onEditProfile,
+}: StaffUniversitiesProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<UniversityStatus | "all">("all");
   const [selectedType, setSelectedType] = useState<UniversityType | "all">("all");
@@ -332,10 +338,16 @@ export default function StaffUniversities({ universitiesData = [] }: StaffUniver
               </div>
 
               <div className="flex gap-3 border-t border-[#E5E5E5] pt-4">
-                <button className="flex-1 rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm font-medium text-[#171717] transition-colors hover:bg-[#FAFAFA]">
+                <button
+                  className="flex-1 rounded-lg border border-[#E5E5E5] px-4 py-2.5 text-sm font-medium text-[#171717] transition-colors hover:bg-[#FAFAFA]"
+                  onClick={() => onEditProfile?.(selectedUniversity.id)}
+                >
                   Request Profile Edit
                 </button>
-                <button className="flex-1 rounded-lg bg-[#171717] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#404040]">
+                <button
+                  className="flex-1 rounded-lg bg-[#171717] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#404040]"
+                  onClick={() => onViewDetails?.(selectedUniversity.id)}
+                >
                   View Full Details
                 </button>
               </div>
