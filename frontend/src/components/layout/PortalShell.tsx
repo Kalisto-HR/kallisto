@@ -19,6 +19,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { universityId } = useParams();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const userRole: PortalUserRole = user?.role === "partner" ? "partner" : "staff";
   const isStaffPath = location.pathname.startsWith("/staff");
@@ -94,6 +95,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
             userRole={userRole}
             currentContext={context}
             currentPage={currentPage}
+            collapsed={sidebarCollapsed}
+            onCollapsedChange={setSidebarCollapsed}
             onNavigate={handleNavigate}
           />
         </div>

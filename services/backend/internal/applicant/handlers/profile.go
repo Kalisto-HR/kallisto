@@ -104,7 +104,7 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 			if !ok || !isSupportedStudentGender(gender) {
 				validationErrors = append(validationErrors, &validation.ValidationError{
 					Field:   "data.gender",
-					Message: "must be one of: male, female",
+					Message: "must be one of: male, female, non_binary, prefer_not_to_say",
 				})
 			}
 		}
@@ -319,8 +319,8 @@ func DeleteProfileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func isSupportedStudentGender(value string) bool {
-	switch strings.TrimSpace(value) {
-	case "male", "female", "other", "prefer_not_to_say":
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "male", "female", "non_binary", "other", "prefer_not_to_say":
 		return true
 	default:
 		return false

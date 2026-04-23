@@ -83,6 +83,9 @@ export const apiRoutes = {
   },
   partner: {
     dashboard: () => `${API_PREFIX}/partner/dashboard`,
+    analytics: {
+      contacts: (stage: string) => withQuery(`${API_PREFIX}/partner/analytics/contacts`, { stage }),
+    },
     submissions: {
       list: (params: QueryParams) => withQuery(`${API_PREFIX}/partner/applications`, params),
       detail: (id: string) => `${API_PREFIX}/partner/applications/${segment(id)}`,

@@ -176,6 +176,7 @@ func registerApplicantRoutes(router *mux.Router) {
 
 func registerPartnerRoutes(router *mux.Router) {
 	router.HandleFunc("/dashboard", withLinkedUniversityID(partnerHandlers.GetPartnerDashboardHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/analytics/contacts", withLinkedUniversityID(partnerHandlers.GetPartnerAnalyticsContactsHandler)).Methods(http.MethodGet)
 	router.HandleFunc("/university/profile", withLinkedUniversityID(sharedHandlers.GetUniversityHandler)).Methods(http.MethodGet)
 	router.HandleFunc("/university/profile", withLinkedUniversityID(sharedHandlers.UpdateUniversityHandler)).Methods(http.MethodPut)
 	router.HandleFunc("/university/application-structure", withLinkedUniversityID(sharedHandlers.GetUniversityApplicationStructureHandler)).Methods(http.MethodGet)

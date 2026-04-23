@@ -42,6 +42,7 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
   const [applicationsCount, setApplicationsCount] = useState<number | null>(null);
   const [basketCount, setBasketCount] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const loadHeaderCounts = async () => {
@@ -91,7 +92,12 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
       />
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block h-full shrink-0">
-          <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
+          <Sidebar
+            currentPage={currentPage}
+            collapsed={sidebarCollapsed}
+            onCollapsedChange={setSidebarCollapsed}
+            onNavigate={handleNavigate}
+          />
         </div>
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

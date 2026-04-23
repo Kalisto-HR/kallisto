@@ -106,6 +106,7 @@ All partner routes live under `/v1.0/partner/*` and require a linked university 
 Examples:
 
 - `GET /v1.0/partner/dashboard`
+- `GET /v1.0/partner/analytics/contacts?stage=suspect|prospect`
 - `GET|PUT /v1.0/partner/university/profile`
 - `GET|PUT /v1.0/partner/university/application-structure`
 - `GET /v1.0/partner/university/application-structure/history`
@@ -114,6 +115,15 @@ Examples:
 - `GET /v1.0/partner/applications/{id}`
 - `GET /v1.0/partner/applications/{id}/files`
 - `GET /v1.0/partner/applications/{id}/files/{fileId}/download`
+
+Partner dashboard responses include submitted-application summary metrics plus early-stage analytics:
+
+- `student_origin_stats`: country counts and percentage breakdowns across suspects, prospects, and submitted students
+- `suspects_count`: applicant accounts with the linked university in their basket and no application row for that university
+- `prospects_count`: applicant accounts with a draft application and no submitted application for that university
+- Gender summary fields use the four applicant buckets `male_count`, `female_count`, `non_binary_count`, and `prefer_not_to_say_count`.
+
+Partner analytics contacts are scoped to the signed-in partner account's linked university. The endpoint accepts `stage=suspect` or `stage=prospect` and returns contact rows with `user_id`, `name`, `email`, `country`, `stage`, and `last_activity_at`.
 
 Partner submissions are read-only. Kallisto does not expose accept, reject, or review endpoints.
 The partner submissions page now exports the currently selected application as a client-side JSON snapshot; attachment binaries still come from the file download endpoints above.

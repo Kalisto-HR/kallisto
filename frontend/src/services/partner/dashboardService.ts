@@ -34,14 +34,37 @@ function normalizeDashboard(value: unknown): PartnerDashboardPayload {
     ? ((source.recent_applications ?? source.recentApplications) as unknown[])
     : [];
   const notificationsRaw: unknown[] = Array.isArray(source.notifications) ? (source.notifications as unknown[]) : [];
+  const originRaw: unknown[] = Array.isArray(source.student_origin_stats ?? source.studentOriginStats)
+    ? ((source.student_origin_stats ?? source.studentOriginStats) as unknown[])
+    : [];
+  const totalApplicants = toNumber(source.total_applicants ?? source.totalApplicants);
+  const maleCount = toNumber(source.male_count ?? source.maleCount);
+  const femaleCount = toNumber(source.female_count ?? source.femaleCount);
+  const nonBinaryCount = toNumber(source.non_binary_count ?? source.nonBinaryCount);
+  const preferNotToSayRaw = source.prefer_not_to_say_count ?? source.preferNotToSayCount;
+  const preferNotToSayCount = typeof preferNotToSayRaw === "undefined"
+    ? Math.max(totalApplicants - maleCount - femaleCount - nonBinaryCount, 0)
+    : toNumber(preferNotToSayRaw);
 
   return {
     newApplications: toNumber(source.new_applications ?? source.newApplications),
-    totalApplicants: toNumber(source.total_applicants ?? source.totalApplicants),
+    totalApplicants,
     avgSAT: toNumber(source.avg_sat ?? source.avgSAT),
     avgIELTS: toNumber(source.avg_ielts ?? source.avgIELTS),
-    maleCount: toNumber(source.male_count ?? source.maleCount),
-    femaleCount: toNumber(source.female_count ?? source.femaleCount),
+    maleCount,
+    femaleCount,
+    nonBinaryCount,
+    preferNotToSayCount,
+    suspectsCount: toNumber(source.suspects_count ?? source.suspectsCount),
+    prospectsCount: toNumber(source.prospects_count ?? source.prospectsCount),
+    studentOriginStats: originRaw.map((value) => {
+      const item = (value ?? {}) as Record<string, unknown>;
+      return {
+        country: toString(item.country) || "Unknown",
+        count: toNumber(item.count),
+        percentage: toNumber(item.percentage),
+      };
+    }),
     recentApplications: recentsRaw.map((value) => {
       const item = (value ?? {}) as Record<string, unknown>;
       return {

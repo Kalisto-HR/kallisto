@@ -58,7 +58,7 @@ interface EditableTestScore {
   deleting: boolean;
 }
 
-type ApplicantGender = "male" | "female";
+type ApplicantGender = "male" | "female" | "non_binary" | "prefer_not_to_say";
 
 const TEST_SCORE_TYPES: Array<{ value: ApplicantTestScoreType; label: string }> = [
   { value: "IELTS", label: "IELTS" },
@@ -71,13 +71,25 @@ const TEST_SCORE_TYPES: Array<{ value: ApplicantTestScoreType; label: string }> 
 const APPLICANT_GENDER_OPTIONS: Array<{ value: ApplicantGender; label: string }> = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
+  { value: "non_binary", label: "Non-binary" },
+  { value: "prefer_not_to_say", label: "Prefer not to say" },
 ];
 
 function normalizeApplicantGender(value: unknown): ApplicantGender | "" {
-  switch (value) {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+  switch (normalized) {
     case "male":
     case "female":
-      return value;
+    case "non_binary":
+    case "prefer_not_to_say":
+      return normalized;
+    case "non-binary":
+    case "nonbinary":
+    case "other":
+      return "non_binary";
+    case "prefer not to say":
+    case "prefer-not-to-say":
+      return "prefer_not_to_say";
     default:
       return "";
   }
@@ -199,7 +211,7 @@ export function ApplicantSettingsPage() {
 
   const saveProfile = async () => {
     if (!gender) {
-      setError("Select either Male or Female before saving your profile.");
+      setError("Select a gender option before saving your profile.");
       setSuccess(null);
       return;
     }

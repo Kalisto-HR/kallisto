@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
@@ -53,6 +54,45 @@ func GetPartnerDashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSONResponse(w, payload, http.StatusOK)
+}
+
+func GetPartnerAnalyticsContactsHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		utils.WriteJSONResponseWithMsg(w, "university id is required", http.StatusBadRequest)
+		return
+	}
+	if err := validation.ValidateUUID(id, "id"); err != nil {
+		validation.WriteValidationErrors(w, []*validation.ValidationError{err})
+		return
+	}
+	if err := enforceUniversityRouteAccess(r.Context(), id); err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	stage := strings.TrimSpace(r.URL.Query().Get("stage"))
+	items, err := usecases_impl.GetPartnerAnalyticsContacts(r.Context(), id, stage)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	utils.WriteJSONResponse(w, map[string]any{"items": items}, http.StatusOK)
 }
 
 func GetApplicationStructureHistoryHandler(w http.ResponseWriter, r *http.Request) {

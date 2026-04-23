@@ -174,6 +174,12 @@ export interface PartnerDashboardNotification {
   read: boolean;
 }
 
+export interface PartnerStudentOriginStat {
+  country: string;
+  count: number;
+  percentage: number;
+}
+
 export interface PartnerDashboardPayload {
   newApplications: number;
   totalApplicants: number;
@@ -181,8 +187,24 @@ export interface PartnerDashboardPayload {
   avgIELTS: number;
   maleCount: number;
   femaleCount: number;
+  nonBinaryCount: number;
+  preferNotToSayCount: number;
+  suspectsCount: number;
+  prospectsCount: number;
+  studentOriginStats: PartnerStudentOriginStat[];
   recentApplications: PartnerDashboardRecentApplication[];
   notifications: PartnerDashboardNotification[];
+}
+
+export type PartnerAnalyticsStage = "suspect" | "prospect";
+
+export interface PartnerAnalyticsContact {
+  userId: string;
+  name: string;
+  email: string;
+  country: string;
+  stage: PartnerAnalyticsStage;
+  lastActivityAt: string | null;
 }
 
 export interface ApplicationStructureVersion {

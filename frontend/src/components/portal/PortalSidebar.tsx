@@ -8,6 +8,8 @@ import {
   ScrollText,
   Terminal,
   Globe,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '../ui/utils';
@@ -17,7 +19,9 @@ interface PortalSidebarProps {
   userRole: 'partner' | 'staff';
   currentContext: PortalContext;
   currentPage: PortalPageView;
+  collapsed?: boolean;
   onNavigate: (page: PortalPageView) => void;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 interface NavItem {
@@ -36,10 +40,13 @@ export function PortalSidebar({
   userRole,
   currentContext,
   currentPage,
+  collapsed = false,
   onNavigate,
+  onCollapsedChange,
 }: PortalSidebarProps) {
   const isGlobalMode = currentContext.type === 'global';
   const isStaff = userRole === 'staff';
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
   const navSections: NavSection[] = [
     {
@@ -74,28 +81,51 @@ export function PortalSidebar({
   );
 
   return (
-    <aside className="brand-sidebar w-64 flex h-full flex-col">
-      <div className="p-4 border-b">
-        <div className="flex items-center gap-2 mb-1">
+    <aside
+      className={cn(
+        'brand-sidebar flex h-full flex-col transition-[width] duration-200',
+        collapsed ? 'w-20' : 'w-64',
+      )}
+    >
+      <div className="border-b p-4">
+        <div className={cn('flex gap-2', collapsed ? 'flex-col items-center justify-center' : 'mb-1 items-center')}>
           <div className="brand-logo-mark flex h-8 w-8 items-center justify-center rounded-2xl">
             <Shield className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <h1 className="font-semibold text-sm">Portal Console</h1>
-          </div>
+          {collapsed ? null : (
+            <div>
+              <h1 className="font-semibold text-sm">Portal Console</h1>
+            </div>
+          )}
+          <button
+            type="button"
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={() => onCollapsedChange?.(!collapsed)}
+            className={cn(
+              'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground',
+              collapsed ? 'mt-3' : 'ml-auto',
+            )}
+          >
+            <ToggleIcon className="h-5 w-5" />
+          </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          {isStaff ? 'Staff access' : 'Partner access'}
-        </p>
+        {collapsed ? null : (
+          <p className="text-xs text-muted-foreground mt-1">
+            {isStaff ? 'Staff access' : 'Partner access'}
+          </p>
+        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+      <nav className={cn('flex-1 overflow-y-auto p-4', collapsed ? 'space-y-4 px-3' : 'space-y-6')}>
         {visibleSections.map((section) => (
           <div key={section.title}>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
-              {section.title}
-            </h3>
-            <div className="space-y-1">
+            {collapsed ? null : (
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                {section.title}
+              </h3>
+            )}
+            <div className={cn('space-y-1', collapsed && 'flex flex-col items-center')}>
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
@@ -104,15 +134,18 @@ export function PortalSidebar({
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
+                    title={collapsed ? item.label : undefined}
+                    aria-label={item.label}
                     className={cn(
-                      'w-full flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                      'flex items-center rounded-xl py-2.5 transition-colors',
+                      collapsed ? 'h-11 w-11 justify-center px-0' : 'w-full gap-3 px-3',
                       isActive
                         ? 'brand-active-nav'
                         : 'text-foreground hover:bg-accent/80'
                     )}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span className="text-sm truncate">{item.label}</span>
+                    {collapsed ? null : <span className="text-sm truncate">{item.label}</span>}
                   </button>
                 );
               })}
@@ -122,19 +155,21 @@ export function PortalSidebar({
       </nav>
 
       {/* Context indicator */}
-      <div className="p-4 border-t bg-accent/40">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className={cn('border-t bg-accent/40 p-4', collapsed && 'flex justify-center px-3')}>
+        <div className={cn('flex items-center gap-2 text-xs text-muted-foreground', collapsed && 'justify-center')}>
           {isGlobalMode ? (
             <>
               <Globe className="w-3.5 h-3.5" />
-              <span className="truncate">Staff workspace</span>
+              {collapsed ? null : <span className="truncate">Staff workspace</span>}
             </>
           ) : (
             <>
               <Building2 className="w-3.5 h-3.5" />
-              <span className="truncate">
-                {currentContext.type === 'university' ? currentContext.universityName : 'University Mode'}
-              </span>
+              {collapsed ? null : (
+                <span className="truncate">
+                  {currentContext.type === 'university' ? currentContext.universityName : 'University Mode'}
+                </span>
+              )}
             </>
           )}
         </div>

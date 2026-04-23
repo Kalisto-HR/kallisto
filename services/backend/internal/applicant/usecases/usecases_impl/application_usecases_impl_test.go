@@ -138,3 +138,25 @@ func TestBuildApplicantInfoIncludesDerivedNameCitizenshipAndGender(t *testing.T)
 		t.Fatalf("unexpected citizenship: %#v", applicantInfo["citizenship"])
 	}
 }
+
+func TestExtractProfileGenderSupportsAllApplicantBuckets(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  []byte
+		want string
+	}{
+		{name: "male", raw: []byte(`{"gender":"male"}`), want: "male"},
+		{name: "female", raw: []byte(`{"gender":"female"}`), want: "female"},
+		{name: "non binary", raw: []byte(`{"gender":"non-binary"}`), want: "non_binary"},
+		{name: "legacy other", raw: []byte(`{"gender":"other"}`), want: "non_binary"},
+		{name: "prefer not to say", raw: []byte(`{"gender":"prefer not to say"}`), want: "prefer_not_to_say"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractProfileGender(tt.raw); got != tt.want {
+				t.Fatalf("extractProfileGender() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

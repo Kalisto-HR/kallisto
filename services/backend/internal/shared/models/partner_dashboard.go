@@ -23,15 +23,35 @@ type PartnerDashboardNotification struct {
 	Read    bool   `json:"read"`
 }
 
+type PartnerStudentOriginStat struct {
+	Country    string  `json:"country" db:"country"`
+	Count      int     `json:"count" db:"count"`
+	Percentage float64 `json:"percentage" db:"percentage"`
+}
+
 type PartnerDashboardResponse struct {
-	NewApplications    int                                 `json:"new_applications"`
-	TotalApplicants    int                                 `json:"total_applicants"`
-	AvgSAT             int                                 `json:"avg_sat"`
-	AvgIELTS           float64                             `json:"avg_ielts"`
-	MaleCount          int                                 `json:"male_count"`
-	FemaleCount        int                                 `json:"female_count"`
-	RecentApplications []PartnerDashboardRecentApplication `json:"recent_applications"`
-	Notifications      []PartnerDashboardNotification      `json:"notifications"`
+	NewApplications     int                                 `json:"new_applications"`
+	TotalApplicants     int                                 `json:"total_applicants"`
+	AvgSAT              int                                 `json:"avg_sat"`
+	AvgIELTS            float64                             `json:"avg_ielts"`
+	MaleCount           int                                 `json:"male_count"`
+	FemaleCount         int                                 `json:"female_count"`
+	NonBinaryCount      int                                 `json:"non_binary_count"`
+	PreferNotToSayCount int                                 `json:"prefer_not_to_say_count"`
+	SuspectsCount       int                                 `json:"suspects_count"`
+	ProspectsCount      int                                 `json:"prospects_count"`
+	StudentOriginStats  []PartnerStudentOriginStat          `json:"student_origin_stats"`
+	RecentApplications  []PartnerDashboardRecentApplication `json:"recent_applications"`
+	Notifications       []PartnerDashboardNotification      `json:"notifications"`
+}
+
+type PartnerAnalyticsContact struct {
+	UserId         string `json:"user_id" db:"user_id"`
+	Name           string `json:"name" db:"name"`
+	Email          string `json:"email" db:"email"`
+	Country        string `json:"country" db:"country"`
+	Stage          string `json:"stage" db:"stage"`
+	LastActivityAt string `json:"last_activity_at" db:"last_activity_at"`
 }
 
 type ApplicationStructureVersion struct {

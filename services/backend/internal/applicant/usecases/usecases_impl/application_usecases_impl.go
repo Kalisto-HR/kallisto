@@ -403,6 +403,10 @@ func extractProfileGender(raw json.RawMessage) string {
 		return "male"
 	case "female":
 		return "female"
+	case "non_binary", "non-binary", "nonbinary", "other":
+		return "non_binary"
+	case "prefer_not_to_say", "prefer not to say", "prefer-not-to-say":
+		return "prefer_not_to_say"
 	default:
 		return ""
 	}

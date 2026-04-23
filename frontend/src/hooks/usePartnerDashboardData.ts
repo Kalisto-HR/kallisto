@@ -7,13 +7,15 @@ export function usePartnerDashboardData(universityId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!universityId) {
       setData(null);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!options.silent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const payload = await fetchPartnerDashboard(universityId);
@@ -21,7 +23,9 @@ export function usePartnerDashboardData(universityId?: string) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard");
     } finally {
-      setLoading(false);
+      if (!options.silent) {
+        setLoading(false);
+      }
     }
   }, [universityId]);
 
@@ -29,5 +33,19 @@ export function usePartnerDashboardData(universityId?: string) {
     void load();
   }, [load]);
 
-  return { data, loading, error, refresh: load };
+  useEffect(() => {
+    if (!universityId) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      void load({ silent: true });
+    }, 30000);
+
+    return () => window.clearInterval(timer);
+  }, [load, universityId]);
+
+  const refresh = useCallback(() => load(), [load]);
+
+  return { data, loading, error, refresh };
 }

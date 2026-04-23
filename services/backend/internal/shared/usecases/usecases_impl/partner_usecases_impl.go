@@ -10,20 +10,26 @@ import (
 	"kallisto/infra/utils"
 	"kallisto/services/backend/internal/shared/models"
 	"net/http"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const (
+	partnerAnalyticsStageSuspect  = "suspect"
+	partnerAnalyticsStageProspect = "prospect"
+)
+
 func GetPartnerDashboard(ctx context.Context, universityId string) (*models.PartnerDashboardResponse, error) {
-	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
-	if !ok {
-		return nil, errors.New("could not establish connection with the database")
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, err
 	}
 
 	resp := &models.PartnerDashboardResponse{}
 
-	err := conn.QueryRow(ctx, `
+	err = conn.QueryRow(ctx, `
 		WITH application_metrics AS (
 			SELECT
 				`+unifiedSubmittedReceivedAtExpr+` AS received_at,
@@ -73,7 +79,15 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 			COALESCE(ROUND(AVG(sat_score))::int, 0) AS avg_sat,
 			COALESCE(ROUND(AVG(ielts_score), 1), 0) AS avg_ielts,
 			COUNT(*) FILTER (WHERE gender_value IN ('male', 'm', 'man', 'boy')) AS male_count,
-			COUNT(*) FILTER (WHERE gender_value IN ('female', 'f', 'woman', 'girl')) AS female_count
+			COUNT(*) FILTER (WHERE gender_value IN ('female', 'f', 'woman', 'girl')) AS female_count,
+			COUNT(*) FILTER (WHERE gender_value IN ('non_binary', 'non-binary', 'nonbinary', 'nb', 'other')) AS non_binary_count,
+			COUNT(*) FILTER (
+				WHERE gender_value NOT IN (
+					'male', 'm', 'man', 'boy',
+					'female', 'f', 'woman', 'girl',
+					'non_binary', 'non-binary', 'nonbinary', 'nb', 'other'
+				)
+			) AS prefer_not_to_say_count
 		FROM application_metrics
 	`, universityId).Scan(
 		&resp.NewApplications,
@@ -82,10 +96,25 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 		&resp.AvgIELTS,
 		&resp.MaleCount,
 		&resp.FemaleCount,
+		&resp.NonBinaryCount,
+		&resp.PreferNotToSayCount,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load dashboard stats: %s", err.Error())
 	}
+
+	suspectsCount, prospectsCount, err := loadPartnerFunnelCounts(ctx, conn, universityId)
+	if err != nil {
+		return nil, err
+	}
+	resp.SuspectsCount = suspectsCount
+	resp.ProspectsCount = prospectsCount
+
+	originStats, err := loadPartnerStudentOriginStats(ctx, conn, universityId)
+	if err != nil {
+		return nil, err
+	}
+	resp.StudentOriginStats = originStats
 
 	rows, err := conn.Query(ctx, `
 		SELECT
@@ -130,6 +159,247 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 
 	return resp, nil
 }
+
+func loadPartnerFunnelCounts(ctx context.Context, conn middlewares.DB, universityId string) (int, int, error) {
+	var suspectsCount int
+	var prospectsCount int
+	err := conn.QueryRow(ctx, `
+		WITH submitted_users AS (
+			SELECT DISTINCT user_id
+			FROM applications
+			WHERE university_id = $1 AND status = 'submitted'
+		),
+		draft_users AS (
+			SELECT DISTINCT user_id
+			FROM applications
+			WHERE university_id = $1 AND status = 'draft'
+		),
+		basket_users AS (
+			SELECT u.id AS user_id
+			FROM users u
+			WHERE u.role = 'applicant'
+			  AND EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements_text(COALESCE(u.data->'basket'->'university_ids', '[]'::jsonb)) AS basket(university_id)
+				WHERE basket.university_id = $1::text
+			  )
+		),
+		funnel_users AS (
+			SELECT b.user_id, 'suspect' AS stage
+			FROM basket_users b
+			WHERE NOT EXISTS (
+				SELECT 1
+				FROM applications a
+				WHERE a.user_id = b.user_id AND a.university_id = $1
+			)
+			UNION ALL
+			SELECT d.user_id, 'prospect' AS stage
+			FROM draft_users d
+			WHERE NOT EXISTS (
+				SELECT 1
+				FROM submitted_users s
+				WHERE s.user_id = d.user_id
+			)
+		)
+		SELECT
+			COUNT(*) FILTER (WHERE stage = 'suspect')::int AS suspects_count,
+			COUNT(*) FILTER (WHERE stage = 'prospect')::int AS prospects_count
+		FROM funnel_users
+	`, universityId).Scan(&suspectsCount, &prospectsCount)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to load partner funnel counts: %s", err.Error())
+	}
+	return suspectsCount, prospectsCount, nil
+}
+
+func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, universityId string) ([]models.PartnerStudentOriginStat, error) {
+	rows, err := conn.Query(ctx, `
+		WITH submitted AS (
+			SELECT DISTINCT ON (a.user_id)
+				a.user_id,
+				COALESCE(
+					NULLIF(BTRIM(a.data->>'citizenship'), ''),
+					NULLIF(BTRIM(a.applicant_info->>'citizenship'), ''),
+					NULLIF(BTRIM(u.data->>'citizenship'), ''),
+					NULLIF(BTRIM(u.data->>'country'), ''),
+					'Unknown'
+				) AS country
+			FROM applications a
+			JOIN users u ON u.id = a.user_id
+			WHERE a.university_id = $1 AND a.status = 'submitted'
+			ORDER BY a.user_id, COALESCE(a.received_at, a.submitted_at, a.created_at) DESC
+		),
+		prospects AS (
+			SELECT DISTINCT ON (a.user_id)
+				a.user_id,
+				COALESCE(
+					NULLIF(BTRIM(a.data->>'citizenship'), ''),
+					NULLIF(BTRIM(u.data->>'citizenship'), ''),
+					NULLIF(BTRIM(u.data->>'country'), ''),
+					'Unknown'
+				) AS country
+			FROM applications a
+			JOIN users u ON u.id = a.user_id
+			WHERE a.university_id = $1
+			  AND a.status = 'draft'
+			  AND NOT EXISTS (
+				SELECT 1
+				FROM submitted s
+				WHERE s.user_id = a.user_id
+			  )
+			ORDER BY a.user_id, COALESCE(a.updated_at, a.created_at) DESC
+		),
+		suspects AS (
+			SELECT
+				u.id AS user_id,
+				COALESCE(
+					NULLIF(BTRIM(u.data->>'citizenship'), ''),
+					NULLIF(BTRIM(u.data->>'country'), ''),
+					'Unknown'
+				) AS country
+			FROM users u
+			WHERE u.role = 'applicant'
+			  AND EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements_text(COALESCE(u.data->'basket'->'university_ids', '[]'::jsonb)) AS basket(university_id)
+				WHERE basket.university_id = $1::text
+			  )
+			  AND NOT EXISTS (
+				SELECT 1
+				FROM applications a
+				WHERE a.user_id = u.id AND a.university_id = $1
+			  )
+		),
+		student_origins AS (
+			SELECT country FROM submitted
+			UNION ALL
+			SELECT country FROM prospects
+			UNION ALL
+			SELECT country FROM suspects
+		)
+		SELECT
+			country,
+			COUNT(*)::int AS count,
+			ROUND((COUNT(*)::numeric / NULLIF(SUM(COUNT(*)) OVER (), 0)) * 100, 1)::double precision AS percentage
+		FROM student_origins
+		GROUP BY country
+		ORDER BY count DESC, country ASC
+	`, universityId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load student origin stats: %s", err.Error())
+	}
+	defer rows.Close()
+
+	stats, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.PartnerStudentOriginStat])
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan student origin stats: %s", err.Error())
+	}
+	return stats, nil
+}
+
+func GetPartnerAnalyticsContacts(ctx context.Context, universityId, stage string) ([]models.PartnerAnalyticsContact, error) {
+	normalizedStage := strings.ToLower(strings.TrimSpace(stage))
+	if normalizedStage != partnerAnalyticsStageSuspect && normalizedStage != partnerAnalyticsStageProspect {
+		return nil, utils.NewHandlerFuncErr(http.StatusBadRequest, "stage must be suspect or prospect")
+	}
+
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, err
+	}
+
+	query := partnerSuspectContactsSQL
+	if normalizedStage == partnerAnalyticsStageProspect {
+		query = partnerProspectContactsSQL
+	}
+
+	rows, err := conn.Query(ctx, query, universityId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s contacts: %s", normalizedStage, err.Error())
+	}
+	defer rows.Close()
+
+	items, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.PartnerAnalyticsContact])
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan %s contacts: %s", normalizedStage, err.Error())
+	}
+	return items, nil
+}
+
+const partnerProspectContactsSQL = `
+	SELECT DISTINCT ON (u.id)
+		u.id::text AS user_id,
+		COALESCE(
+			NULLIF(BTRIM(a.data->>'full_name'), ''),
+			NULLIF(BTRIM(a.data->>'name'), ''),
+			NULLIF(BTRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+			'Applicant'
+		) AS name,
+		u.email,
+		COALESCE(
+			NULLIF(BTRIM(a.data->>'citizenship'), ''),
+			NULLIF(BTRIM(u.data->>'citizenship'), ''),
+			NULLIF(BTRIM(u.data->>'country'), ''),
+			'Unknown'
+		) AS country,
+		'prospect' AS stage,
+		to_char(COALESCE(a.updated_at, a.created_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS last_activity_at
+	FROM applications a
+	JOIN users u ON u.id = a.user_id
+	WHERE a.university_id = $1
+	  AND a.status = 'draft'
+	  AND NOT EXISTS (
+		SELECT 1
+		FROM applications submitted
+		WHERE submitted.user_id = a.user_id
+		  AND submitted.university_id = $1
+		  AND submitted.status = 'submitted'
+	  )
+	ORDER BY u.id, COALESCE(a.updated_at, a.created_at) DESC
+`
+
+const partnerSuspectContactsSQL = `
+	SELECT
+		u.id::text AS user_id,
+		COALESCE(
+			NULLIF(BTRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''),
+			'Applicant'
+		) AS name,
+		u.email,
+		COALESCE(
+			NULLIF(BTRIM(u.data->>'citizenship'), ''),
+			NULLIF(BTRIM(u.data->>'country'), ''),
+			'Unknown'
+		) AS country,
+		'suspect' AS stage,
+		COALESCE(
+			to_char(
+				COALESCE(
+					CASE
+						WHEN COALESCE(u.data #>> '{basket,updated_at}', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+						THEN (u.data #>> '{basket,updated_at}')::timestamptz
+						ELSE NULL
+					END,
+					u.last_seen::timestamptz
+				) AT TIME ZONE 'UTC',
+				'YYYY-MM-DD"T"HH24:MI:SS"Z"'
+			),
+			''
+		) AS last_activity_at
+	FROM users u
+	WHERE u.role = 'applicant'
+	  AND EXISTS (
+		SELECT 1
+		FROM jsonb_array_elements_text(COALESCE(u.data->'basket'->'university_ids', '[]'::jsonb)) AS basket(university_id)
+		WHERE basket.university_id = $1::text
+	  )
+	  AND NOT EXISTS (
+		SELECT 1
+		FROM applications a
+		WHERE a.user_id = u.id AND a.university_id = $1
+	  )
+	ORDER BY last_activity_at DESC NULLS LAST, name ASC
+`
 
 func GetApplicationStructureHistory(ctx context.Context, universityId string, limit int) ([]models.ApplicationStructureVersion, error) {
 	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)

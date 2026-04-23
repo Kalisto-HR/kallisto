@@ -30,7 +30,15 @@ describe("partner dashboard service", () => {
         avg_sat: 1350,
         avg_ielts: 7,
         male_count: 8,
-        female_count: 12,
+        female_count: 9,
+        non_binary_count: 2,
+        prefer_not_to_say_count: 1,
+        suspects_count: 6,
+        prospects_count: 3,
+        student_origin_stats: [
+          { country: "Kazakhstan", count: 6, percentage: 60 },
+          { country: "Uzbekistan", count: 4, percentage: 40 },
+        ],
         recent_applications: [
           {
             id: "app-1",
@@ -51,7 +59,15 @@ describe("partner dashboard service", () => {
       avgSAT: 1350,
       avgIELTS: 7,
       maleCount: 8,
-      femaleCount: 12,
+      femaleCount: 9,
+      nonBinaryCount: 2,
+      preferNotToSayCount: 1,
+      suspectsCount: 6,
+      prospectsCount: 3,
+      studentOriginStats: [
+        { country: "Kazakhstan", count: 6, percentage: 60 },
+        { country: "Uzbekistan", count: 4, percentage: 40 },
+      ],
       recentApplications: [
         {
           id: "app-1",
