@@ -1,4 +1,4 @@
-### Python template
+	### Python template
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -356,3 +356,18 @@ vacancies.json
 cookies.txt
 frontend/test-results/
 
+# Kallisto Docker/local build artifacts
+bin/
+docker-compose.yml.save
+docker-compose.yml.save.*
+*.save
+*.save.*
+
+# Frontend local artifacts
+frontend/node_modules/
+frontend/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
