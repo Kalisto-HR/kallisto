@@ -2,17 +2,24 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowRight,
   AlertCircle,
   Award,
   BookOpen,
+  Building,
   CalendarDays,
   CheckCircle2,
   DollarSign,
+  ExternalLink,
   Globe,
   GraduationCap,
+  Home,
+  Mail,
   MapPin,
+  Phone,
   Send,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { ApplicantApplicationListItem, University } from "../../types/domain";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import {
@@ -90,36 +97,90 @@ function toStringArray(value: unknown): string[] {
     .filter((item) => item.length > 0);
 }
 
+interface GeneralRequirement {
+  name: string;
+  description: string;
+  appliesTo: string;
+}
+
 interface UniversityProfileSummary {
   website: string | null;
+  schoolWebsite: string | null;
+  applicationSystem: string | null;
   contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  campuses: string[];
+  accommodation: string | null;
+  chineseName: string | null;
+  abbreviation: string | null;
+  location: string | null;
+  admissionOffice: string | null;
+  deadlineNote: string | null;
+  programGroups: string | null;
   foundedYear: string | null;
   studentCount: string | null;
   facultyCount: string | null;
   accreditations: string[];
+  generalRequirements: GeneralRequirement[];
+  testRequirements: {
+    ieltsMin: number | null;
+    toeflMin: number | null;
+    hskLevel: number | null;
+  };
 }
 
 function summarizeUniversityProfile(profile: Record<string, unknown> | null): UniversityProfileSummary {
+  const empty: UniversityProfileSummary = {
+    website: null,
+    schoolWebsite: null,
+    applicationSystem: null,
+    contactEmail: null,
+    contactPhone: null,
+    address: null,
+    campuses: [],
+    accommodation: null,
+    chineseName: null,
+    abbreviation: null,
+    location: null,
+    admissionOffice: null,
+    deadlineNote: null,
+    programGroups: null,
+    foundedYear: null,
+    studentCount: null,
+    facultyCount: null,
+    accreditations: [],
+    generalRequirements: [],
+    testRequirements: { ieltsMin: null, toeflMin: null, hskLevel: null },
+  };
+
   if (!profile) {
-    return {
-      website: null,
-      contactEmail: null,
-      foundedYear: null,
-      studentCount: null,
-      facultyCount: null,
-      accreditations: [],
-    };
+    return empty;
   }
+
+  const testReqs = toRecord(profile.testRequirements);
 
   return {
     website:
       toStringValue(profile.website) ??
       toStringValue(profile.websiteUrl) ??
       toStringValue(profile.site),
+    schoolWebsite: toStringValue(profile.schoolWebsite),
+    applicationSystem: toStringValue(profile.applicationSystem),
     contactEmail:
       toStringValue(profile.contactEmail) ??
       toStringValue(profile.contact_email) ??
       toStringValue(profile.email),
+    contactPhone: toStringValue(profile.contactPhone),
+    address: toStringValue(profile.address),
+    campuses: toStringArray(profile.campuses),
+    accommodation: toStringValue(profile.accommodation),
+    chineseName: toStringValue(profile.chineseName),
+    abbreviation: toStringValue(profile.abbreviation),
+    location: toStringValue(profile.location),
+    admissionOffice: toStringValue(profile.admissionOffice),
+    deadlineNote: toStringValue(profile.deadlineNote),
+    programGroups: toStringValue(profile.programGroups),
     foundedYear:
       toDisplayValue(profile.foundedYear) ??
       toDisplayValue(profile.founded_year) ??
@@ -134,6 +195,14 @@ function summarizeUniversityProfile(profile: Record<string, unknown> | null): Un
       toDisplayValue(profile.faculty_count) ??
       toDisplayValue(profile.faculty),
     accreditations: toStringArray(profile.accreditations),
+    generalRequirements: Array.isArray(profile.generalRequirements)
+      ? (profile.generalRequirements as GeneralRequirement[])
+      : [],
+    testRequirements: {
+      ieltsMin: testReqs?.ieltsMin ? Number(testReqs.ieltsMin) : null,
+      toeflMin: testReqs?.toeflMin ? Number(testReqs.toeflMin) : null,
+      hskLevel: testReqs?.hskLevel ? Number(testReqs.hskLevel) : null,
+    },
   };
 }
 
@@ -455,12 +524,22 @@ export function UniversityDetailPage() {
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <Link to={primaryAction.href}>
-            <Button className="w-full sm:w-auto">
+          {existingSubmittedApplication ? (
+            <Link to={primaryAction.href}>
+              <Button className="w-full sm:w-auto">
+                <Send className="mr-2 h-4 w-4" />
+                {primaryAction.label}
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() => toast.info("Coming soon", { description: "Currently not available. Please check back later." })}
+            >
               <Send className="mr-2 h-4 w-4" />
               {primaryAction.label}
             </Button>
-          </Link>
+          )}
           <Button className="w-full sm:w-auto" variant={isInBasket ? "default" : "outline"} onClick={() => void toggleBasket()}>
             {isInBasket ? (
               <>
@@ -537,87 +616,175 @@ export function UniversityDetailPage() {
           <TabsTrigger value="costs">Costs</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              <p>
-                {university.description ??
-                  "No detailed overview has been published for this university yet."}
-              </p>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  {university.description ??
+                    "No detailed overview has been published for this university yet."}
+                </p>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {universityProfileSummary.website ? (
-                  <div className="rounded-lg border border-slate-200 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Website</div>
+                {universityProfileSummary.chineseName || universityProfileSummary.abbreviation ? (
+                  <div className="flex flex-wrap gap-2">
+                    {universityProfileSummary.chineseName ? (
+                      <Badge variant="outline">{universityProfileSummary.chineseName}</Badge>
+                    ) : null}
+                    {universityProfileSummary.abbreviation ? (
+                      <Badge variant="secondary">{universityProfileSummary.abbreviation}</Badge>
+                    ) : null}
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" />
+                  Links & Contact
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {universityProfileSummary.website ? (
                     <a
                       href={universityProfileSummary.website.startsWith("http") ? universityProfileSummary.website : `https://${universityProfileSummary.website}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 block break-all font-medium text-slate-900 underline-offset-4 hover:underline"
+                      className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
                     >
-                      {universityProfileSummary.website}
+                      <Globe className="mt-0.5 h-5 w-5 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">University Website</div>
+                        <div className="mt-1 truncate font-medium text-slate-900">{universityProfileSummary.website.replace(/^https?:\/\//, "")}</div>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
                     </a>
-                  </div>
-                ) : null}
-                {universityProfileSummary.contactEmail ? (
-                  <div className="rounded-lg border border-slate-200 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Contact Email</div>
+                  ) : null}
+                  {universityProfileSummary.applicationSystem ? (
                     <a
-                      href={`mailto:${universityProfileSummary.contactEmail}`}
-                      className="mt-1 block break-all font-medium text-slate-900 underline-offset-4 hover:underline"
+                      href={universityProfileSummary.applicationSystem.startsWith("http") ? universityProfileSummary.applicationSystem : `https://${universityProfileSummary.applicationSystem}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
                     >
-                      {universityProfileSummary.contactEmail}
+                      <Send className="mt-0.5 h-5 w-5 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Application System</div>
+                        <div className="mt-1 truncate font-medium text-slate-900">{universityProfileSummary.applicationSystem.replace(/^https?:\/\//, "")}</div>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
                     </a>
-                  </div>
-                ) : null}
-                {universityProfileSummary.foundedYear ? (
-                  <div className="rounded-lg border border-slate-200 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Founded</div>
-                    <div className="mt-1 font-medium text-slate-900">{universityProfileSummary.foundedYear}</div>
-                  </div>
-                ) : null}
-                {universityProfileSummary.studentCount ? (
-                  <div className="rounded-lg border border-slate-200 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Students</div>
-                    <div className="mt-1 font-medium text-slate-900">{universityProfileSummary.studentCount}</div>
-                  </div>
-                ) : null}
-                {universityProfileSummary.facultyCount ? (
-                  <div className="rounded-lg border border-slate-200 p-4">
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Faculty</div>
-                    <div className="mt-1 font-medium text-slate-900">{universityProfileSummary.facultyCount}</div>
-                  </div>
-                ) : null}
-              </div>
-
-              {universityProfileSummary.accreditations.length > 0 ? (
-                <div className="space-y-3 rounded-lg border border-slate-200 p-4 text-slate-700">
-                  <div className="flex items-center gap-2 font-medium text-slate-900">
-                    <Badge variant="secondary" className="px-2 py-0 text-xs">
-                      Accreditations
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {universityProfileSummary.accreditations.map((accreditation) => (
-                      <Badge key={accreditation} variant="outline" className="border-slate-300 text-slate-700">
-                        {accreditation}
-                      </Badge>
-                    ))}
-                  </div>
+                  ) : null}
+                  {universityProfileSummary.schoolWebsite && universityProfileSummary.schoolWebsite !== universityProfileSummary.website ? (
+                    <a
+                      href={universityProfileSummary.schoolWebsite.startsWith("http") ? universityProfileSummary.schoolWebsite : `https://${universityProfileSummary.schoolWebsite}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
+                      <Building className="mt-0.5 h-5 w-5 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">School Website</div>
+                        <div className="mt-1 truncate font-medium text-slate-900">{universityProfileSummary.schoolWebsite.replace(/^https?:\/\//, "")}</div>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                    </a>
+                  ) : null}
+                  {universityProfileSummary.contactEmail ? (
+                    <a
+                      href={`mailto:${universityProfileSummary.contactEmail.split(";")[0].trim()}`}
+                      className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
+                      <Mail className="mt-0.5 h-5 w-5 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Contact Email</div>
+                        <div className="mt-1 break-all text-sm font-medium text-slate-900">{universityProfileSummary.contactEmail}</div>
+                      </div>
+                    </a>
+                  ) : null}
+                  {universityProfileSummary.contactPhone ? (
+                    <div className="flex items-start gap-3 rounded-lg border border-slate-200 p-4">
+                      <Phone className="mt-0.5 h-5 w-5 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Phone</div>
+                        <div className="mt-1 text-sm font-medium text-slate-900">{universityProfileSummary.contactPhone}</div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {universityProfileSummary.address ? (
+                    <div className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 sm:col-span-2 lg:col-span-1">
+                      <MapPin className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Address</div>
+                        <div className="mt-1 text-sm font-medium text-slate-900">{universityProfileSummary.address}</div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
+              </CardContent>
+            </Card>
 
-              {intakeTerms.length > 0 ? (
-                <div className="space-y-3 rounded-lg border border-slate-200 p-4 text-slate-700">
-                  <div className="flex items-center gap-2 font-medium text-slate-900">
-                    <CalendarDays className="h-4 w-4 text-primary" />
-                    Upcoming intake terms
-                  </div>
+            {universityProfileSummary.campuses.length > 0 || universityProfileSummary.accommodation ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Home className="h-5 w-5 text-primary" />
+                    Campus Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {universityProfileSummary.campuses.length > 0 ? (
+                    <div>
+                      <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Campuses</div>
+                      <div className="flex flex-wrap gap-2">
+                        {universityProfileSummary.campuses.map((campus) => (
+                          <Badge key={campus} variant="outline" className="border-slate-300">
+                            {campus}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                  {universityProfileSummary.accommodation ? (
+                    <div>
+                      <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Accommodation</div>
+                      <p className="text-sm text-slate-700">{universityProfileSummary.accommodation}</p>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {universityProfileSummary.deadlineNote ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                    Application Deadlines
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-slate-700">{universityProfileSummary.deadlineNote}</p>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {intakeTerms.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                    Upcoming Intake Terms
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-2">
                     {intakeTerms.map((term) => (
-                      <div key={term.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div key={term.id} className="flex flex-col gap-1 rounded-lg border border-slate-200 p-3 sm:flex-row sm:items-center sm:justify-between">
                         <span className="font-medium text-slate-900">{term.term}</span>
                         <span className="text-sm text-muted-foreground">
                           Deadline: {formatDateLabel(term.deadline)}
@@ -625,10 +792,10 @@ export function UniversityDetailPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
         </TabsContent>
         <TabsContent value="programs">
           <Card>
@@ -639,19 +806,26 @@ export function UniversityDetailPage() {
               {programs.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   {programs.map((program) => (
-                    <div key={program.id} className="rounded-xl border border-slate-200 p-4">
+                    <Link
+                      key={program.id}
+                      to={routes.applicant.programDetail(university.id, program.id)}
+                      className="group rounded-xl border border-slate-200 p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+                    >
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
                           <GraduationCap className="h-4 w-4" />
                         </div>
-                        <div className="space-y-1">
-                          <div className="font-medium text-slate-900">{program.name}</div>
+                        <div className="flex-1 space-y-1">
+                          <div className="font-medium text-slate-900 group-hover:text-primary">
+                            {program.name}
+                          </div>
                           <div className="text-sm text-muted-foreground">
-                            {[program.level, program.duration].filter(Boolean).join(" · ") || "Program details pending"}
+                            {[program.level, program.duration].filter(Boolean).join(" · ") || "View program details"}
                           </div>
                         </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -663,73 +837,132 @@ export function UniversityDetailPage() {
           </Card>
         </TabsContent>
         <TabsContent value="admissions">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admission Requirements</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-slate-700">
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <div className="mb-1 font-medium text-slate-900">Application deadline</div>
-                  <div>{formatDateLabel(university.applicationDeadline)}</div>
-                </div>
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <div className="mb-2 flex items-center gap-2 font-medium text-slate-900">
-                    <BookOpen className="h-4 w-4 text-primary" />
-                    Required application items
+          <div className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Application Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-slate-700">
+                  <div className="rounded-lg border border-slate-200 p-4">
+                    <div className="mb-1 font-medium text-slate-900">Application Deadline</div>
+                    <div>{formatDateLabel(university.applicationDeadline)}</div>
                   </div>
-                  {admissionRequirements.requiredFields.length > 0 ? (
-                    <ul className="space-y-2 text-muted-foreground">
-                      {admissionRequirements.requiredFields.map((field) => (
-                        <li key={field} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                          <span>{field}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground">The university has not published required application fields yet.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Tests and Documents</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-slate-700">
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <div className="mb-2 font-medium text-slate-900">Minimum test scores</div>
-                  {minimumScores.length > 0 ? (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {minimumScores.map((row) => (
-                        <div key={row.label} className="rounded-lg bg-slate-50 px-3 py-2">
-                          <div className="text-xs uppercase tracking-wide text-muted-foreground">{row.label}</div>
-                          <div className="font-medium text-slate-900">{row.value}</div>
-                        </div>
-                      ))}
+                  {university.applicationFee ? (
+                    <div className="rounded-lg border border-slate-200 p-4">
+                      <div className="mb-1 font-medium text-slate-900">Application Fee</div>
+                      <div>{formatRmb(university.applicationFee, { fallback: "N/A" })}</div>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground">No minimum standardized test scores have been published.</p>
-                  )}
-                </div>
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <div className="mb-2 font-medium text-slate-900">Required supporting documents</div>
-                  {admissionRequirements.requiredDocuments.length > 0 ? (
-                    <ul className="space-y-2 text-muted-foreground">
-                      {admissionRequirements.requiredDocuments.map((field) => (
-                        <li key={field} className="flex items-start gap-2">
-                          <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
-                          <span>{field}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground">No required supporting documents have been published.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  ) : null}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Test Score Requirements</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-slate-700">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {universityProfileSummary.testRequirements.ieltsMin ? (
+                      <div className="rounded-lg bg-slate-50 px-4 py-3">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">IELTS</div>
+                        <div className="text-lg font-semibold text-slate-900">{universityProfileSummary.testRequirements.ieltsMin}+</div>
+                      </div>
+                    ) : null}
+                    {universityProfileSummary.testRequirements.toeflMin ? (
+                      <div className="rounded-lg bg-slate-50 px-4 py-3">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">TOEFL</div>
+                        <div className="text-lg font-semibold text-slate-900">{universityProfileSummary.testRequirements.toeflMin}+</div>
+                      </div>
+                    ) : null}
+                    {universityProfileSummary.testRequirements.hskLevel ? (
+                      <div className="rounded-lg bg-slate-50 px-4 py-3">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">HSK Level</div>
+                        <div className="text-lg font-semibold text-slate-900">{universityProfileSummary.testRequirements.hskLevel}+</div>
+                      </div>
+                    ) : null}
+                  </div>
+                  {!universityProfileSummary.testRequirements.ieltsMin &&
+                   !universityProfileSummary.testRequirements.toeflMin &&
+                   !universityProfileSummary.testRequirements.hskLevel ? (
+                    <p className="text-muted-foreground">No minimum test scores have been published.</p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </div>
+
+            {universityProfileSummary.generalRequirements.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    General Admission Requirements
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {universityProfileSummary.generalRequirements.map((req, idx) => (
+                      <div key={idx} className="rounded-lg border border-slate-200 p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                            <span className="font-medium text-slate-900">{req.name}</span>
+                          </div>
+                          <Badge variant="secondary" className="w-fit text-xs">
+                            {req.appliesTo}
+                          </Badge>
+                        </div>
+                        <p className="mt-2 pl-6 text-sm text-muted-foreground">{req.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : admissionRequirements.requiredFields.length > 0 || admissionRequirements.requiredDocuments.length > 0 ? (
+              <div className="grid gap-4 lg:grid-cols-2">
+                {admissionRequirements.requiredFields.length > 0 ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Required Application Items</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        {admissionRequirements.requiredFields.map((field) => (
+                          <li key={field} className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                            <span>{field}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ) : null}
+                {admissionRequirements.requiredDocuments.length > 0 ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Required Documents</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        {admissionRequirements.requiredDocuments.map((field) => (
+                          <li key={field} className="flex items-start gap-2">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                            <span>{field}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8">
+                  <p className="text-center text-muted-foreground">
+                    No detailed admission requirements have been published for this university yet.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
         <TabsContent value="costs">

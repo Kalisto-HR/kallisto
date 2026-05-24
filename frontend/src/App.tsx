@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Toaster } from "./components/ui/sonner";
 import { SessionProvider } from "./context/SessionContext";
 import { RoleProtectedRoute } from "./components/routing/RoleProtectedRoute";
 import { routes } from "./routes/routeConfig";
@@ -11,6 +12,7 @@ import { ResetPasswordPage } from "./pages/auth/ResetPasswordPage";
 import { ApplicantDashboardPage } from "./pages/applicant/ApplicantDashboardPage";
 import { UniversitySearchPage } from "./pages/applicant/UniversitySearchPage";
 import { UniversityDetailPage } from "./pages/applicant/UniversityDetailPage";
+import { ProgramDetailPage } from "./pages/applicant/ProgramDetailPage";
 import { ApplicantApplicationsPage } from "./pages/applicant/ApplicantApplicationsPage";
 import { ApplicantApplicationDetailPage } from "./pages/applicant/ApplicantApplicationDetailPage";
 import { ApplicantApplicationCreatePage } from "./pages/applicant/ApplicantApplicationCreatePage";
@@ -53,6 +55,7 @@ function PartnerOrStaffLayout() {
 export default function App() {
   return (
     <SessionProvider>
+      <Toaster position="top-center" richColors />
       <Routes>
         <Route path="/" element={<Navigate to={routes.auth.signIn} replace />} />
 
@@ -70,6 +73,7 @@ export default function App() {
             <Route path="dashboard" element={<ApplicantDashboardPage />} />
             <Route path="universities" element={<UniversitySearchPage />} />
             <Route path="universities/:id" element={<UniversityDetailPage />} />
+            <Route path="universities/:id/programs/:programId" element={<ProgramDetailPage />} />
             <Route path="basket" element={<ApplicantBasketPage />} />
             <Route path="applications" element={<ApplicantApplicationsPage />} />
             <Route path="applications/new/:universityId" element={<ApplicantApplicationCreatePage />} />

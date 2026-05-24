@@ -12,6 +12,7 @@ export const routes = {
     dashboard: "/applicant/dashboard",
     universities: "/applicant/universities",
     universityDetail: (id: string) => `/applicant/universities/${id}`,
+    programDetail: (universityId: string, programId: string) => `/applicant/universities/${universityId}/programs/${programId}`,
     basket: "/applicant/basket",
     applications: "/applicant/applications",
     applicationDetail: (universityId: string, cycle: string) => `/applicant/applications/${universityId}/${cycle}`,
