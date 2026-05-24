@@ -35,6 +35,7 @@ type universitySeed struct {
 	Ranking             *int            `json:"ranking"`
 	Metadata            json.RawMessage `json:"metadata"`
 	ApplicationFee      *float64        `json:"applicationFee"`
+	UniversityProfile   json.RawMessage `json:"universityProfile"`
 }
 
 const upsertUniversityQuery = `
@@ -42,12 +43,14 @@ INSERT INTO universities (
 	id, name, description, province, city, country,
 	acceptance_rate, tuition_fee, application_deadline,
 	ielts_min, toefl_min, scholarship_available, city_type,
-	campus_vibe, application_schema, ranking, metadata, application_fee
+	campus_vibe, application_schema, ranking, metadata, application_fee,
+	university_profile
 ) VALUES (
 	$1, $2, $3, $4, $5, $6,
 	$7, $8, $9,
 	$10, $11, $12, $13,
-	$14, $15, $16, $17, $18
+	$14, $15, $16, $17, $18,
+	$19
 )
 ON CONFLICT (id) DO UPDATE SET
 	name = EXCLUDED.name,
@@ -66,7 +69,8 @@ ON CONFLICT (id) DO UPDATE SET
 	application_schema = EXCLUDED.application_schema,
 	ranking = EXCLUDED.ranking,
 	metadata = EXCLUDED.metadata,
-	application_fee = EXCLUDED.application_fee
+	application_fee = EXCLUDED.application_fee,
+	university_profile = EXCLUDED.university_profile
 `
 const ensureUniversitySchemaQuery = `
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -105,6 +109,7 @@ ALTER TABLE universities ADD COLUMN IF NOT EXISTS toefl_min INT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS scholarship_available BOOLEAN DEFAULT FALSE;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS city_type TEXT;
 ALTER TABLE universities ADD COLUMN IF NOT EXISTS campus_vibe TEXT;
+ALTER TABLE universities ADD COLUMN IF NOT EXISTS university_profile JSONB;
 
 CREATE INDEX IF NOT EXISTS idx_universities_ranking ON universities(ranking);
 CREATE INDEX IF NOT EXISTS idx_universities_country ON universities(country);
@@ -208,6 +213,7 @@ func upsertUniversities(ctx context.Context, pool *pgxpool.Pool, universities []
 				university.Ranking,
 				nullIfEmptyJSON(university.Metadata),
 				university.ApplicationFee,
+				nullIfEmptyJSON(university.UniversityProfile),
 			)
 			if err != nil {
 				return fmt.Errorf("upsert failed for id '%s': %w", university.ID, err)
