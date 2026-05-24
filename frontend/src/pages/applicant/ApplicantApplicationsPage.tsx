@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, FileText } from "lucide-react";
+import { toast } from "sonner";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import type { ApplicantApplicationListItem } from "../../types/domain";
 import { Badge } from "../../components/ui/badge";
@@ -107,11 +108,22 @@ export function ApplicantApplicationsPage() {
                   Created {item.createdAt || "N/A"}
                 </span>
               </div>
-              <Link to={openHref}>
-                <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                  {item.status === "draft" ? "Open draft" : "Open"}
+              {item.status === "draft" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => toast.info("Coming soon", { description: "Currently not available. Please check back later." })}
+                >
+                  Open draft
                 </Button>
-              </Link>
+              ) : (
+                <Link to={openHref}>
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                    Open
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
           );

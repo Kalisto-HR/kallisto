@@ -7,6 +7,7 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -237,11 +238,22 @@ export function ApplicantDashboardPage() {
                   <Badge variant="secondary" className="capitalize">
                     {item.status}
                   </Badge>
-                  <Link to={openHref}>
-                    <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                      {item.status === "draft" ? "Open draft" : "Open"}
+                  {item.status === "draft" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => toast.info("Coming soon", { description: "Currently not available. Please check back later." })}
+                    >
+                      Open draft
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link to={openHref}>
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                        Open
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
               );
