@@ -299,8 +299,11 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 
 func GetPartnerAnalyticsContacts(ctx context.Context, universityId, stage string) ([]models.PartnerAnalyticsContact, error) {
 	normalizedStage := strings.ToLower(strings.TrimSpace(stage))
+	if normalizedStage == "" {
+		return nil, utils.NewHandlerFuncErr(http.StatusBadRequest, "stage query parameter is required")
+	}
 	if normalizedStage != partnerAnalyticsStageSuspect && normalizedStage != partnerAnalyticsStageProspect {
-		return nil, utils.NewHandlerFuncErr(http.StatusBadRequest, "stage must be suspect or prospect")
+		return nil, utils.NewHandlerFuncErr(http.StatusBadRequest, "stage must be 'suspect' or 'prospect'")
 	}
 
 	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)

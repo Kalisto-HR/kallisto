@@ -80,7 +80,16 @@ func GetPartnerAnalyticsContactsHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	stage := strings.TrimSpace(r.URL.Query().Get("stage"))
-	items, err := usecases_impl.GetPartnerAnalyticsContacts(r.Context(), id, stage)
+	if stage == "" {
+		utils.WriteJSONResponseWithMsg(w, "stage query parameter is required", http.StatusBadRequest)
+		return
+	}
+	normalizedStage := strings.ToLower(stage)
+	if normalizedStage != "suspect" && normalizedStage != "prospect" {
+		utils.WriteJSONResponseWithMsg(w, "stage must be 'suspect' or 'prospect'", http.StatusBadRequest)
+		return
+	}
+	items, err := usecases_impl.GetPartnerAnalyticsContacts(r.Context(), id, normalizedStage)
 	if err != nil {
 		handleFuncErr, ok := err.(utils.HandlerFuncErr)
 		status := http.StatusInternalServerError
