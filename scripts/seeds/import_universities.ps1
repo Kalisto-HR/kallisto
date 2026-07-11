@@ -43,7 +43,7 @@ function Resolve-ConnectionString {
 }
 
 $resolvedDataFile = if ([string]::IsNullOrWhiteSpace($DataFile)) {
-    Join-Path $PSScriptRoot "data\universities.v1.json"
+    Join-Path $PSScriptRoot "data\universities.v2.json"
 } else {
     $DataFile
 }

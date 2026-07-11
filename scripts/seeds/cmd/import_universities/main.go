@@ -125,7 +125,7 @@ CREATE INDEX IF NOT EXISTS idx_universities_scholarship_available ON universitie
 func main() {
 	_ = env.LoadEnv(".env")
 
-	defaultDataPath := filepath.Join("scripts", "seeds", "data", "universities.v1.json")
+	defaultDataPath := filepath.Join("scripts", "seeds", "data", "universities.v2.json")
 	dataPath := flag.String("data", defaultDataPath, "path to universities JSON seed file")
 	databaseURL := flag.String("database-url", os.Getenv("DATABASE_URL"), "database connection URL")
 	flag.Parse()

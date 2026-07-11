@@ -296,35 +296,6 @@ function formatDateLabel(value: string | null): string {
   return parsed.toLocaleDateString();
 }
 
-function buildMinimumScoreRows(university: University): Array<{ label: string; value: string }> {
-  const profile = toRecord(university.universityProfile);
-  const testRequirements = toRecord(profile?.testRequirements);
-  const rows = [
-    {
-      label: "SAT",
-      value: toDisplayValue(testRequirements?.satMin) ?? null,
-    },
-    {
-      label: "ACT",
-      value: toDisplayValue(testRequirements?.actMin) ?? null,
-    },
-    {
-      label: "IELTS",
-      value:
-        toDisplayValue(testRequirements?.ieltsMin) ??
-        (university.ieltsMin !== null ? String(university.ieltsMin) : null),
-    },
-    {
-      label: "TOEFL",
-      value:
-        toDisplayValue(testRequirements?.toeflMin) ??
-        (university.toeflMin !== null ? String(university.toeflMin) : null),
-    },
-  ];
-
-  return rows.filter((row): row is { label: string; value: string } => Boolean(row.value));
-}
-
 function buildSchemaRequirements(university: University) {
   const schema = toRecord(university.applicationSchema);
   const sections = Array.isArray(schema?.sections) ? schema.sections : [];
@@ -455,7 +426,6 @@ export function UniversityDetailPage() {
   const universityProfileSummary = summarizeUniversityProfile(universityProfile);
   const programs = toProgramList(university);
   const intakeTerms = toIntakeTerms(universityProfile);
-  const minimumScores = buildMinimumScoreRows(university);
   const admissionRequirements = buildSchemaRequirements(university);
   const existingSubmittedApplication =
     existingApplications.find(

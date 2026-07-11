@@ -15,11 +15,11 @@ seed-universities:
 	go run scripts/seeds/cmd/import_universities/main.go
 
 migrate-db:
-	bash scripts/db/apply_migrations.sh --client-db client_db --admin-db admin_db --db-user postgres --db-host localhost --db-port 5432
+	bash scripts/db/apply_migrations.sh --database admin_db --db-user postgres --db-host localhost --db-port 5432
 
 seed-db-dev:
-	bash scripts/db/apply_seeds.sh --seed-profile dev --client-db client_db --admin-db admin_db --db-user postgres --db-host localhost --db-port 5432
-
+	bash scripts/db/apply_seeds.sh --seed-profile dev --database admin_db --db-user postgres --db-host localhost --db-port 5432
+	
 bootstrap-db:
 	bash scripts/db/bootstrap.sh --create-databases --seed-profile dev --db-user postgres --db-host localhost --db-port 5432
 

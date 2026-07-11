@@ -37,9 +37,7 @@ run_migration() {
 }
 
 MIGRATION_FILES=(
-  "admin_db.sql"
-  "20260329_current_state_contracts.sql"
-  "20260329_drop_legacy_single_db_scaffolding.sql"
+  "schema.sql"
 )
 
 for migration_file in "${MIGRATION_FILES[@]}"; do

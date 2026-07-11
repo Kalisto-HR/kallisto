@@ -1,4 +1,0 @@
--- Legacy static seed file for universities table.
--- Preferred path: scripts/seeds/import_universities.ps1 (JSON-driven idempotent seed).
--- Uzbekistan universities were removed from the maintained seed dataset.
--- This compatibility file is intentionally a no-op; use the JSON importer instead.

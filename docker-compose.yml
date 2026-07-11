@@ -28,12 +28,13 @@ services:
         condition: service_healthy
     environment:
       PGPASSWORD: postgres
-    entrypoint: >
-      sh -c "
-      apk add --no-cache postgresql-client bash &&
-      bash scripts/db/bootstrap.sh --create-databases --seed-profile dev
-      --database admin_db --db-user postgres --db-host db --db-port 5432
-      "
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        apk add --no-cache postgresql-client bash &&
+        chmod +x scripts/db/*.sh &&
+        bash scripts/db/bootstrap.sh --create-databases --seed-profile dev
+        --database admin_db --db-user postgres --db-host db --db-port 5432
 
   backend:
     build:
