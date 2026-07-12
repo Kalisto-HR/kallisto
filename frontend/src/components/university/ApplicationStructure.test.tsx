@@ -51,10 +51,10 @@ const baseSchema = {
 
 function renderStructure() {
   return render(
-    <MemoryRouter initialEntries={["/partner/university/application-structure/e1f2a3b4-c5d6-7890-4567-901234567890"]}>
+    <MemoryRouter initialEntries={["/partner/e1f2a3b4-c5d6-7890-4567-901234567890/application-structure"]}>
       <Routes>
         <Route
-          path="/partner/university/application-structure/:universityId"
+          path="/partner/:universityId/application-structure"
           element={<ApplicationStructure />}
         />
       </Routes>
@@ -164,5 +164,34 @@ describe("ApplicationStructure", () => {
 
     expect(await screen.findByText(/^Draft changes not published$/i)).toBeInTheDocument();
     expect(screen.getByText(/Applicants still see the last published structure/i)).toBeInTheDocument();
+  });
+
+  it("normalizes legacy textarea fields so saved schemas do not crash the page", async () => {
+    vi.mocked(fetchPartnerApplicationStructure).mockResolvedValue({
+      sections: [
+        {
+          id: "section-1",
+          name: "Application Form",
+          title: "Application Form",
+          order: 1,
+          visible: true,
+          fields: [
+            {
+              id: "personal_statement",
+              type: "textarea",
+              label: "Personal Statement",
+              required: true,
+              order: 1,
+            },
+          ],
+        },
+      ],
+    });
+    vi.mocked(fetchPartnerApplicationStructureHistory).mockResolvedValue([]);
+
+    renderStructure();
+
+    expect(await screen.findByText("Personal Statement")).toBeInTheDocument();
+    expect(screen.getByText("Long Text")).toBeInTheDocument();
   });
 });

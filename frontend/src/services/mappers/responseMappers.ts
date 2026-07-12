@@ -64,6 +64,7 @@ export function normalizeUniversityListItem(value: unknown): UniversityListItem 
   return {
     id: toString(source.id),
     name: toString(source.name),
+    description: toNullableString(source.description),
     province: toNullableString(source.province),
     city: toNullableString(source.city),
     country: toNullableString(source.country),
@@ -77,6 +78,7 @@ export function normalizeUniversityListItem(value: unknown): UniversityListItem 
     scholarshipAvailable: toNullableBool(source.scholarship_available ?? source.scholarshipAvailable),
     cityType: toNullableString(source.city_type ?? source.cityType),
     campusVibe: toNullableString(source.campus_vibe ?? source.campusVibe),
+    programGroups: toNullableString(source.program_groups ?? source.programGroups),
   };
 }
 

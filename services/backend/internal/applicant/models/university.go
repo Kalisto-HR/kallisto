@@ -35,6 +35,7 @@ type University struct {
 type UniversityListItem struct {
 	Id                   string     `json:"id" db:"id"`
 	Name                 string     `json:"name" db:"name"`
+	Description          *string    `json:"description,omitempty" db:"description"`
 	Province             *string    `json:"province,omitempty" db:"province"`
 	City                 *string    `json:"city,omitempty" db:"city"`
 	Country              *string    `json:"country,omitempty" db:"country"`
@@ -48,6 +49,7 @@ type UniversityListItem struct {
 	ScholarshipAvailable *bool      `json:"scholarship_available,omitempty" db:"scholarship_available"`
 	CityType             *string    `json:"city_type,omitempty" db:"city_type"`
 	CampusVibe           *string    `json:"campus_vibe,omitempty" db:"campus_vibe"`
+	ProgramGroups        *string    `json:"program_groups,omitempty" db:"program_groups"`
 }
 
 type UniversitySearchParams struct {

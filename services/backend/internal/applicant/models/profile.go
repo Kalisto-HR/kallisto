@@ -13,6 +13,8 @@ const (
 	TestScoreTypeSAT   TestScoreType = "SAT"
 	TestScoreTypeTOEFL TestScoreType = "TOEFL"
 	TestScoreTypeACT   TestScoreType = "ACT"
+	TestScoreTypeHSK   TestScoreType = "HSK"
+	TestScoreTypeCSCA  TestScoreType = "CSCA"
 	TestScoreTypeOther TestScoreType = "OTHER"
 )
 

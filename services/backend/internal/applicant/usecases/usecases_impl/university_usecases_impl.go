@@ -29,10 +29,11 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 
 	offset := (page - 1) * limit
 	rows, err := conn.Query(ctx,
-		`SELECT id, name, province, city, country, ranking, application_fee,
+		`SELECT id, name, description, province, city, country, ranking, application_fee,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
-		        city_type, campus_vibe
+		        city_type, campus_vibe,
+		        university_profile->>'programGroups' AS program_groups
 		 FROM universities
 		 ORDER BY ranking ASC NULLS LAST, name ASC
 		 LIMIT $1 OFFSET $2`,
@@ -292,10 +293,11 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 
 	offset := (params.Page - 1) * params.Limit
 	selectQuery := fmt.Sprintf(
-		`SELECT id, name, province, city, country, ranking, application_fee,
+		`SELECT id, name, description, province, city, country, ranking, application_fee,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
-		        city_type, campus_vibe
+		        city_type, campus_vibe,
+		        university_profile->>'programGroups' AS program_groups
 		 FROM universities
 		 %s
 		 ORDER BY ranking ASC NULLS LAST, name ASC LIMIT $%d OFFSET $%d`,

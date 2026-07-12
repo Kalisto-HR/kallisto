@@ -63,6 +63,10 @@ func main() {
 	auditLogger := observability.NewAuditLogger(dbPool, zap.L())
 
 	router.Use(middlewares.CORS())
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	}).Methods(http.MethodGet)
 
 	authRouter := router.PathPrefix("/v1.0/auth").Subrouter()
 	authRouter.Use(middlewares.ObserveManagedRequests(zap.L(), serviceLogger, "auth"))
@@ -150,6 +154,8 @@ func registerApplicantRoutes(router *mux.Router) {
 	router.HandleFunc("/basket/checkout-preview", applicantHandlers.BasketCheckoutPreviewHandler).Methods(http.MethodPost)
 	router.HandleFunc("/basket/{id}", applicantHandlers.AddBasketItemHandler).Methods(http.MethodPost)
 	router.HandleFunc("/basket/{id}", applicantHandlers.RemoveBasketItemHandler).Methods(http.MethodDelete)
+
+	router.HandleFunc("/fit-score/calculate", applicantHandlers.CalculateFitScoreHandler).Methods(http.MethodPost)
 
 	router.HandleFunc("/applications", applicantHandlers.GetApplicationsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/applications", applicantHandlers.CreateApplicationHandler).Methods(http.MethodPost)

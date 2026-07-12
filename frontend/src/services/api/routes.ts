@@ -73,6 +73,9 @@ export const apiRoutes = {
     favorites: {
       list: () => `${API_PREFIX}/applicant/favorites`,
     },
+    fitScore: {
+      calculate: () => `${API_PREFIX}/applicant/fit-score/calculate`,
+    },
     profile: {
       base: () => `${API_PREFIX}/applicant/profile`,
       password: () => `${API_PREFIX}/applicant/profile/password`,

@@ -49,12 +49,41 @@ export async function copyPartnerContactEmails(items: PartnerAnalyticsContact[])
     return 0;
   }
 
-  if (!navigator.clipboard?.writeText) {
-    throw new Error("Clipboard is unavailable");
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(emailList);
+    return items.filter((item) => item.email.trim()).length;
   }
 
-  await navigator.clipboard.writeText(emailList);
+  if (!copyTextWithTextareaFallback(emailList)) {
+    throw new Error("Clipboard is unavailable");
+  }
   return items.filter((item) => item.email.trim()).length;
+}
+
+function copyTextWithTextareaFallback(value: string): boolean {
+  if (typeof document === "undefined") {
+    return false;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
+
+  return copied;
 }
 
 function escapeCsvCell(value: string): string {

@@ -16,6 +16,7 @@ export interface Pagination<T> {
 export interface UniversityListItem {
   id: string;
   name: string;
+  description?: string | null;
   province: string | null;
   city: string | null;
   country: string | null;
@@ -29,6 +30,7 @@ export interface UniversityListItem {
   scholarshipAvailable: boolean | null;
   cityType: string | null;
   campusVibe: string | null;
+  programGroups?: string | null;
 }
 
 export interface University {
@@ -95,7 +97,7 @@ export interface Profile {
   lastSeen: string | null;
 }
 
-export type ApplicantTestScoreType = "IELTS" | "SAT" | "TOEFL" | "ACT" | "OTHER";
+export type ApplicantTestScoreType = "IELTS" | "SAT" | "TOEFL" | "ACT" | "HSK" | "CSCA" | "OTHER";
 
 export interface ApplicantTestScore {
   id: string;
@@ -216,4 +218,57 @@ export interface ApplicationStructureVersion {
   changedBy: string | null;
   changeNote: string | null;
   createdAt: string;
+}
+
+export interface FitScoreStudentProfile {
+  nationality?: string;
+  educationLevel?: string;
+  gpa?: number;
+  gpaScale?: number;
+  ielts?: number;
+  toefl?: number;
+  hsk?: number;
+  sat?: number;
+  intendedMajor?: string;
+  budgetPerYear?: number;
+  preferredLanguage?: string;
+  preferredCity?: string;
+  documentsReady?: string[];
+  achievements?: string[];
+}
+
+export interface FitScoreProgram {
+  universityId?: string;
+  universityName?: string;
+  programId?: string;
+  majorName?: string;
+  degreeLevel?: string;
+  language?: string;
+  minGpa?: number;
+  minIelts?: number;
+  minToefl?: number;
+  minHsk?: number;
+  tuition?: number;
+  scholarshipAvailable?: boolean;
+  deadline?: string;
+  requiredDocuments?: string[];
+  competitivenessLevel?: string;
+}
+
+export interface FitScoreBreakdown {
+  academicScore: number;
+  languageScore: number;
+  majorScore: number;
+  budgetScore: number;
+  documentScore: number;
+  deadlineScore: number;
+}
+
+export interface FitScoreResult {
+  finalScore: number;
+  label: string;
+  breakdown: FitScoreBreakdown;
+  reasons: string[];
+  recommendations: string[];
+  explanation?: string;
 }

@@ -484,6 +484,8 @@ func decodeAndValidateProfileTestScoreRequest(r *http.Request) (*models.ProfileT
 			string(models.TestScoreTypeSAT),
 			string(models.TestScoreTypeTOEFL),
 			string(models.TestScoreTypeACT),
+			string(models.TestScoreTypeHSK),
+			string(models.TestScoreTypeCSCA),
 			string(models.TestScoreTypeOther),
 		}),
 	)

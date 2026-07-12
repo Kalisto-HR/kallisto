@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Bell,
   Camera,
@@ -7,6 +8,7 @@ import {
   Plus,
   Save,
   Shield,
+  Target,
   Trash2,
   User,
 } from "lucide-react";
@@ -25,6 +27,10 @@ import {
   LoadingState,
   SuccessState,
 } from "../../components/common/PageState";
+import {
+  ApplicantMatchProfileEditor,
+  type ApplicantMatchProfileForm,
+} from "../../components/applicant/ApplicantMatchProfileEditor";
 import {
   createApplicantTestScore,
   deleteApplicantTestScore,
@@ -65,6 +71,8 @@ const TEST_SCORE_TYPES: Array<{ value: ApplicantTestScoreType; label: string }> 
   { value: "SAT", label: "SAT" },
   { value: "TOEFL", label: "TOEFL" },
   { value: "ACT", label: "ACT" },
+  { value: "HSK", label: "HSK" },
+  { value: "CSCA", label: "CSCA" },
   { value: "OTHER", label: "Other" },
 ];
 
@@ -123,7 +131,75 @@ function createBlankTestScoreRow(): EditableTestScore {
   };
 }
 
+function profileString(data: Record<string, unknown>, key: string): string {
+  const value = data[key];
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return typeof value === "string" ? value : "";
+}
+
+function profileStringArray(data: Record<string, unknown>, key: string): string[] {
+  const value = data[key];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+function buildMatchProfileForm(data: Record<string, unknown> | null | undefined): ApplicantMatchProfileForm {
+  const source = data ?? {};
+  return {
+    nationality: profileString(source, "nationality"),
+    educationLevel: profileString(source, "educationLevel"),
+    gpa: profileString(source, "gpa"),
+    gpaScale: profileString(source, "gpaScale"),
+    intendedMajor: profileString(source, "intendedMajor"),
+    budgetPerYear: profileString(source, "budgetPerYear"),
+    preferredLanguage: profileString(source, "preferredLanguage"),
+    preferredCity: profileString(source, "preferredCity"),
+    documentsReady: profileStringArray(source, "documentsReady"),
+    achievements: profileStringArray(source, "achievements").join("\n"),
+  };
+}
+
+function optionalNumber(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function nullableNumber(value: string): number | null {
+  return optionalNumber(value) ?? null;
+}
+
+function linesToArray(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function cleanMatchProfilePayload(value: ApplicantMatchProfileForm): Record<string, unknown> {
+  return {
+    nationality: value.nationality.trim(),
+    educationLevel: value.educationLevel,
+    gpa: nullableNumber(value.gpa),
+    gpaScale: nullableNumber(value.gpaScale),
+    intendedMajor: value.intendedMajor.trim(),
+    budgetPerYear: nullableNumber(value.budgetPerYear),
+    preferredLanguage: value.preferredLanguage,
+    preferredCity: value.preferredCity.trim(),
+    documentsReady: value.documentsReady,
+    achievements: linesToArray(value.achievements),
+  };
+}
+
 export function ApplicantSettingsPage() {
+  const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -146,7 +222,10 @@ export function ApplicantSettingsPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [testScores, setTestScores] = useState<EditableTestScore[]>([]);
   const [testScoresLoading, setTestScoresLoading] = useState(false);
+  const [matchProfile, setMatchProfile] = useState<ApplicantMatchProfileForm>(() => buildMatchProfileForm(null));
+  const [savingMatchProfile, setSavingMatchProfile] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const defaultTab = searchParams.get("tab") === "match-profile" ? "match-profile" : "profile";
 
   useEffect(() => {
     const load = async () => {
@@ -170,6 +249,7 @@ export function ApplicantSettingsPage() {
 
         setBio(typeof profileData.bio === "string" ? profileData.bio : "");
         setGender(normalizeApplicantGender(profileData.gender));
+        setMatchProfile(buildMatchProfileForm(profileData));
         setEmailNotifications(typeof notifications.email === "boolean" ? notifications.email : true);
         setPushNotifications(typeof notifications.push === "boolean" ? notifications.push : true);
         const visibility =
@@ -246,6 +326,58 @@ export function ApplicantSettingsPage() {
       setError(err instanceof Error ? err.message : "Failed to save profile");
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const saveMatchProfile = async () => {
+    const gpa = optionalNumber(matchProfile.gpa);
+    const gpaScale = optionalNumber(matchProfile.gpaScale);
+    const budgetPerYear = optionalNumber(matchProfile.budgetPerYear);
+
+    if (matchProfile.gpa.trim() && (gpa === undefined || gpa < 0)) {
+      setError("GPA must be a valid number greater than or equal to 0.");
+      setSuccess(null);
+      return;
+    }
+    if (matchProfile.gpaScale.trim() && (gpaScale === undefined || gpaScale <= 0)) {
+      setError("GPA scale must be a valid number greater than 0.");
+      setSuccess(null);
+      return;
+    }
+    if (gpa !== undefined && gpaScale !== undefined && gpa > gpaScale) {
+      setError("GPA cannot be greater than GPA scale.");
+      setSuccess(null);
+      return;
+    }
+    if (matchProfile.budgetPerYear.trim() && (budgetPerYear === undefined || budgetPerYear < 0)) {
+      setError("Budget per year must be a valid number greater than or equal to 0.");
+      setSuccess(null);
+      return;
+    }
+
+    setSavingMatchProfile(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const data = cleanMatchProfilePayload(matchProfile);
+      await updateApplicantProfile({ data });
+      setProfile((current) => {
+        if (!current) {
+          return current;
+        }
+        return {
+          ...current,
+          data: {
+            ...(current.data ?? {}),
+            ...data,
+          },
+        };
+      });
+      setSuccess("Match profile saved. Your Fit Score will use the updated fields.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save match profile");
+    } finally {
+      setSavingMatchProfile(false);
     }
   };
 
@@ -532,11 +664,15 @@ export function ApplicantSettingsPage() {
       {error ? <ErrorState message={error} /> : null}
       {success ? <SuccessState message={success} /> : null}
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList className="w-full overflow-x-auto">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="match-profile" className="gap-2">
+            <Target className="h-4 w-4" />
+            <span className="hidden sm:inline">Match Profile</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2">
             <Lock className="h-4 w-4" />
@@ -775,6 +911,20 @@ export function ApplicantSettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="match-profile" className="space-y-6">
+          <ApplicantMatchProfileEditor
+            value={matchProfile}
+            saving={savingMatchProfile}
+            onChange={setMatchProfile}
+            onSave={() => void saveMatchProfile()}
+            onReset={() => {
+              setMatchProfile(buildMatchProfileForm(profile.data));
+              setSuccess(null);
+              setError(null);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="security" className="space-y-6">

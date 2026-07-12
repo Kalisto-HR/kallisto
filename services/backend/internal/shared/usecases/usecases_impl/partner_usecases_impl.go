@@ -71,7 +71,7 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 					''
 				))) AS gender_value
 			FROM applications
-			WHERE university_id = $1 AND status = 'submitted'
+			WHERE university_id = $1::uuid AND status = 'submitted'
 		)
 		SELECT
 			COUNT(*) FILTER (WHERE received_at >= NOW() - INTERVAL '7 days') AS new_applications,
@@ -126,7 +126,7 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 			submitted_at,
 			NULL::double precision AS acceptance_pct
 		FROM applications
-		WHERE university_id = $1 AND status = 'submitted'
+		WHERE university_id = $1::uuid AND status = 'submitted'
 		ORDER BY `+unifiedSubmittedReceivedAtExpr+` DESC
 		LIMIT 10
 	`, universityId)
@@ -167,12 +167,12 @@ func loadPartnerFunnelCounts(ctx context.Context, conn middlewares.DB, universit
 		WITH submitted_users AS (
 			SELECT DISTINCT user_id
 			FROM applications
-			WHERE university_id = $1 AND status = 'submitted'
+			WHERE university_id = $1::uuid AND status = 'submitted'
 		),
 		draft_users AS (
 			SELECT DISTINCT user_id
 			FROM applications
-			WHERE university_id = $1 AND status = 'draft'
+			WHERE university_id = $1::uuid AND status = 'draft'
 		),
 		basket_users AS (
 			SELECT u.id AS user_id
@@ -190,7 +190,7 @@ func loadPartnerFunnelCounts(ctx context.Context, conn middlewares.DB, universit
 			WHERE NOT EXISTS (
 				SELECT 1
 				FROM applications a
-				WHERE a.user_id = b.user_id AND a.university_id = $1
+				WHERE a.user_id = b.user_id AND a.university_id = $1::uuid
 			)
 			UNION ALL
 			SELECT d.user_id, 'prospect' AS stage
@@ -226,7 +226,7 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 				) AS country
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
-			WHERE a.university_id = $1 AND a.status = 'submitted'
+			WHERE a.university_id = $1::uuid AND a.status = 'submitted'
 			ORDER BY a.user_id, COALESCE(a.received_at, a.submitted_at, a.created_at) DESC
 		),
 		prospects AS (
@@ -240,7 +240,7 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 				) AS country
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
-			WHERE a.university_id = $1
+			WHERE a.university_id = $1::uuid
 			  AND a.status = 'draft'
 			  AND NOT EXISTS (
 				SELECT 1
@@ -267,7 +267,7 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 			  AND NOT EXISTS (
 				SELECT 1
 				FROM applications a
-				WHERE a.user_id = u.id AND a.university_id = $1
+				WHERE a.user_id = u.id AND a.university_id = $1::uuid
 			  )
 		),
 		student_origins AS (
@@ -349,13 +349,13 @@ const partnerProspectContactsSQL = `
 		to_char(COALESCE(a.updated_at, a.created_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS last_activity_at
 	FROM applications a
 	JOIN users u ON u.id = a.user_id
-	WHERE a.university_id = $1
+	WHERE a.university_id = $1::uuid
 	  AND a.status = 'draft'
 	  AND NOT EXISTS (
 		SELECT 1
 		FROM applications submitted
 		WHERE submitted.user_id = a.user_id
-		  AND submitted.university_id = $1
+		  AND submitted.university_id = $1::uuid
 		  AND submitted.status = 'submitted'
 	  )
 	ORDER BY u.id, COALESCE(a.updated_at, a.created_at) DESC
@@ -399,7 +399,7 @@ const partnerSuspectContactsSQL = `
 	  AND NOT EXISTS (
 		SELECT 1
 		FROM applications a
-		WHERE a.user_id = u.id AND a.university_id = $1
+		WHERE a.user_id = u.id AND a.university_id = $1::uuid
 	  )
 	ORDER BY last_activity_at DESC NULLS LAST, name ASC
 `
@@ -413,7 +413,7 @@ func GetApplicationStructureHistory(ctx context.Context, universityId string, li
 	rows, err := conn.Query(ctx, `
 		SELECT id, university_id, version_no, schema, published, changed_by, change_note, created_at
 		FROM university_application_structure_versions
-		WHERE university_id = $1
+		WHERE university_id = $1::uuid
 		ORDER BY version_no DESC
 		LIMIT $2
 	`, universityId, limit)
@@ -447,7 +447,7 @@ func PublishApplicationStructure(
 	var out models.ApplicationStructureVersion
 	var schema []byte
 	err := pgx.BeginFunc(ctx, dbConn, func(tx pgx.Tx) error {
-		if err := tx.QueryRow(ctx, "SELECT application_schema FROM universities WHERE id = $1", universityId).Scan(&schema); err != nil {
+		if err := tx.QueryRow(ctx, "SELECT application_schema FROM universities WHERE id = $1::uuid", universityId).Scan(&schema); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
 			}
@@ -461,7 +461,7 @@ func PublishApplicationStructure(
 		if err := tx.QueryRow(ctx, `
 			SELECT COALESCE(MAX(version_no), 0) + 1
 			FROM university_application_structure_versions
-			WHERE university_id = $1
+			WHERE university_id = $1::uuid
 		`, universityId).Scan(&nextVersion); err != nil {
 			return fmt.Errorf("failed to compute next version: %s", err.Error())
 		}
@@ -469,7 +469,7 @@ func PublishApplicationStructure(
 		if _, err := tx.Exec(ctx, `
 			UPDATE university_application_structure_versions
 			SET published = FALSE
-			WHERE university_id = $1 AND published = TRUE
+			WHERE university_id = $1::uuid AND published = TRUE
 		`, universityId); err != nil {
 			return fmt.Errorf("failed to clear published versions: %s", err.Error())
 		}

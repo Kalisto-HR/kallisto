@@ -50,6 +50,9 @@ COOKIE_SAMESITE=lax
 CORS_ALLOWED_ORIGINS=http://localhost:5173
 ```
 
+For Docker VM deployment, copy `.env.example` to `.env`, fill the production values, and follow
+[Docker VM Deployment](docs/DOCKER_VM_DEPLOYMENT.md).
+
 ### 4. Run the backend and frontend
 
 ```bash
@@ -97,11 +100,12 @@ cd frontend && npm run build
 
 ## Documentation
 
-- [Setup](C:/Users/Vida/Documents/Kallisto/kallisto/docs/SETUP.md)
-- [Architecture](C:/Users/Vida/Documents/Kallisto/kallisto/docs/ARCHITECTURE.md)
-- [API](C:/Users/Vida/Documents/Kallisto/kallisto/docs/API.md)
-- [Migrations](C:/Users/Vida/Documents/Kallisto/kallisto/docs/MIGRATIONS.md)
-- [Observability](C:/Users/Vida/Documents/Kallisto/kallisto/docs/OBSERVABILITY.md)
-- [System Map](C:/Users/Vida/Documents/Kallisto/kallisto/docs/SYSTEM_MAP.md)
-- [Handover](C:/Users/Vida/Documents/Kallisto/kallisto/docs/HANDOVER.md)
+- [Setup](docs/SETUP.md)
+- [Docker VM Deployment](docs/DOCKER_VM_DEPLOYMENT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [API](docs/API.md)
+- [Migrations](docs/MIGRATIONS.md)
+- [Observability](docs/OBSERVABILITY.md)
+- [System Map](docs/SYSTEM_MAP.md)
+- [Handover](docs/HANDOVER.md)
 - Historical reference: `docs/archive/`

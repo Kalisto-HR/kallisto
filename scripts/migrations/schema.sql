@@ -160,7 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_admin_application_files_created_at ON application
 CREATE TABLE IF NOT EXISTS profile_test_scores (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    test_type TEXT NOT NULL CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'OTHER')),
+    test_type TEXT NOT NULL CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'HSK', 'CSCA', 'OTHER')),
     other_test_name TEXT,
     score NUMERIC(8,2) NOT NULL CHECK (score >= 0),
     out_of NUMERIC(8,2) NOT NULL CHECK (out_of > 0),
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS application_test_scores (
     university_id UUID NOT NULL,
     application_cycle TEXT NOT NULL,
     profile_test_score_id UUID REFERENCES profile_test_scores(id) ON DELETE SET NULL,
-    test_type TEXT NOT NULL CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'OTHER')),
+    test_type TEXT NOT NULL CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'HSK', 'CSCA', 'OTHER')),
     other_test_name TEXT,
     score NUMERIC(8,2) NOT NULL CHECK (score >= 0),
     out_of NUMERIC(8,2) NOT NULL CHECK (out_of > 0),
@@ -203,6 +203,16 @@ CREATE TABLE IF NOT EXISTS application_test_scores (
 CREATE INDEX IF NOT EXISTS idx_admin_application_test_scores_application ON application_test_scores(user_id, university_id, application_cycle);
 CREATE INDEX IF NOT EXISTS idx_admin_application_test_scores_profile_link ON application_test_scores(profile_test_score_id);
 CREATE INDEX IF NOT EXISTS idx_admin_application_test_scores_imported_at ON application_test_scores(imported_at DESC);
+
+ALTER TABLE profile_test_scores
+    DROP CONSTRAINT IF EXISTS profile_test_scores_test_type_check,
+    ADD CONSTRAINT profile_test_scores_test_type_check
+        CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'HSK', 'CSCA', 'OTHER'));
+
+ALTER TABLE application_test_scores
+    DROP CONSTRAINT IF EXISTS application_test_scores_test_type_check,
+    ADD CONSTRAINT application_test_scores_test_type_check
+        CHECK (test_type IN ('IELTS', 'SAT', 'TOEFL', 'ACT', 'HSK', 'CSCA', 'OTHER'));
 
 -- Add foreign key constraint for university_linked after universities table exists
 DO $$

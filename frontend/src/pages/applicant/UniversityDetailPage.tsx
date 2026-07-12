@@ -20,7 +20,15 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { ApplicantApplicationListItem, University } from "../../types/domain";
+import type {
+  ApplicantApplicationListItem,
+  ApplicantTestScore,
+  FitScoreProgram,
+  FitScoreResult,
+  FitScoreStudentProfile,
+  Profile,
+  University,
+} from "../../types/domain";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import {
   addCompareItem,
@@ -30,12 +38,15 @@ import {
   removeCompareItem,
 } from "../../services/applicant/compareService";
 import { addBasketItem, fetchBasketState, removeBasketItem } from "../../services/applicant/basketService";
+import { calculateFitScore } from "../../services/applicant/fitScoreService";
+import { fetchApplicantProfile, fetchApplicantTestScores } from "../../services/applicant/profileService";
 import { fetchUniversityById } from "../../services/applicant/universitiesService";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { KallistoMatchScoreCard } from "../../components/applicant/KallistoMatchScoreCard";
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
 import { routes } from "../../routes/routeConfig";
 import { formatRmb } from "../../utils/currency";
@@ -94,6 +105,17 @@ function toStringArray(value: unknown): string[] {
       }
       return "";
     })
+    .filter((item) => item.length > 0);
+}
+
+function splitDelimitedList(value: unknown): string[] {
+  const raw = toStringValue(value);
+  if (!raw) {
+    return [];
+  }
+  return raw
+    .split(/[;\n]/)
+    .map((item) => item.trim())
     .filter((item) => item.length > 0);
 }
 
@@ -240,6 +262,16 @@ function toProgramList(university: University): UniversityProgram[] {
     return normalizedProfileItems;
   }
 
+  const profileProgramGroups = splitDelimitedList(profile?.programGroups);
+  if (profileProgramGroups.length > 0) {
+    return profileProgramGroups.map((name, index) => ({
+      id: `program-group-${index + 1}`,
+      name,
+      level: null,
+      duration: null,
+    }));
+  }
+
   const metadata = toRecord(university.metadata);
   const metadataItems = Array.isArray(metadata?.programs) ? metadata.programs : [];
   return metadataItems
@@ -333,6 +365,107 @@ function buildSchemaRequirements(university: University) {
   };
 }
 
+function toNumberValue(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return undefined;
+}
+
+function pickString(data: Record<string, unknown> | null | undefined, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = toStringValue(data?.[key]);
+    if (value) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function pickNumber(data: Record<string, unknown> | null | undefined, keys: string[]): number | undefined {
+  for (const key of keys) {
+    const value = toNumberValue(data?.[key]);
+    if (value !== undefined) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function pickStringArray(data: Record<string, unknown> | null | undefined, keys: string[]): string[] {
+  for (const key of keys) {
+    const value = toStringArray(data?.[key]);
+    if (value.length > 0) {
+      return value;
+    }
+  }
+  return [];
+}
+
+function highestTestScore(testScores: ApplicantTestScore[], type: string): number | undefined {
+  const scores = testScores
+    .filter((score) => {
+      if (score.testType === type) {
+        return true;
+      }
+      return type === "HSK" && score.testType === "OTHER" && score.otherTestName?.toLowerCase().includes("hsk");
+    })
+    .map((score) => score.score)
+    .filter((score) => Number.isFinite(score));
+  return scores.length > 0 ? Math.max(...scores) : undefined;
+}
+
+function buildFitScoreStudentProfile(profile: Profile | null, testScores: ApplicantTestScore[]): FitScoreStudentProfile {
+  const data = profile?.data ?? {};
+  return {
+    nationality: pickString(data, ["nationality", "country", "citizenship"]),
+    educationLevel: pickString(data, ["educationLevel", "education_level", "currentEducationLevel"]),
+    gpa: pickNumber(data, ["gpa", "GPA"]),
+    gpaScale: pickNumber(data, ["gpaScale", "gpa_scale"]),
+    ielts: highestTestScore(testScores, "IELTS") ?? pickNumber(data, ["ielts", "ieltsScore"]),
+    toefl: highestTestScore(testScores, "TOEFL") ?? pickNumber(data, ["toefl", "toeflScore"]),
+    hsk: highestTestScore(testScores, "HSK") ?? pickNumber(data, ["hsk", "hskLevel"]),
+    sat: highestTestScore(testScores, "SAT") ?? pickNumber(data, ["sat", "satScore"]),
+    intendedMajor: pickString(data, ["intendedMajor", "intended_major", "major", "fieldOfStudy"]),
+    budgetPerYear: pickNumber(data, ["budgetPerYear", "budget_per_year", "annualBudget"]),
+    preferredLanguage: pickString(data, ["preferredLanguage", "preferred_language"]),
+    preferredCity: pickString(data, ["preferredCity", "preferred_city"]),
+    documentsReady: pickStringArray(data, ["documentsReady", "documents_ready", "readyDocuments"]),
+    achievements: pickStringArray(data, ["achievements", "awards"]),
+  };
+}
+
+function buildFitScoreProgram(
+  university: University,
+  primaryProgram: UniversityProgram | null,
+  requiredDocuments: string[],
+): FitScoreProgram {
+  const profile = toRecord(university.universityProfile);
+  const testRequirements = toRecord(profile?.testRequirements);
+  const admissions = toRecord(profile?.admissions);
+  return {
+    universityId: university.id,
+    universityName: university.name,
+    programId: primaryProgram?.id ?? university.id,
+    majorName: primaryProgram?.name ?? pickString(profile, ["programGroups"]) ?? university.name,
+    degreeLevel: primaryProgram?.level ?? pickString(profile, ["degreeLevel", "degree_level"]),
+    language: pickString(profile, ["language", "programLanguage", "teachingLanguage"]) ?? "English",
+    minGpa: pickNumber(admissions, ["minGpa", "min_gpa"]) ?? pickNumber(profile, ["minGpa", "min_gpa"]),
+    minIelts: pickNumber(testRequirements, ["ieltsMin", "ielts_min"]) ?? university.ieltsMin ?? undefined,
+    minToefl: pickNumber(testRequirements, ["toeflMin", "toefl_min"]) ?? university.toeflMin ?? undefined,
+    minHsk: pickNumber(testRequirements, ["hskLevel", "hsk_level", "minHsk", "min_hsk"]),
+    tuition: university.tuitionFee ?? pickNumber(profile, ["tuition", "tuitionFee"]) ?? undefined,
+    scholarshipAvailable: university.scholarshipAvailable ?? undefined,
+    deadline: university.applicationDeadline ?? "",
+    requiredDocuments,
+    competitivenessLevel: pickString(profile, ["competitivenessLevel", "competitiveness_level"]),
+  };
+}
+
 export function UniversityDetailPage() {
   const { id = "" } = useParams();
   const [university, setUniversity] = useState<University | null>(null);
@@ -342,6 +475,9 @@ export function UniversityDetailPage() {
   const [compareFeedback, setCompareFeedback] = useState<string | null>(null);
   const [isInBasket, setIsInBasket] = useState(false);
   const [basketFeedback, setBasketFeedback] = useState<string | null>(null);
+  const [fitScore, setFitScore] = useState<FitScoreResult | null>(null);
+  const [fitScoreLoading, setFitScoreLoading] = useState(false);
+  const [fitScoreError, setFitScoreError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -349,12 +485,17 @@ export function UniversityDetailPage() {
     const load = async () => {
       setLoading(true);
       setError(null);
+      setFitScore(null);
+      setFitScoreError(null);
+      setFitScoreLoading(true);
       try {
-        const [universityData, compareList, basketState, applications] = await Promise.all([
+        const [universityData, compareList, basketState, applications, profile, testScores] = await Promise.all([
           fetchUniversityById(id),
           fetchCompareList().catch(() => []),
           fetchBasketState().catch(() => null),
           fetchApplicantApplications().catch(() => []),
+          fetchApplicantProfile().catch(() => null),
+          fetchApplicantTestScores().catch(() => []),
         ]);
         setUniversity(universityData);
         setCompareCount(compareList.length);
@@ -363,9 +504,21 @@ export function UniversityDetailPage() {
         setBasketFeedback(null);
         setIsInBasket(basketState?.items.some((item) => item.id === id) ?? false);
         setExistingApplications(applications.filter((item) => item.universityId === id));
+        const programList = toProgramList(universityData);
+        const requirements = buildSchemaRequirements(universityData);
+        try {
+          const result = await calculateFitScore(
+            buildFitScoreStudentProfile(profile, testScores),
+            buildFitScoreProgram(universityData, programList[0] ?? null, requirements.requiredDocuments),
+          );
+          setFitScore(result);
+        } catch (scoreError) {
+          setFitScoreError(scoreError instanceof Error ? scoreError.message : "Fit score is unavailable right now.");
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load university");
       } finally {
+        setFitScoreLoading(false);
         setLoading(false);
       }
     };
@@ -470,9 +623,11 @@ export function UniversityDetailPage() {
           <div className="flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
               <h1 className="text-2xl font-semibold sm:text-3xl">{university.name}</h1>
-              <Badge variant="secondary" className="brand-soft-badge">
-                {university.ranking ? `${Math.max(60, 300 - university.ranking)}% Match` : "N/A Match"}
-              </Badge>
+              {fitScore ? (
+                <Badge variant="secondary" className="brand-soft-badge">
+                  {fitScore.finalScore}/100 {fitScore.label}
+                </Badge>
+              ) : null}
             </div>
             <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:gap-4">
               <span className="flex items-center gap-1.5">
@@ -534,7 +689,9 @@ export function UniversityDetailPage() {
         {compareFeedback ? (
           <Alert className="border-primary/20 bg-card/80">
             <AlertCircle className="h-4 w-4 text-primary" />
-            <AlertTitle>Compare table full</AlertTitle>
+            <AlertTitle>
+              {compareFeedback === COMPARE_LIMIT_MESSAGE ? "Compare table full" : "Compare update failed"}
+            </AlertTitle>
             <AlertDescription>{compareFeedback}</AlertDescription>
           </Alert>
         ) : null}
@@ -577,6 +734,13 @@ export function UniversityDetailPage() {
           </CardContent>
         </Card>
       </section>
+
+      <KallistoMatchScoreCard
+        score={fitScore}
+        loading={fitScoreLoading}
+        error={fitScoreError}
+        improveHref={`${routes.applicant.settings}?tab=match-profile`}
+      />
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="flex w-full justify-start overflow-x-auto">

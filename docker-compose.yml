@@ -1,66 +1,139 @@
 services:
-  db:
-    image: postgres:16
-    container_name: kallisto-db
-    restart: always
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: <put-a-strong-random-password-here>
-      POSTGRES_DB: admin_db
+      POSTGRES_DB: ${POSTGRES_DB:-admin_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # no ports: mapping — only reachable from other containers on kallisto_default network
+    ports:
+      - "${POSTGRES_BIND_ADDRESS:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - kallisto
 
-  migrate:
-    image: golang:1.25-alpine
-    container_name: kallisto-migrate
-    working_dir: /app
-    volumes:
-      - .:/app
-    depends_on:
-      db:
-        condition: service_healthy
+  migrator:
+    image: postgres:16-alpine
+    restart: "no"
+    env_file:
+      - .env
     environment:
-      PGPASSWORD: <put-a-strong-random-password-here>
-    entrypoint: ["sh", "-c"]
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-admin_db}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./scripts/migrations:/migrations:ro
     command:
-      - >
-        apk add --no-cache postgresql-client bash &&
-        chmod +x scripts/db/*.sh &&
-        bash scripts/db/bootstrap.sh --create-databases --seed-profile dev
-        --database admin_db --db-user postgres --db-host db --db-port 5432
+      - sh
+      - -c
+      - psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -f /migrations/schema.sql
+    networks:
+      - kallisto
+
+  university-seeder:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-admin_db}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    command:
+      - /app/import_universities
+      - --data
+      - /app/universities.v2.json
+      - --database-url
+      - postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-admin_db}?sslmode=disable
+    networks:
+      - kallisto
+
+  admin-seeder:
+    image: postgres:16-alpine
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-admin_db}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+      university-seeder:
+        condition: service_completed_successfully
+    volumes:
+      - ./scripts/seeds:/seeds:ro
+    command:
+      - sh
+      - -c
+      - psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -f /seeds/admin_seed.sql
+    networks:
+      - kallisto
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: kallisto-backend
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     environment:
-      DATABASE_URL: "postgres://postgres:<put-a-strong-random-password-here>@db:5432/admin_db?sslmode=disable"
-    ports:
-      - "8081:8081"
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-admin_db}?sslmode=disable
     depends_on:
-      migrate:
+      postgres:
+        condition: service_healthy
+      migrator:
         condition: service_completed_successfully
+      admin-seeder:
+        condition: service_completed_successfully
+    ports:
+      - "${BACKEND_BIND_ADDRESS:-127.0.0.1}:${BACKEND_PORT:-8081}:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/healthz >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - kallisto
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: kallisto-frontend
-    restart: always
-    ports:
-      - "5173:80"
+      args:
+        VITE_SESSION_IDLE_TIMEOUT_MINUTES: ${VITE_SESSION_IDLE_TIMEOUT_MINUTES:-60}
+    restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - kallisto
 
 volumes:
   postgres_data:
+
+networks:
+  kallisto:
+    driver: bridge

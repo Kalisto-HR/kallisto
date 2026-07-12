@@ -213,6 +213,13 @@ type ApplicationStructureTemplate = {
   sections: TemplateSectionDescriptor[];
 };
 
+const fieldTypeAliases: Record<string, FieldType> = {
+  text: 'short-text',
+  textarea: 'long-text',
+  select: 'dropdown',
+  upload: 'file-upload',
+};
+
 function createBuilderId(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -222,6 +229,14 @@ function toRecord(value: unknown): Record<string, unknown> | null {
     return value as Record<string, unknown>;
   }
   return null;
+}
+
+function normalizeFieldType(type: unknown): FieldType {
+  if (typeof type !== 'string') return 'short-text';
+  const normalized = type.trim();
+  if (!normalized) return 'short-text';
+  if (normalized in fieldTypeInfo) return normalized as FieldType;
+  return fieldTypeAliases[normalized] ?? 'short-text';
 }
 
 function normalizeStructureSections(rawSchema: unknown): Section[] {
@@ -250,7 +265,7 @@ function normalizeStructureSections(rawSchema: unknown): Section[] {
             const visibility = toRecord(field.visibility);
             return {
               id: typeof field.id === 'string' && field.id.trim() ? field.id : `field-${sectionIndex + 1}-${fieldIndex + 1}`,
-              type: (typeof field.type === 'string' && field.type.trim() ? field.type : 'short-text') as FieldType,
+              type: normalizeFieldType(field.type),
               label: typeof field.label === 'string' && field.label.trim() ? field.label : 'Field',
               helperText: typeof field.helperText === 'string' && field.helperText.trim() ? field.helperText : undefined,
               placeholder: typeof field.placeholder === 'string' && field.placeholder.trim() ? field.placeholder : undefined,
@@ -1850,7 +1865,7 @@ export function ApplicationStructure({ onNavigate }: ApplicationStructureProps) 
 
           <div className="flex flex-wrap items-center gap-3">
             {onNavigate ? (
-              <Button variant="outline" size="sm" onClick={() => onNavigate('university-dashboard')}>
+              <Button variant="outline" size="sm" onClick={() => onNavigate('partner-dashboard')}>
                 Back
               </Button>
             ) : null}

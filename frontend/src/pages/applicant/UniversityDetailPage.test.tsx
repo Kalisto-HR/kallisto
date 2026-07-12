@@ -5,6 +5,8 @@ import { UniversityDetailPage } from "./UniversityDetailPage";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import { addBasketItem, fetchBasketState, removeBasketItem } from "../../services/applicant/basketService";
 import { fetchCompareList } from "../../services/applicant/compareService";
+import { calculateFitScore } from "../../services/applicant/fitScoreService";
+import { fetchApplicantProfile, fetchApplicantTestScores } from "../../services/applicant/profileService";
 import { fetchUniversityById } from "../../services/applicant/universitiesService";
 
 vi.mock("../../services/applicant/applicationsService", () => ({
@@ -23,6 +25,15 @@ vi.mock("../../services/applicant/compareService", () => ({
   removeCompareItem: vi.fn(),
   MAX_COMPARE_ITEMS: 4,
   COMPARE_LIMIT_MESSAGE: "You already have 4 universities in Compare. Remove one to add this university.",
+}));
+
+vi.mock("../../services/applicant/fitScoreService", () => ({
+  calculateFitScore: vi.fn(),
+}));
+
+vi.mock("../../services/applicant/profileService", () => ({
+  fetchApplicantProfile: vi.fn(),
+  fetchApplicantTestScores: vi.fn(),
 }));
 
 vi.mock("../../services/applicant/universitiesService", () => ({
@@ -87,6 +98,22 @@ describe("UniversityDetailPage", () => {
       maxPlanCapacity: 4,
     });
     vi.mocked(fetchApplicantApplications).mockResolvedValue([]);
+    vi.mocked(fetchApplicantProfile).mockRejectedValue(new Error("profile unavailable"));
+    vi.mocked(fetchApplicantTestScores).mockResolvedValue([]);
+    vi.mocked(calculateFitScore).mockResolvedValue({
+      finalScore: 78,
+      label: "Strong Fit",
+      breakdown: {
+        academicScore: 80,
+        languageScore: 90,
+        majorScore: 75,
+        budgetScore: 70,
+        documentScore: 60,
+        deadlineScore: 95,
+      },
+      reasons: ["Intended major is related to the program major."],
+      recommendations: ["Prepare missing documents."],
+    });
     vi.mocked(addBasketItem).mockResolvedValue(undefined);
     vi.mocked(removeBasketItem).mockResolvedValue(undefined);
   });
@@ -105,13 +132,11 @@ describe("UniversityDetailPage", () => {
     );
 
     expect(await screen.findByText(/bukhara state university/i)).toBeInTheDocument();
-    expect(screen.getByText(/https:\/\/bsu\.uz/i)).toBeInTheDocument();
+    expect(screen.getByText("bsu.uz")).toBeInTheDocument();
+    expect(screen.getByText(/78\/100 strong fit/i)).toBeInTheDocument();
     expect(screen.getByText(/admissions@bsu\.uz/i)).toBeInTheDocument();
-    expect(screen.getByText(/1930/)).toBeInTheDocument();
-    expect(screen.getByText(/18000/)).toBeInTheDocument();
-    expect(screen.getByText(/1200/)).toBeInTheDocument();
-    expect(screen.getByText(/ministry of higher education/i)).toBeInTheDocument();
-    expect(screen.getByText(/ISO 9001/i)).toBeInTheDocument();
+    expect(screen.getByText(/kallisto match score/i)).toBeInTheDocument();
+    expect(screen.getByText(/academic fit/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /add to basket/i }));
 

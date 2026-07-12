@@ -463,11 +463,22 @@ export function UniversitySearchPage() {
                             Fee {formatRmb(item.applicationFee ?? item.tuitionFee, { fallback: "N/A" })}
                           </span>
                         </div>
+                        {item.description ? (
+                          <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+                            {item.description}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-3">
+                      {item.programGroups ? (
+                        <p className="text-sm text-slate-700">
+                          <span className="font-medium text-slate-900">Programs: </span>
+                          {item.programGroups}
+                        </p>
+                      ) : null}
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap gap-2">
                           <Badge variant="outline" className="text-xs">
@@ -501,7 +512,9 @@ export function UniversitySearchPage() {
                       {compareFeedback && compareFeedbackId === item.id ? (
                         <Alert className="border-primary/20 bg-card/80">
                           <AlertCircle className="h-4 w-4 text-primary" />
-                          <AlertTitle>Compare table full</AlertTitle>
+                          <AlertTitle>
+                            {compareFeedback === COMPARE_LIMIT_MESSAGE ? "Compare table full" : "Compare update failed"}
+                          </AlertTitle>
                           <AlertDescription>{compareFeedback}</AlertDescription>
                         </Alert>
                       ) : null}

@@ -1,20 +1,32 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
-WORKDIR /app
+WORKDIR /src
 
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+COPY infra ./infra
+COPY services/backend ./services/backend
+COPY scripts/seeds/cmd/import_universities ./scripts/seeds/cmd/import_universities
 
-RUN go build -o /app/bin/backend ./services/backend/cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/backend ./services/backend/cmd
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/import_universities ./scripts/seeds/cmd/import_universities
 
-FROM alpine:latest
+FROM alpine:3.20
+
+RUN addgroup -S kallisto && adduser -S kallisto -G kallisto
 
 WORKDIR /app
 
-COPY --from=builder /app/bin/backend /app/backend
+COPY --from=builder /out/backend /app/backend
+COPY --from=builder /out/import_universities /app/import_universities
+COPY scripts/seeds/data/universities.v2.json /app/universities.v2.json
+
+USER kallisto
 
 EXPOSE 8081
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:8081/healthz >/dev/null || exit 1
 
 CMD ["/app/backend"]
