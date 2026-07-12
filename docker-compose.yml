@@ -5,12 +5,11 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: <put-a-strong-random-password-here>
       POSTGRES_DB: admin_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # no ports: mapping — only reachable from other containers on kallisto_default network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -27,7 +26,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGPASSWORD: postgres
+      PGPASSWORD: <put-a-strong-random-password-here>
     entrypoint: ["sh", "-c"]
     command:
       - >
@@ -45,7 +44,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: "postgres://postgres:postgres@db:5432/admin_db?sslmode=disable"
+      DATABASE_URL: "postgres://postgres:<put-a-strong-random-password-here>@db:5432/admin_db?sslmode=disable"
     ports:
       - "8081:8081"
     depends_on:
