@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   type LucideIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../ui/utils';
 import type { PortalContext, PortalPageView } from '../../types/portal';
 
@@ -27,7 +28,7 @@ interface PortalSidebarProps {
 interface NavItem {
   id: PortalPageView;
   icon: LucideIcon;
-  label: string;
+  labelKey: string;
 }
 
 interface NavSection {
@@ -44,34 +45,36 @@ export function PortalSidebar({
   onNavigate,
   onCollapsedChange,
 }: PortalSidebarProps) {
+  const { t } = useTranslation("common");
   const isGlobalMode = currentContext.type === 'global';
   const isStaff = userRole === 'staff';
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
+  const toggleLabel = collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar");
 
   const navSections: NavSection[] = [
     {
-      title: 'University',
+      title: t("nav.university"),
       visible: (role, context) => {
         return role === 'partner' && context.type === 'university';
       },
       items: [
-        { id: 'partner-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { id: 'partner-university-profile', icon: Building2, label: 'University Profile' },
-        { id: 'partner-application-structure', icon: FileText, label: 'Application Structure' },
-        { id: 'partner-applications', icon: Users, label: 'Submissions' },
+        { id: 'partner-dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+        { id: 'partner-university-profile', icon: Building2, labelKey: 'nav.universityProfile' },
+        { id: 'partner-application-structure', icon: FileText, labelKey: 'nav.applicationStructure' },
+        { id: 'partner-applications', icon: Users, labelKey: 'nav.submissions' },
       ],
     },
     {
-      title: 'Staff Workspace',
+      title: t("nav.staffWorkspace"),
       visible: (role, context) => {
         return role === 'staff' && context.type === 'global';
       },
       items: [
-        { id: 'staff-dashboard', icon: Globe, label: 'Dashboard' },
-        { id: 'staff-universities', icon: Building2, label: 'Universities' },
-        { id: 'staff-service-logs', icon: Terminal, label: 'Service Logs' },
-        { id: 'staff-audit-logs', icon: ScrollText, label: 'Audit Logs' },
-        { id: 'staff-settings', icon: Settings, label: 'Settings' },
+        { id: 'staff-dashboard', icon: Globe, labelKey: 'nav.dashboard' },
+        { id: 'staff-universities', icon: Building2, labelKey: 'nav.universities' },
+        { id: 'staff-service-logs', icon: Terminal, labelKey: 'nav.serviceLogs' },
+        { id: 'staff-audit-logs', icon: ScrollText, labelKey: 'nav.auditLogs' },
+        { id: 'staff-settings', icon: Settings, labelKey: 'nav.settings' },
       ],
     },
   ];
@@ -94,13 +97,13 @@ export function PortalSidebar({
           </div>
           {collapsed ? null : (
             <div>
-              <h1 className="font-semibold text-sm">Portal Console</h1>
+              <h1 className="font-semibold text-sm">{t("nav.portalConsole")}</h1>
             </div>
           )}
           <button
             type="button"
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={toggleLabel}
+            aria-label={toggleLabel}
             onClick={() => onCollapsedChange?.(!collapsed)}
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground',
@@ -112,7 +115,7 @@ export function PortalSidebar({
         </div>
         {collapsed ? null : (
           <p className="text-xs text-muted-foreground mt-1">
-            {isStaff ? 'Staff access' : 'Partner access'}
+            {isStaff ? t("nav.staffAccess") : t("nav.partnerAccess")}
           </p>
         )}
       </div>
@@ -129,13 +132,14 @@ export function PortalSidebar({
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
+                const label = t(item.labelKey);
 
                 return (
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
-                    title={collapsed ? item.label : undefined}
-                    aria-label={item.label}
+                    title={collapsed ? label : undefined}
+                    aria-label={label}
                     className={cn(
                       'flex items-center rounded-xl py-2.5 transition-colors',
                       collapsed ? 'h-11 w-11 justify-center px-0' : 'w-full gap-3 px-3',
@@ -145,7 +149,7 @@ export function PortalSidebar({
                     )}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
-                    {collapsed ? null : <span className="text-sm truncate">{item.label}</span>}
+                    {collapsed ? null : <span className="text-sm truncate">{label}</span>}
                   </button>
                 );
               })}
@@ -160,14 +164,14 @@ export function PortalSidebar({
           {isGlobalMode ? (
             <>
               <Globe className="w-3.5 h-3.5" />
-              {collapsed ? null : <span className="truncate">Staff workspace</span>}
+              {collapsed ? null : <span className="truncate">{t("nav.staffWorkspaceMode")}</span>}
             </>
           ) : (
             <>
               <Building2 className="w-3.5 h-3.5" />
               {collapsed ? null : (
                 <span className="truncate">
-                  {currentContext.type === 'university' ? currentContext.universityName : 'University Mode'}
+                  {currentContext.type === 'university' ? currentContext.universityName : t("nav.universityMode")}
                 </span>
               )}
             </>

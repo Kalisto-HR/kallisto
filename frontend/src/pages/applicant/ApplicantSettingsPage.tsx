@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Bell,
   Camera,
@@ -45,6 +46,7 @@ import {
 import { PASSWORD_CHANGED_REASON } from "../../services/sessionEvents";
 import { routes } from "../../routes/routeConfig";
 import type { Profile, ApplicantTestScore, ApplicantTestScoreType } from "../../types/domain";
+import { isUzbekistanRegionCode, sortedRegionOptions } from "../../i18n/regions";
 
 function getInitials(firstName: string, lastName: string): string {
   const first = firstName[0] ?? "";
@@ -199,12 +201,14 @@ function cleanMatchProfilePayload(value: ApplicantMatchProfileForm): Record<stri
 }
 
 export function ApplicantSettingsPage() {
+  const { t } = useTranslation(["common", "students"]);
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [bio, setBio] = useState("");
   const [gender, setGender] = useState<ApplicantGender | "">("");
+  const [regionCode, setRegionCode] = useState("");
   const [profileVisibility, setProfileVisibility] = useState("partners");
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -249,6 +253,7 @@ export function ApplicantSettingsPage() {
 
         setBio(typeof profileData.bio === "string" ? profileData.bio : "");
         setGender(normalizeApplicantGender(profileData.gender));
+        setRegionCode(isUzbekistanRegionCode(profileData.regionCode) ? profileData.regionCode : "");
         setMatchProfile(buildMatchProfileForm(profileData));
         setEmailNotifications(typeof notifications.email === "boolean" ? notifications.email : true);
         setPushNotifications(typeof notifications.push === "boolean" ? notifications.push : true);
@@ -303,7 +308,11 @@ export function ApplicantSettingsPage() {
       await updateApplicantProfile({
         firstName,
         lastName,
-        data: { bio, gender },
+        data: {
+          bio,
+          gender,
+          ...(regionCode ? { regionCode } : {}),
+        },
       });
 
       setProfile((current) => {
@@ -318,6 +327,7 @@ export function ApplicantSettingsPage() {
             ...(current.data ?? {}),
             bio,
             gender,
+            ...(regionCode ? { regionCode } : {}),
           },
         };
       });
@@ -652,6 +662,7 @@ export function ApplicantSettingsPage() {
   if (!profile) {
     return <EmptyState title="Profile unavailable" description="No settings data found." />;
   }
+  const regionOptions = sortedRegionOptions(t);
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -778,6 +789,21 @@ export function ApplicantSettingsPage() {
                   <p className="text-xs text-muted-foreground">
                     Required for application analytics and partner reporting.
                   </p>
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="region-code">{t("students:fields.regionOfResidence")}</Label>
+                  <Select value={regionCode} onValueChange={setRegionCode}>
+                    <SelectTrigger id="region-code" aria-label={t("students:fields.regionOfResidence")}>
+                      <SelectValue placeholder={t("students:fields.selectRegion")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regionOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

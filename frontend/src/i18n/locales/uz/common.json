@@ -1,0 +1,79 @@
+{
+  "language": {
+    "label": "Interfeys tili",
+    "en": "EN — English",
+    "ru": "RU — Русский",
+    "uz": "UZ — O‘zbekcha"
+  },
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "findUniversities": "Universitetlarni topish",
+    "compare": "Taqqoslash",
+    "billing": "To‘lov",
+    "settings": "Sozlamalar",
+    "help": "Yordam",
+    "university": "Universitet",
+    "universityProfile": "Universitet profili",
+    "applicationStructure": "Ariza tuzilmasi",
+    "submissions": "Arizalar",
+    "staffWorkspace": "Staff ish maydoni",
+    "universities": "Universitetlar",
+    "serviceLogs": "Servis loglari",
+    "auditLogs": "Audit loglari",
+    "portalConsole": "Portal",
+    "partnerAccess": "Hamkor kirishi",
+    "staffAccess": "Staff kirishi",
+    "staffWorkspaceMode": "Staff ish maydoni",
+    "universityMode": "Universitet rejimi",
+    "expandSidebar": "Yon menyuni ochish",
+    "collapseSidebar": "Yon menyuni yopish",
+    "applicantNavigation": "Abituriyent navigatsiyasi",
+    "applicantNavigationDescription": "Abituriyent kabineti navigatsiya havolalari.",
+    "portalNavigation": "Navigatsiya menyusi",
+    "portalNavigationDescription": "Hamkor va staff portali funksiyalariga kirish"
+  },
+  "actions": {
+    "view": "Ko‘rish",
+    "openSubmissions": "Arizalarni ochish",
+    "copyEmails": "Emaillarni nusxalash",
+    "copying": "Nusxalanmoqda",
+    "csv": "CSV",
+    "exporting": "Eksport qilinmoqda",
+    "signOut": "Chiqish",
+    "logOut": "Chiqish",
+    "save": "Saqlash",
+    "uploading": "Yuklanmoqda...",
+    "uploadPhoto": "Rasm yuklash"
+  },
+  "labels": {
+    "applicantAccount": "Abituriyent akkaunti",
+    "applications_one": "{{count}} ariza",
+    "applications_other": "{{count}} ariza",
+    "basketItems_one": "{{count}} savat elementi",
+    "basketItems_other": "{{count}} savat elementi",
+    "staff": "Staff",
+    "partner": "Hamkor",
+    "unknown": "Noma’lum",
+    "regionOfResidence": "Yashash hududi",
+    "selectRegion": "Hududni tanlang"
+  },
+  "regions": {
+    "tashkent_city": "Toshkent shahri",
+    "karakalpakstan": "Qoraqalpog‘iston Respublikasi",
+    "andijan": "Andijon viloyati",
+    "bukhara": "Buxoro viloyati",
+    "fergana": "Farg‘ona viloyati",
+    "jizzakh": "Jizzax viloyati",
+    "khorezm": "Xorazm viloyati",
+    "namangan": "Namangan viloyati",
+    "navoiy": "Navoiy viloyati",
+    "qashqadaryo": "Qashqadaryo viloyati",
+    "samarqand": "Samarqand viloyati",
+    "sirdaryo": "Sirdaryo viloyati",
+    "surxondaryo": "Surxondaryo viloyati",
+    "tashkent_region": "Toshkent viloyati"
+  },
+  "validation": {
+    "invalidRegion": "O‘zbekiston hududi noto‘g‘ri ko‘rsatilgan."
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "partner": {
+    "title": "Hamkor paneli",
+    "subtitle": "Yuborilgan arizalar, abituriyentlar tarkibi va dastlabki qiziqishni kuzating.",
+    "stats": {
+      "newSubmissions": "Yangi arizalar",
+      "last7Days": "Oxirgi 7 kun",
+      "totalSubmissions": "Jami arizalar",
+      "allSubmitted": "Barcha yuborilgan arizalar",
+      "suspects": "Potensiallar",
+      "basketOnly": "Savat orqali qiziqish",
+      "prospects": "Jarayondagilar",
+      "draftApplications": "Qoralama arizalar",
+      "averageSat": "O‘rtacha SAT",
+      "averageIelts": "O‘rtacha IELTS",
+      "reportedScore": "Abituriyent ko‘rsatgan ball"
+    },
+    "contacts": {
+      "none": "{{stage}} emaillari hozircha mavjud emas.",
+      "copied_one": "{{count}} ta {{stage}} emaili nusxalandi.",
+      "copied_other": "{{count}} ta {{stage}} emaili nusxalandi.",
+      "downloaded_one": "{{count}} ta {{stage}} kontakti yuklab olindi.",
+      "downloaded_other": "{{count}} ta {{stage}} kontakti yuklab olindi.",
+      "failed": "{{stage}} kontaktlarini yuklab bo‘lmadi"
+    },
+    "studentOrigin": {
+      "title": "Talabalarning hududlar bo‘yicha statistikasi",
+      "description": "Potensial nomzodlar, abituriyentlar va ariza topshirgan talabalar orasida O‘zbekiston hududlari.",
+      "unknownRegion": "Hudud ko‘rsatilmagan",
+      "student_one": "{{count}} talaba",
+      "student_other": "{{count}} talaba",
+      "empty": "Hududlar bo‘yicha ma’lumot mavjud emas",
+      "loading": "Hududlar statistikasi yuklanmoqda...",
+      "other": "Boshqa hududlar"
+    },
+    "gender": {
+      "title": "Jins bo‘yicha taqsimot",
+      "description": "Ushbu universitetga ariza topshirgan abituriyent profillari asosida.",
+      "loading": "Taqsimot yuklanmoqda...",
+      "empty": "Hozircha yuborilgan arizalar yo‘q.",
+      "male": "Erkak",
+      "female": "Ayol",
+      "nonBinary": "Nobinar",
+      "preferNotToSay": "Ko‘rsatilmagan",
+      "applicant_one": "{{count}} abituriyent",
+      "applicant_other": "{{count}} abituriyent"
+    },
+    "recent": {
+      "title": "So‘nggi arizalar",
+      "description": "So‘nggi yuborilgan arizalarni faqat ko‘rish rejimida kuzatish.",
+      "loading": "Arizalar faolligi yuklanmoqda...",
+      "empty": "Hozircha arizalar mavjud emas.",
+      "applicant": "Abituriyent",
+      "program": "Dastur",
+      "citizenship": "Fuqarolik",
+      "submitted": "Yuborilgan",
+      "action": "Amal"
+    },
+    "alerts": {
+      "title": "Ariza bildirishnomalari",
+      "description": "Arizalar faolligi bo‘yicha so‘nggi avtomatik bildirishnomalar.",
+      "loading": "Bildirishnomalar yuklanmoqda...",
+      "empty": "Hozircha bildirishnomalar yo‘q.",
+      "alert": "Bildirishnoma",
+      "new": "Yangi"
+    }
+  }
+}

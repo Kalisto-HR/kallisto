@@ -60,7 +60,7 @@ function normalizeDashboard(value: unknown): PartnerDashboardPayload {
     studentOriginStats: originRaw.map((value) => {
       const item = (value ?? {}) as Record<string, unknown>;
       return {
-        country: toString(item.country) || "Unknown",
+        regionCode: toNullableString(item.region_code ?? item.regionCode) ?? toNullableString(item.country),
         count: toNumber(item.count),
         percentage: toNumber(item.percentage),
       };

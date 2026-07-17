@@ -10,6 +10,7 @@ import (
 
 	authsession "kallisto/infra/auth/session"
 	"kallisto/infra/middlewares"
+	"kallisto/infra/regions"
 	"kallisto/infra/utils"
 	"kallisto/infra/validation"
 	"kallisto/services/backend/internal/applicant/models"
@@ -99,13 +100,33 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 				Field:   "data",
 				Message: "must be a valid JSON object",
 			})
-		} else if genderValue, exists := data["gender"]; exists {
-			gender, ok := genderValue.(string)
-			if !ok || !isSupportedStudentGender(gender) {
-				validationErrors = append(validationErrors, &validation.ValidationError{
-					Field:   "data.gender",
-					Message: "must be one of: male, female, non_binary, prefer_not_to_say",
-				})
+		} else {
+			if genderValue, exists := data["gender"]; exists {
+				gender, ok := genderValue.(string)
+				if !ok || !isSupportedStudentGender(gender) {
+					validationErrors = append(validationErrors, &validation.ValidationError{
+						Field:   "data.gender",
+						Message: "must be one of: male, female, non_binary, prefer_not_to_say",
+					})
+				}
+			}
+			if regionValue, exists := data["regionCode"]; exists {
+				region, ok := regionValue.(string)
+				if !ok || !regions.IsSupportedUzbekistanRegionCode(region) {
+					validationErrors = append(validationErrors, &validation.ValidationError{
+						Field:   "data.regionCode",
+						Message: "INVALID_REGION",
+					})
+				}
+			}
+			if regionValue, exists := data["region_code"]; exists {
+				region, ok := regionValue.(string)
+				if !ok || !regions.IsSupportedUzbekistanRegionCode(region) {
+					validationErrors = append(validationErrors, &validation.ValidationError{
+						Field:   "data.region_code",
+						Message: "INVALID_REGION",
+					})
+				}
 			}
 		}
 	}

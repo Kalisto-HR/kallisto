@@ -118,7 +118,7 @@ Examples:
 
 Partner dashboard responses include submitted-application summary metrics plus early-stage analytics:
 
-- `student_origin_stats`: country counts and percentage breakdowns across suspects, prospects, and submitted students
+- `student_origin_stats`: Uzbekistan region-code counts and percentage breakdowns across suspects, prospects, and submitted students. Rows use `region_code`; missing or unmapped legacy values are returned as `null` for the UI to display as an unknown region.
 - `suspects_count`: applicant accounts with the linked university in their basket and no application row for that university
 - `prospects_count`: applicant accounts with a draft application and no submitted application for that university
 - Gender summary fields use the four applicant buckets `male_count`, `female_count`, `non_binary_count`, and `prefer_not_to_say_count`.

@@ -1,0 +1,79 @@
+{
+  "language": {
+    "label": "Interface language",
+    "en": "EN — English",
+    "ru": "RU — Русский",
+    "uz": "UZ — O‘zbekcha"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "findUniversities": "Find Universities",
+    "compare": "Compare",
+    "billing": "Billing",
+    "settings": "Settings",
+    "help": "Help",
+    "university": "University",
+    "universityProfile": "University Profile",
+    "applicationStructure": "Application Structure",
+    "submissions": "Submissions",
+    "staffWorkspace": "Staff Workspace",
+    "universities": "Universities",
+    "serviceLogs": "Service Logs",
+    "auditLogs": "Audit Logs",
+    "portalConsole": "Portal Console",
+    "partnerAccess": "Partner access",
+    "staffAccess": "Staff access",
+    "staffWorkspaceMode": "Staff workspace",
+    "universityMode": "University Mode",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "applicantNavigation": "Applicant Navigation",
+    "applicantNavigationDescription": "Access applicant dashboard navigation links.",
+    "portalNavigation": "Navigation Menu",
+    "portalNavigationDescription": "Access partner and staff console features"
+  },
+  "actions": {
+    "view": "View",
+    "openSubmissions": "Open submissions",
+    "copyEmails": "Copy emails",
+    "copying": "Copying",
+    "csv": "CSV",
+    "exporting": "Exporting",
+    "signOut": "Sign out",
+    "logOut": "Log out",
+    "save": "Save",
+    "uploading": "Uploading...",
+    "uploadPhoto": "Upload photo"
+  },
+  "labels": {
+    "applicantAccount": "Applicant account",
+    "applications_one": "{{count}} Application",
+    "applications_other": "{{count}} Applications",
+    "basketItems_one": "{{count}} Basket Item",
+    "basketItems_other": "{{count}} Basket Items",
+    "staff": "Staff",
+    "partner": "Partner",
+    "unknown": "Unknown",
+    "regionOfResidence": "Region of residence",
+    "selectRegion": "Select a region"
+  },
+  "regions": {
+    "tashkent_city": "Tashkent City",
+    "karakalpakstan": "Republic of Karakalpakstan",
+    "andijan": "Andijan Region",
+    "bukhara": "Bukhara Region",
+    "fergana": "Fergana Region",
+    "jizzakh": "Jizzakh Region",
+    "khorezm": "Khorezm Region",
+    "namangan": "Namangan Region",
+    "navoiy": "Navoiy Region",
+    "qashqadaryo": "Qashqadaryo Region",
+    "samarqand": "Samarqand Region",
+    "sirdaryo": "Sirdaryo Region",
+    "surxondaryo": "Surxondaryo Region",
+    "tashkent_region": "Tashkent Region"
+  },
+  "validation": {
+    "invalidRegion": "Invalid Uzbekistan region."
+  }
+}

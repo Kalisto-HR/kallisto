@@ -36,8 +36,8 @@ describe("partner dashboard service", () => {
         suspects_count: 6,
         prospects_count: 3,
         student_origin_stats: [
-          { country: "Kazakhstan", count: 6, percentage: 60 },
-          { country: "Uzbekistan", count: 4, percentage: 40 },
+          { region_code: "tashkent_city", count: 6, percentage: 60 },
+          { region_code: null, count: 4, percentage: 40 },
         ],
         recent_applications: [
           {
@@ -65,8 +65,8 @@ describe("partner dashboard service", () => {
       suspectsCount: 6,
       prospectsCount: 3,
       studentOriginStats: [
-        { country: "Kazakhstan", count: 6, percentage: 60 },
-        { country: "Uzbekistan", count: 4, percentage: 40 },
+        { regionCode: "tashkent_city", count: 6, percentage: 60 },
+        { regionCode: null, count: 4, percentage: 40 },
       ],
       recentApplications: [
         {

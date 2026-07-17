@@ -1,0 +1,83 @@
+{
+  "language": {
+    "label": "Язык интерфейса",
+    "en": "EN — English",
+    "ru": "RU — Русский",
+    "uz": "UZ — O‘zbekcha"
+  },
+  "nav": {
+    "dashboard": "Панель",
+    "findUniversities": "Найти университеты",
+    "compare": "Сравнение",
+    "billing": "Оплата",
+    "settings": "Настройки",
+    "help": "Помощь",
+    "university": "Университет",
+    "universityProfile": "Профиль университета",
+    "applicationStructure": "Структура заявки",
+    "submissions": "Заявки",
+    "staffWorkspace": "Рабочая область staff",
+    "universities": "Университеты",
+    "serviceLogs": "Сервисные логи",
+    "auditLogs": "Аудит",
+    "portalConsole": "Портал",
+    "partnerAccess": "Доступ партнера",
+    "staffAccess": "Доступ staff",
+    "staffWorkspaceMode": "Рабочая область staff",
+    "universityMode": "Режим университета",
+    "expandSidebar": "Развернуть меню",
+    "collapseSidebar": "Свернуть меню",
+    "applicantNavigation": "Навигация абитуриента",
+    "applicantNavigationDescription": "Ссылки навигации личного кабинета абитуриента.",
+    "portalNavigation": "Меню навигации",
+    "portalNavigationDescription": "Доступ к функциям портала партнеров и staff"
+  },
+  "actions": {
+    "view": "Открыть",
+    "openSubmissions": "Открыть заявки",
+    "copyEmails": "Копировать email",
+    "copying": "Копирование",
+    "csv": "CSV",
+    "exporting": "Экспорт",
+    "signOut": "Выйти",
+    "logOut": "Выйти",
+    "save": "Сохранить",
+    "uploading": "Загрузка...",
+    "uploadPhoto": "Загрузить фото"
+  },
+  "labels": {
+    "applicantAccount": "Аккаунт абитуриента",
+    "applications_one": "{{count}} заявка",
+    "applications_few": "{{count}} заявки",
+    "applications_many": "{{count}} заявок",
+    "applications_other": "{{count}} заявки",
+    "basketItems_one": "{{count}} в корзине",
+    "basketItems_few": "{{count}} в корзине",
+    "basketItems_many": "{{count}} в корзине",
+    "basketItems_other": "{{count}} в корзине",
+    "staff": "Staff",
+    "partner": "Партнер",
+    "unknown": "Неизвестно",
+    "regionOfResidence": "Регион проживания",
+    "selectRegion": "Выберите регион"
+  },
+  "regions": {
+    "tashkent_city": "Город Ташкент",
+    "karakalpakstan": "Республика Каракалпакстан",
+    "andijan": "Андижанская область",
+    "bukhara": "Бухарская область",
+    "fergana": "Ферганская область",
+    "jizzakh": "Джизакская область",
+    "khorezm": "Хорезмская область",
+    "namangan": "Наманганская область",
+    "navoiy": "Навоийская область",
+    "qashqadaryo": "Кашкадарьинская область",
+    "samarqand": "Самаркандская область",
+    "sirdaryo": "Сырдарьинская область",
+    "surxondaryo": "Сурхандарьинская область",
+    "tashkent_region": "Ташкентская область"
+  },
+  "validation": {
+    "invalidRegion": "Указан недопустимый регион Узбекистана."
+  }
+}

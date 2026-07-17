@@ -24,7 +24,7 @@ type PartnerDashboardNotification struct {
 }
 
 type PartnerStudentOriginStat struct {
-	Country    string  `json:"country" db:"country"`
+	RegionCode *string `json:"region_code" db:"region_code"`
 	Count      int     `json:"count" db:"count"`
 	Percentage float64 `json:"percentage" db:"percentage"`
 }

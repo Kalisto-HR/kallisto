@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../ui/sheet";
 import { PortalHeader } from "../portal/PortalHeader";
 import { PortalSidebar } from "../portal/PortalSidebar";
@@ -14,6 +15,7 @@ import {
 import { routes } from "../../routes/routeConfig";
 
 export function PortalShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("common");
   const { user, signOut } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
@@ -103,9 +105,9 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetContent side="left" className="p-0 w-64" aria-describedby="mobile-menu-description">
-            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+            <SheetTitle className="sr-only">{t("nav.portalNavigation")}</SheetTitle>
             <SheetDescription id="mobile-menu-description" className="sr-only">
-              Access partner and staff console features
+              {t("nav.portalNavigationDescription")}
             </SheetDescription>
             <PortalSidebar
               userRole={userRole}

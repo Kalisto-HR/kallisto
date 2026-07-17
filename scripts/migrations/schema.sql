@@ -34,12 +34,76 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS data JSONB;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS photo BYTEA;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS region_code VARCHAR;
 
 ALTER TABLE users
     DROP CONSTRAINT IF EXISTS users_role_check;
 
 ALTER TABLE users
     ADD CONSTRAINT users_role_check CHECK (role IN ('applicant', 'partner', 'staff'));
+
+ALTER TABLE users
+    DROP CONSTRAINT IF EXISTS users_region_code_check;
+
+ALTER TABLE users
+    ADD CONSTRAINT users_region_code_check CHECK (
+        region_code IS NULL OR region_code IN (
+            'tashkent_city',
+            'karakalpakstan',
+            'andijan',
+            'bukhara',
+            'fergana',
+            'jizzakh',
+            'khorezm',
+            'namangan',
+            'navoiy',
+            'qashqadaryo',
+            'samarqand',
+            'sirdaryo',
+            'surxondaryo',
+            'tashkent_region'
+        )
+    );
+
+CREATE OR REPLACE FUNCTION normalize_uz_region_code(raw_value TEXT)
+RETURNS TEXT
+LANGUAGE SQL
+IMMUTABLE
+AS $$
+    SELECT CASE
+        WHEN raw_value IS NULL OR btrim(raw_value) = '' THEN NULL
+        WHEN lower(btrim(raw_value)) IN (
+            'tashkent_city', 'karakalpakstan', 'andijan', 'bukhara', 'fergana', 'jizzakh', 'khorezm',
+            'namangan', 'navoiy', 'qashqadaryo', 'samarqand', 'sirdaryo', 'surxondaryo', 'tashkent_region'
+        ) THEN lower(btrim(raw_value))
+        WHEN lower(btrim(raw_value)) IN ('tashkent city', 'tashkent', 'toshkent shahri') THEN 'tashkent_city'
+        WHEN lower(btrim(raw_value)) IN ('republic of karakalpakstan', 'karakalpakstan', 'qoraqalpogiston respublikasi') THEN 'karakalpakstan'
+        WHEN lower(btrim(raw_value)) IN ('andijan region', 'andijan', 'andijon viloyati') THEN 'andijan'
+        WHEN lower(btrim(raw_value)) IN ('bukhara region', 'bukhara', 'buxoro viloyati') THEN 'bukhara'
+        WHEN lower(btrim(raw_value)) IN ('fergana region', 'fergana', 'fargona viloyati') THEN 'fergana'
+        WHEN lower(btrim(raw_value)) IN ('jizzakh region', 'jizzakh', 'jizzax viloyati') THEN 'jizzakh'
+        WHEN lower(btrim(raw_value)) IN ('khorezm region', 'khorezm', 'xorazm viloyati') THEN 'khorezm'
+        WHEN lower(btrim(raw_value)) IN ('namangan region', 'namangan', 'namangan viloyati') THEN 'namangan'
+        WHEN lower(btrim(raw_value)) IN ('navoiy region', 'navoiy', 'navoi', 'navoiy viloyati') THEN 'navoiy'
+        WHEN lower(btrim(raw_value)) IN ('qashqadaryo region', 'qashqadaryo', 'kashkadarya', 'qashqadaryo viloyati') THEN 'qashqadaryo'
+        WHEN lower(btrim(raw_value)) IN ('samarqand region', 'samarkand', 'samarqand', 'samarqand viloyati') THEN 'samarqand'
+        WHEN lower(btrim(raw_value)) IN ('sirdaryo region', 'sirdaryo', 'sirdaryo viloyati') THEN 'sirdaryo'
+        WHEN lower(btrim(raw_value)) IN ('surxondaryo region', 'surxondaryo', 'surkhandarya', 'surxondaryo viloyati') THEN 'surxondaryo'
+        WHEN lower(btrim(raw_value)) IN ('tashkent region', 'toshkent viloyati') THEN 'tashkent_region'
+        ELSE NULL
+    END
+$$;
+
+UPDATE users
+SET region_code = COALESCE(
+    normalize_uz_region_code(COALESCE(data->>'regionCode', data->>'region_code')),
+    normalize_uz_region_code(COALESCE(data->>'region', data->>'country')),
+    region_code
+)
+WHERE region_code IS NULL
+  AND role = 'applicant'
+  AND COALESCE(data->>'regionCode', data->>'region_code', data->>'region', data->>'country', '') <> '';
+CREATE INDEX IF NOT EXISTS idx_users_region_code ON users(region_code);
 
 -- =============================================================================
 -- UNIVERSITIES TABLE (Source of Truth)

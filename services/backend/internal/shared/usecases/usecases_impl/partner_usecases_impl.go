@@ -217,13 +217,17 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 		WITH submitted AS (
 			SELECT DISTINCT ON (a.user_id)
 				a.user_id,
-				COALESCE(
-					NULLIF(BTRIM(a.data->>'citizenship'), ''),
-					NULLIF(BTRIM(a.applicant_info->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'country'), ''),
-					'Unknown'
-				) AS country
+				normalize_uz_region_code(COALESCE(
+					u.region_code,
+					NULLIF(BTRIM(a.data->>'regionCode'), ''),
+					NULLIF(BTRIM(a.data->>'region_code'), ''),
+					NULLIF(BTRIM(a.applicant_info->>'regionCode'), ''),
+					NULLIF(BTRIM(a.applicant_info->>'region_code'), ''),
+					NULLIF(BTRIM(u.data->>'regionCode'), ''),
+					NULLIF(BTRIM(u.data->>'region_code'), ''),
+					NULLIF(BTRIM(u.data->>'region'), ''),
+					NULLIF(BTRIM(u.data->>'country'), '')
+				)) AS region_code
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
 			WHERE a.university_id = $1::uuid AND a.status = 'submitted'
@@ -232,12 +236,15 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 		prospects AS (
 			SELECT DISTINCT ON (a.user_id)
 				a.user_id,
-				COALESCE(
-					NULLIF(BTRIM(a.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'country'), ''),
-					'Unknown'
-				) AS country
+				normalize_uz_region_code(COALESCE(
+					u.region_code,
+					NULLIF(BTRIM(a.data->>'regionCode'), ''),
+					NULLIF(BTRIM(a.data->>'region_code'), ''),
+					NULLIF(BTRIM(u.data->>'regionCode'), ''),
+					NULLIF(BTRIM(u.data->>'region_code'), ''),
+					NULLIF(BTRIM(u.data->>'region'), ''),
+					NULLIF(BTRIM(u.data->>'country'), '')
+				)) AS region_code
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
 			WHERE a.university_id = $1::uuid
@@ -252,11 +259,13 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 		suspects AS (
 			SELECT
 				u.id AS user_id,
-				COALESCE(
-					NULLIF(BTRIM(u.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'country'), ''),
-					'Unknown'
-				) AS country
+				normalize_uz_region_code(COALESCE(
+					u.region_code,
+					NULLIF(BTRIM(u.data->>'regionCode'), ''),
+					NULLIF(BTRIM(u.data->>'region_code'), ''),
+					NULLIF(BTRIM(u.data->>'region'), ''),
+					NULLIF(BTRIM(u.data->>'country'), '')
+				)) AS region_code
 			FROM users u
 			WHERE u.role = 'applicant'
 			  AND EXISTS (
@@ -271,19 +280,19 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 			  )
 		),
 		student_origins AS (
-			SELECT country FROM submitted
+			SELECT region_code FROM submitted
 			UNION ALL
-			SELECT country FROM prospects
+			SELECT region_code FROM prospects
 			UNION ALL
-			SELECT country FROM suspects
+			SELECT region_code FROM suspects
 		)
 		SELECT
-			country,
+			region_code,
 			COUNT(*)::int AS count,
-			ROUND((COUNT(*)::numeric / NULLIF(SUM(COUNT(*)) OVER (), 0)) * 100, 1)::double precision AS percentage
+			ROUND((COUNT(*)::numeric / NULLIF(SUM(COUNT(*)) OVER (), 0)) * 100, 2)::double precision AS percentage
 		FROM student_origins
-		GROUP BY country
-		ORDER BY count DESC, country ASC
+		GROUP BY region_code
+		ORDER BY count DESC, region_code ASC NULLS LAST
 	`, universityId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load student origin stats: %s", err.Error())

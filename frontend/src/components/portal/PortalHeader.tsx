@@ -1,7 +1,9 @@
 import { Bell, Menu, LogOut, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { PortalContextSwitcher } from './PortalContextSwitcher';
 import type { PortalContext } from '../../types/portal';
+import { LanguageSwitcher } from '../../i18n/LanguageSwitcher';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +29,7 @@ export function PortalHeader({
   onMenuClick,
   onLogout,
 }: PortalHeaderProps) {
+  const { t } = useTranslation("common");
   return (
     <header className="brand-topbar sticky top-0 z-10 flex h-16 items-center justify-between gap-2 px-3 sm:px-6">
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
@@ -53,6 +56,7 @@ export function PortalHeader({
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>
+        <LanguageSwitcher />
 
         {/* User menu */}
         <DropdownMenu>
@@ -68,13 +72,13 @@ export function PortalHeader({
             <div className="px-2 py-1.5">
               <p className="text-sm font-medium">{userName}</p>
               <p className="text-xs text-muted-foreground">
-                {userRole === 'staff' ? 'Staff' : 'Partner'}
+                {userRole === 'staff' ? t("labels.staff") : t("labels.partner")}
               </p>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onLogout}>
               <LogOut className="w-4 h-4 mr-2" />
-              Sign out
+              {t("actions.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -177,7 +177,7 @@ export interface PartnerDashboardNotification {
 }
 
 export interface PartnerStudentOriginStat {
-  country: string;
+  regionCode: string | null;
   count: number;
   percentage: number;
 }

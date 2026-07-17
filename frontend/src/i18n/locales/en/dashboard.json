@@ -1,0 +1,68 @@
+{
+  "partner": {
+    "title": "Partner Dashboard",
+    "subtitle": "Monitor submitted applications, applicant mix, and early-stage student interest.",
+    "stats": {
+      "newSubmissions": "New Submissions",
+      "last7Days": "Last 7 days",
+      "totalSubmissions": "Total Submissions",
+      "allSubmitted": "All submitted applications",
+      "suspects": "Suspects",
+      "basketOnly": "Basket-only interest",
+      "prospects": "Prospects",
+      "draftApplications": "Draft applications",
+      "averageSat": "Average SAT",
+      "averageIelts": "Average IELTS",
+      "reportedScore": "Applicant-reported score"
+    },
+    "contacts": {
+      "none": "No {{stage}} emails are available yet.",
+      "copied_one": "Copied {{count}} {{stage}} email.",
+      "copied_other": "Copied {{count}} {{stage}} emails.",
+      "downloaded_one": "Downloaded {{count}} {{stage}} contact.",
+      "downloaded_other": "Downloaded {{count}} {{stage}} contacts.",
+      "failed": "Failed to load {{stage}} contacts"
+    },
+    "studentOrigin": {
+      "title": "Student Origin Statistics",
+      "description": "Regions represented across suspects, prospects, and submitted students.",
+      "unknownRegion": "Unknown region",
+      "student_one": "{{count}} student",
+      "student_other": "{{count}} students",
+      "empty": "No regional data available",
+      "loading": "Loading regional statistics...",
+      "other": "Other regions"
+    },
+    "gender": {
+      "title": "Gender Distribution",
+      "description": "Based on submitted applicant profiles for this university.",
+      "loading": "Loading gender distribution...",
+      "empty": "No submitted applicants are available yet.",
+      "male": "Male",
+      "female": "Female",
+      "nonBinary": "Non-binary",
+      "preferNotToSay": "Prefer not to say",
+      "applicant_one": "{{count}} applicant",
+      "applicant_other": "{{count}} applicants"
+    },
+    "recent": {
+      "title": "Recent Submissions",
+      "description": "Read-only visibility into the latest submitted applications.",
+      "loading": "Loading submission activity...",
+      "empty": "No submissions available yet.",
+      "applicant": "Applicant",
+      "program": "Program",
+      "citizenship": "Citizenship",
+      "submitted": "Submitted",
+      "action": "Action"
+    },
+    "alerts": {
+      "title": "Submission Alerts",
+      "description": "Recent automated notifications from submission activity.",
+      "loading": "Loading alerts...",
+      "empty": "No alerts right now.",
+      "alert": "Alert",
+      "new": "New"
+    }
+  }
+}

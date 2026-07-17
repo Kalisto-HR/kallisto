@@ -3,10 +3,12 @@ package usecases_impl
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	authsession "kallisto/infra/auth/session"
 	"kallisto/infra/middlewares"
+	"kallisto/infra/regions"
 	"kallisto/infra/utils"
 	"kallisto/services/backend/internal/applicant/models"
 	"net/http"
@@ -24,7 +26,21 @@ func GetUserById(ctx context.Context, userId string) (*models.ProfileResponse, e
 		return nil, errors.New("could not establish connection with the database")
 	}
 
-	rows, err := conn.Query(ctx, "SELECT id, email, first_name, last_name, data, photo, last_seen FROM users WHERE id=$1", userId)
+	rows, err := conn.Query(ctx, `
+		SELECT
+			id,
+			email,
+			first_name,
+			last_name,
+			CASE
+				WHEN region_code IS NULL THEN data
+				ELSE COALESCE(data, '{}'::jsonb) || jsonb_build_object('regionCode', region_code)
+			END AS data,
+			photo,
+			last_seen
+		FROM users
+		WHERE id=$1
+	`, userId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform database query: %s", err.Error())
 	}
@@ -66,6 +82,23 @@ func UpdateUserProfile(ctx context.Context, userId string, req *models.ProfileUp
 		setClauses = append(setClauses, fmt.Sprintf("data=COALESCE(data, '{}'::jsonb) || $%d::jsonb", argIndex))
 		args = append(args, string(req.Data))
 		argIndex++
+
+		var data map[string]any
+		if err := json.Unmarshal(req.Data, &data); err == nil {
+			if rawRegion, ok := data["regionCode"].(string); ok {
+				if regionCode, valid := regions.NormalizeUzbekistanRegionCode(rawRegion); valid {
+					setClauses = append(setClauses, fmt.Sprintf("region_code=$%d", argIndex))
+					args = append(args, regionCode)
+					argIndex++
+				}
+			} else if rawRegion, ok := data["region_code"].(string); ok {
+				if regionCode, valid := regions.NormalizeUzbekistanRegionCode(rawRegion); valid {
+					setClauses = append(setClauses, fmt.Sprintf("region_code=$%d", argIndex))
+					args = append(args, regionCode)
+					argIndex++
+				}
+			}
+		}
 	}
 
 	if len(setClauses) == 0 {
