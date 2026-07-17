@@ -327,16 +327,17 @@ func saveBasketData(ctx context.Context, conn *pgxpool.Pool, userId string, stat
 	return nil
 }
 
-func getUniversitiesByIds(ctx context.Context, conn *pgxpool.Pool, universityIds []string) ([]models.UniversityListItem, error) {
+func getUniversitiesByIds(ctx context.Context, conn middlewares.DB, universityIds []string) ([]models.UniversityListItem, error) {
 	if len(universityIds) == 0 {
 		return []models.UniversityListItem{}, nil
 	}
 
 	rows, err := conn.Query(ctx, `
 		SELECT
-			id, name, province, city, country, ranking, application_fee,
+			id, name, description, province, city, country, ranking, application_fee,
 			acceptance_rate, tuition_fee, application_deadline,
-			ielts_min, toefl_min, scholarship_available, city_type, campus_vibe
+			ielts_min, toefl_min, scholarship_available, city_type, campus_vibe,
+			university_profile->>'programGroups' AS program_groups
 		FROM universities
 		WHERE id::text = ANY($1::text[])
 		ORDER BY array_position($1::text[], id::text)

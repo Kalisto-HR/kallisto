@@ -3,9 +3,6 @@ import type { SupportedLanguage } from "./index";
 type RuntimePhraseMap = Record<string, string>;
 
 const ru: RuntimePhraseMap = {
-  "__showingUniversities": "Показано {{current}} из {{total}} университетов",
-  "__pageOf": "Страница {{current}} из {{total}}",
-  "__submissionsAvailable": "Доступно заявок: {{count}}",
   "Application platform": "Платформа заявок",
   "Sign In": "Войти",
   "Access your Kallisto workspace": "Войдите в рабочую область Kallisto",
@@ -157,9 +154,6 @@ const ru: RuntimePhraseMap = {
 };
 
 const uz: RuntimePhraseMap = {
-  "__showingUniversities": "{{total}} ta universitetdan {{current}} tasi ko‘rsatilmoqda",
-  "__pageOf": "{{current}} / {{total}} sahifa",
-  "__submissionsAvailable": "{{count}} ta ariza mavjud",
   "Application platform": "Arizalar platformasi",
   "Sign In": "Kirish",
   "Access your Kallisto workspace": "Kallisto ish maydoningizga kiring",
@@ -310,4 +304,14 @@ export function getRuntimePhraseMap(language: SupportedLanguage): RuntimePhraseM
   if (language === "ru") return ru;
   if (language === "uz") return uz;
   return {};
+}
+
+export function getRuntimeReversePhraseMap(): RuntimePhraseMap {
+  const reverse: RuntimePhraseMap = {};
+  [ru, uz].forEach((phrases) => {
+    Object.entries(phrases).forEach(([source, translated]) => {
+      reverse[translated] = source;
+    });
+  });
+  return reverse;
 }

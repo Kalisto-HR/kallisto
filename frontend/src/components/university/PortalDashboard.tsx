@@ -214,7 +214,7 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold">Partner Dashboard</h1>
+            <h1 className="text-3xl font-semibold">{t("dashboard:partner.title")}</h1>
             <p className="mt-1 text-muted-foreground">
               {t("dashboard:partner.subtitle")}
             </p>
@@ -253,7 +253,9 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
                   <Icon className="h-5 w-5 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-semibold">{isInitialLoading ? "..." : stat.value}</div>
+                  <div className="text-3xl font-semibold" data-i18n-dynamic="true">
+                    {isInitialLoading ? "..." : stat.value}
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">{stat.caption}</p>
                   {contactStage ? (
                     <div className="mt-4 flex flex-wrap gap-2">

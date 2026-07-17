@@ -3,11 +3,72 @@ package usecases_impl
 import (
 	"context"
 	"testing"
+	"time"
 
 	"kallisto/infra/middlewares"
 
 	pgxmock "github.com/pashagolub/pgxmock/v4"
 )
+
+func TestGetUserCompareListScansUniversityListShape(t *testing.T) {
+	t.Parallel()
+
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatalf("failed to create pgx mock: %v", err)
+	}
+	defer mock.Close()
+
+	deadline := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	description := "Research university"
+	province := "Shanghai"
+	city := "Shanghai"
+	country := "China"
+	ranking := 50
+	applicationFee := 500.0
+	acceptanceRate := 20.5
+	tuitionFee := 45000.0
+	ieltsMin := 6.5
+	toeflMin := 90
+	scholarshipAvailable := true
+	cityType := "urban"
+	campusVibe := "collaborative"
+	programGroups := "Engineering, Business"
+
+	mock.ExpectExec(`DELETE FROM user_compare uc`).
+		WithArgs("user-compare").
+		WillReturnResult(pgxmock.NewResult("DELETE", 0))
+	mock.ExpectQuery(`SELECT\s+u\.id, u\.name, u\.description`).
+		WithArgs("user-compare").
+		WillReturnRows(pgxmock.NewRows([]string{
+			"id", "name", "description", "province", "city", "country", "ranking", "application_fee",
+			"acceptance_rate", "tuition_fee", "application_deadline", "ielts_min", "toefl_min",
+			"scholarship_available", "city_type", "campus_vibe", "program_groups",
+		}).AddRow(
+			"uni-1", "Fudan University", &description, &province, &city, &country, &ranking, &applicationFee,
+			&acceptanceRate, &tuitionFee, &deadline, &ieltsMin, &toeflMin, &scholarshipAvailable,
+			&cityType, &campusVibe, &programGroups,
+		))
+
+	ctx := context.WithValue(context.Background(), middlewares.CtxPostgresKey, mock)
+	items, err := GetUserCompareList(ctx, "user-compare")
+	if err != nil {
+		t.Fatalf("GetUserCompareList returned error: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len(items) = %d, want 1", len(items))
+	}
+	if items[0].Description == nil || *items[0].Description != description {
+		t.Fatalf("description = %v, want %q", items[0].Description, description)
+	}
+	if items[0].ProgramGroups == nil || *items[0].ProgramGroups != programGroups {
+		t.Fatalf("program groups = %v, want %q", items[0].ProgramGroups, programGroups)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unmet mock expectations: %v", err)
+	}
+}
 
 func TestAddToComparePrunesOrphansAndAllowsUnderLimit(t *testing.T) {
 	t.Parallel()

@@ -26,10 +26,11 @@ func GetUserCompareList(ctx context.Context, userId string) ([]models.University
 
 	rows, err := conn.Query(ctx, `
 		SELECT 
-			u.id, u.name, u.province, u.city, u.country, u.ranking, u.application_fee,
+			u.id, u.name, u.description, u.province, u.city, u.country, u.ranking, u.application_fee,
 			u.acceptance_rate, u.tuition_fee, u.application_deadline,
 			u.ielts_min, u.toefl_min, u.scholarship_available,
-			u.city_type, u.campus_vibe
+			u.city_type, u.campus_vibe,
+			u.university_profile->>'programGroups' AS program_groups
 		FROM user_compare uc
 		JOIN universities u ON u.id = uc.university_id
 		WHERE uc.user_id = $1

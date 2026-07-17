@@ -311,34 +311,41 @@ function formatFileSize(size: number): string {
 const APPLICATIONS_DISABLED = true;
 
 export function ApplicantApplicationCreatePage() {
+  if (APPLICATIONS_DISABLED) {
+    return <ApplicationsDisabledNotice />;
+  }
+  return <ApplicantApplicationCreateForm />;
+}
+
+function ApplicationsDisabledNotice() {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6 py-12">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-muted-foreground" />
+            Currently Not Available
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground">
+            Applications are temporarily disabled. Please check back later.
+          </p>
+          <Link to={routes.applicant.universities}>
+            <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Universities
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ApplicantApplicationCreateForm() {
   const { universityId = "" } = useParams();
   const [searchParams] = useSearchParams();
-
-  if (APPLICATIONS_DISABLED) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-6 py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-muted-foreground" />
-              Currently Not Available
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Applications are temporarily disabled. Please check back later.
-            </p>
-            <Link to={routes.applicant.universities}>
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Universities
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const flow = useApplicationFlowData(universityId);
   const { loading: flowLoading, markDraftLoaded, saveDraft, setCycle, setFormData } = flow;

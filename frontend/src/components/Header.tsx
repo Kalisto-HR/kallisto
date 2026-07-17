@@ -62,10 +62,10 @@ export function Header({
             onClick={() => onNavigate?.("basket")}
           >
             <ShoppingBasket className="h-4 w-4 shrink-0 text-primary" />
-            <span className="hidden font-semibold sm:inline">
+            <span className="hidden font-semibold sm:inline" data-i18n-dynamic="true">
               {t("labels.basketItems", { count: basketItems })}
             </span>
-            <span className="font-semibold sm:hidden">{basketItems}</span>
+            <span className="font-semibold sm:hidden" data-i18n-dynamic="true">{basketItems}</span>
           </Button>
 
           <Button
@@ -75,10 +75,10 @@ export function Header({
             onClick={() => onNavigate?.("applications")}
           >
             <CreditCard className="h-4 w-4 shrink-0 text-primary" />
-            <span className="hidden font-semibold sm:inline">
+            <span className="hidden font-semibold sm:inline" data-i18n-dynamic="true">
               {t("labels.applications", { count })}
             </span>
-            <span className="font-semibold sm:hidden">{count}</span>
+            <span className="font-semibold sm:hidden" data-i18n-dynamic="true">{count}</span>
           </Button>
 
           <LanguageSwitcher />
