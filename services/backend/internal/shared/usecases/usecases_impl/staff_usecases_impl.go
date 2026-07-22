@@ -29,14 +29,94 @@ func GetStaffOverview(ctx context.Context) (*models.GlobalOverviewResponse, erro
 	}
 
 	var stats models.GlobalOverviewStats
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE role = 'applicant'").Scan(&stats.TotalStudents); err != nil {
+		return nil, fmt.Errorf("failed to count students: %s", err.Error())
+	}
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE role = 'applicant' AND created_at >= NOW() - INTERVAL '7 days'").Scan(&stats.NewStudentsLast7Days); err != nil {
+		return nil, fmt.Errorf("failed to count new students: %s", err.Error())
+	}
 	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM universities").Scan(&stats.TotalUniversities); err != nil {
 		return nil, fmt.Errorf("failed to count universities: %s", err.Error())
 	}
-	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM users").Scan(&stats.PortalAccounts); err != nil {
+	if err := conn.QueryRow(ctx, "SELECT COALESCE(SUM(jsonb_array_length(jsonb_path_query_array(COALESCE(university_profile, '{}'::jsonb), '$.programGroups[*].programs[*]'))), 0)::int FROM universities WHERE COALESCE(management_status, 'active') = 'active'").Scan(&stats.ActivePrograms); err != nil {
+		return nil, fmt.Errorf("failed to count active programs: %s", err.Error())
+	}
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM applications").Scan(&stats.ApplicationsStarted); err != nil {
+		return nil, fmt.Errorf("failed to count started applications: %s", err.Error())
+	}
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM applications WHERE status <> 'draft'").Scan(&stats.ApplicationsSubmitted); err != nil {
+		return nil, fmt.Errorf("failed to count submitted applications: %s", err.Error())
+	}
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM application_files af JOIN applications a ON a.user_id = af.user_id AND a.university_id = af.university_id AND a.application_cycle = af.application_cycle WHERE a.status <> 'draft'").Scan(&stats.PendingDocumentReviews); err != nil {
+		return nil, fmt.Errorf("failed to count pending document reviews: %s", err.Error())
+	}
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE role IN ('partner', 'staff')").Scan(&stats.PortalAccounts); err != nil {
 		return nil, fmt.Errorf("failed to count role accounts: %s", err.Error())
 	}
-	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM applications WHERE status = 'submitted'").Scan(&stats.TotalApplications); err != nil {
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) FROM applications").Scan(&stats.TotalApplications); err != nil {
 		return nil, fmt.Errorf("failed to count applications: %s", err.Error())
+	}
+
+	funnel := []models.GlobalOverviewFunnelStep{
+		{Stage: "registered", Count: stats.TotalStudents},
+		{Stage: "profile_completed", Count: countOrZero(ctx, conn, "SELECT COUNT(*) FROM users WHERE role = 'applicant' AND first_name IS NOT NULL AND last_name IS NOT NULL AND region_code IS NOT NULL")},
+		{Stage: "university_selected", Count: countOrZero(ctx, conn, "SELECT COUNT(DISTINCT user_id) FROM user_compare")},
+		{Stage: "application_started", Count: countOrZero(ctx, conn, "SELECT COUNT(DISTINCT user_id) FROM applications")},
+		{Stage: "documents_uploaded", Count: countOrZero(ctx, conn, "SELECT COUNT(DISTINCT user_id) FROM application_files")},
+		{Stage: "application_submitted", Count: countOrZero(ctx, conn, "SELECT COUNT(DISTINCT user_id) FROM applications WHERE status <> 'draft'")},
+		{Stage: "sent_to_university", Count: 0},
+		{Stage: "accepted", Count: 0},
+	}
+
+	registrationsByDate, err := querySeries(ctx, conn, `
+		SELECT TO_CHAR(day, 'YYYY-MM-DD') AS label, COUNT(u.id)::int AS count
+		FROM generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day') day
+		LEFT JOIN users u ON u.role = 'applicant' AND u.created_at::date = day::date
+		GROUP BY day
+		ORDER BY day ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query registrations by date: %s", err.Error())
+	}
+	applicationsByStatus, err := queryStatusPoints(ctx, conn, `
+		SELECT status, COUNT(*)::int AS count
+		FROM applications
+		GROUP BY status
+		ORDER BY status ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query applications by status: %s", err.Error())
+	}
+	popularUniversities, err := querySeries(ctx, conn, `
+		SELECT u.name AS label, COUNT(a.id)::int AS count
+		FROM applications a
+		JOIN universities u ON u.id = a.university_id
+		GROUP BY u.id, u.name
+		ORDER BY count DESC, u.name ASC
+		LIMIT 8`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query popular universities: %s", err.Error())
+	}
+	popularPrograms, err := querySeries(ctx, conn, `
+		SELECT COALESCE(NULLIF(a.data->>'program', ''), NULLIF(a.data->>'programName', ''), NULLIF(a.data->>'intendedMajor', ''), 'Unknown program') AS label,
+		       COUNT(*)::int AS count
+		FROM applications a
+		GROUP BY label
+		ORDER BY count DESC, label ASC
+		LIMIT 8`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query popular programs: %s", err.Error())
+	}
+	studentsByRegion, err := querySeries(ctx, conn, `
+		SELECT COALESCE(region_code, 'unknown') AS label, COUNT(*)::int AS count
+		FROM users
+		WHERE role = 'applicant'
+		GROUP BY COALESCE(region_code, 'unknown')
+		ORDER BY count DESC, label ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query students by region: %s", err.Error())
+	}
+	conversion := []models.GlobalOverviewSeriesPoint{
+		{Label: "started", Count: stats.ApplicationsStarted},
+		{Label: "submitted", Count: stats.ApplicationsSubmitted},
 	}
 
 	recentActivity := make([]models.GlobalOverviewActivity, 0, 6)
@@ -97,10 +177,136 @@ func GetStaffOverview(ctx context.Context) (*models.GlobalOverviewResponse, erro
 	}
 
 	return &models.GlobalOverviewResponse{
-		Stats:          stats,
-		RecentActivity: recentActivity,
-		SystemHealth:   systemHealth,
+		Stats:                 stats,
+		ApplicationFunnel:     funnel,
+		RegistrationsByDate:   registrationsByDate,
+		ApplicationsByStatus:  applicationsByStatus,
+		PopularUniversities:   popularUniversities,
+		PopularPrograms:       popularPrograms,
+		StudentsByRegion:      studentsByRegion,
+		ApplicationConversion: conversion,
+		RecentActivity:        recentActivity,
+		SystemHealth:          systemHealth,
 	}, nil
+}
+
+func GetGlobalStudents(ctx context.Context, search, region, status, completion, paymentStatus, registeredFrom, registeredTo string, page, limit int) ([]models.GlobalStudentListItem, int, error) {
+	conn, err := getDBConn(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	baseQuery := `
+		FROM users u
+		LEFT JOIN LATERAL (
+			SELECT COUNT(*)::int AS applications_count,
+			       COUNT(*) FILTER (WHERE status <> 'draft')::int AS submitted_applications_count
+			FROM applications a
+			WHERE a.user_id = u.id
+		) app ON true
+		WHERE u.role = 'applicant'`
+
+	args := make([]any, 0, 8)
+	argPos := 0
+
+	if strings.TrimSpace(search) != "" {
+		argPos++
+		baseQuery += fmt.Sprintf(" AND (u.id::text ILIKE $%d OR u.email ILIKE $%d OR CONCAT_WS(' ', u.first_name, u.last_name) ILIKE $%d OR COALESCE(u.data->>'phone', '') ILIKE $%d)", argPos, argPos, argPos, argPos)
+		args = append(args, "%"+strings.TrimSpace(search)+"%")
+	}
+	if strings.TrimSpace(region) != "" && region != "all" {
+		argPos++
+		baseQuery += fmt.Sprintf(" AND u.region_code = $%d", argPos)
+		args = append(args, strings.TrimSpace(region))
+	}
+	if strings.TrimSpace(status) != "" && status != "all" {
+		argPos++
+		if status == "active" {
+			baseQuery += fmt.Sprintf(" AND COALESCE(u.data->>'accountStatus', 'active') = $%d", argPos)
+		} else {
+			baseQuery += fmt.Sprintf(" AND COALESCE(u.data->>'accountStatus', 'active') = $%d", argPos)
+		}
+		args = append(args, strings.TrimSpace(status))
+	}
+	if strings.TrimSpace(paymentStatus) != "" && paymentStatus != "all" {
+		argPos++
+		baseQuery += fmt.Sprintf(" AND COALESCE(u.data->>'paymentStatus', 'unpaid') = $%d", argPos)
+		args = append(args, strings.TrimSpace(paymentStatus))
+	}
+	if parsedFrom := parseDateFilter(registeredFrom); parsedFrom != nil {
+		argPos++
+		baseQuery += fmt.Sprintf(" AND u.created_at >= $%d", argPos)
+		args = append(args, *parsedFrom)
+	}
+	if parsedTo := parseDateFilter(registeredTo); parsedTo != nil {
+		argPos++
+		baseQuery += fmt.Sprintf(" AND u.created_at < $%d", argPos)
+		args = append(args, parsedTo.Add(24*time.Hour))
+	}
+
+	profileCompletionExpr := `
+		(
+			(CASE WHEN COALESCE(u.first_name, '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.last_name, '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.email, '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.data->>'phone', '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.region_code, '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.data->>'intendedMajor', u.data->>'intended_major', '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.data->>'preferredLanguage', u.data->>'preferred_language', '') <> '' THEN 1 ELSE 0 END) +
+			(CASE WHEN COALESCE(u.data->>'budgetPerYear', u.data->>'budget_per_year', '') <> '' THEN 1 ELSE 0 END)
+		) * 100 / 8`
+
+	if strings.TrimSpace(completion) != "" && completion != "all" {
+		switch completion {
+		case "complete":
+			baseQuery += " AND " + profileCompletionExpr + " >= 80"
+		case "partial":
+			baseQuery += " AND " + profileCompletionExpr + " BETWEEN 40 AND 79"
+		case "low":
+			baseQuery += " AND " + profileCompletionExpr + " < 40"
+		}
+	}
+
+	var total int
+	if err := conn.QueryRow(ctx, "SELECT COUNT(*) "+baseQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("failed to count students: %s", err.Error())
+	}
+
+	offset := (page - 1) * limit
+	argPos++
+	limitPos := argPos
+	argPos++
+	offsetPos := argPos
+	args = append(args, limit, offset)
+
+	rows, err := conn.Query(ctx, fmt.Sprintf(`
+		SELECT
+			u.id::text AS student_id,
+			COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), 'Unnamed student') AS full_name,
+			u.email AS email,
+			NULLIF(u.data->>'phone', '') AS phone_number,
+			u.region_code AS region_code,
+			COALESCE(NULLIF(u.data->>'interfaceLanguage', ''), NULLIF(u.data->>'language', ''), 'en') AS interface_language,
+			%s::int AS profile_completion_percent,
+			COALESCE(app.applications_count, 0)::int AS applications_count,
+			COALESCE(app.submitted_applications_count, 0)::int AS submitted_applications_count,
+			COALESCE(NULLIF(u.data->>'paymentStatus', ''), 'unpaid') AS payment_status,
+			COALESCE(NULLIF(u.data->>'accountStatus', ''), 'active') AS account_status,
+			u.created_at AS registration_date,
+			u.last_seen AS last_activity
+		%s
+		ORDER BY u.created_at DESC
+		LIMIT $%d OFFSET $%d`, profileCompletionExpr, baseQuery, limitPos, offsetPos), args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to query students: %s", err.Error())
+	}
+	defer rows.Close()
+
+	items, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.GlobalStudentListItem])
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to scan students: %s", err.Error())
+	}
+	return items, total, nil
 }
 
 func GetGlobalUniversities(ctx context.Context, search, status, uniType string, page, limit int) ([]models.GlobalUniversityListItem, int, error) {
@@ -115,7 +321,7 @@ func GetGlobalUniversities(ctx context.Context, search, status, uniType string, 
 			SELECT COUNT(*)::int AS applications_count
 			FROM applications sa
 			WHERE sa.university_id = u.id
-			  AND sa.status = 'submitted'
+			  AND sa.status <> 'draft'
 		) app ON true
 		LEFT JOIN LATERAL (
 			SELECT COUNT(*)::int AS admins_count
@@ -596,6 +802,61 @@ func parseTimestampFilter(value string) *time.Time {
 	}
 
 	return &parsed
+}
+
+func parseDateFilter(value string) *time.Time {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil
+	}
+
+	parsed, err := time.Parse("2006-01-02", trimmed)
+	if err != nil {
+		return nil
+	}
+	return &parsed
+}
+
+func countOrZero(ctx context.Context, conn middlewares.DB, query string, args ...any) int {
+	var count int
+	if err := conn.QueryRow(ctx, query, args...).Scan(&count); err != nil {
+		return 0
+	}
+	return count
+}
+
+func querySeries(ctx context.Context, conn middlewares.DB, query string, args ...any) ([]models.GlobalOverviewSeriesPoint, error) {
+	rows, err := conn.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.GlobalOverviewSeriesPoint])
+	if err != nil {
+		return nil, err
+	}
+	if items == nil {
+		items = []models.GlobalOverviewSeriesPoint{}
+	}
+	return items, nil
+}
+
+func queryStatusPoints(ctx context.Context, conn middlewares.DB, query string, args ...any) ([]models.GlobalOverviewStatusPoint, error) {
+	rows, err := conn.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.GlobalOverviewStatusPoint])
+	if err != nil {
+		return nil, err
+	}
+	if items == nil {
+		items = []models.GlobalOverviewStatusPoint{}
+	}
+	return items, nil
 }
 
 func parseIntFilter(value string) (int, bool) {

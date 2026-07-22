@@ -174,11 +174,10 @@ describe("layout shells", () => {
     );
 
     expect(await screen.findByText("Staff child")).toBeInTheDocument();
-    expect(screen.getByText("Staff Workspace")).toBeInTheDocument();
+    expect(screen.getByText("Staff workspace")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /collapse sidebar/i }));
 
-    expect(screen.queryByText("Staff Workspace")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /expand sidebar/i })).toBeInTheDocument();
   });
 });

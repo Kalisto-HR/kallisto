@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import type { ApplicantApplicationListItem } from "../../types/domain";
 import { Badge } from "../../components/ui/badge";
@@ -9,8 +10,10 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
 import { routes } from "../../routes/routeConfig";
+import { getApplicationStatusBadgeVariant, getApplicationStatusLabel } from "../../utils/applicationStatus";
 
 export function ApplicantApplicationsPage() {
+  const { t } = useTranslation(["common", "applications"]);
   const [items, setItems] = useState<ApplicantApplicationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,27 +57,27 @@ export function ApplicantApplicationsPage() {
   return (
     <div className="space-y-6">
       <section className="space-y-1">
-        <h1 className="text-3xl font-semibold">My Applications</h1>
-        <p className="text-muted-foreground">Track draft and submitted applications in one place.</p>
+        <h1 className="text-3xl font-semibold">{t("applications:tracking.title", { defaultValue: "My Applications" })}</h1>
+        <p className="text-muted-foreground">{t("applications:tracking.description", { defaultValue: "Track draft and submitted applications in one place." })}</p>
       </section>
 
       <section className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
             <div className="text-3xl font-semibold">{summary.total}</div>
-            <p className="text-xs text-muted-foreground">Total Applications</p>
+            <p className="text-xs text-muted-foreground">{t("applications:tracking.total", { defaultValue: "Total Applications" })}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-3xl font-semibold">{summary.drafts}</div>
-            <p className="text-xs text-muted-foreground">Drafts</p>
+            <p className="text-xs text-muted-foreground">{getApplicationStatusLabel(t, "draft")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <div className="text-3xl font-semibold">{summary.submitted}</div>
-            <p className="text-xs text-muted-foreground">Submitted</p>
+            <p className="text-xs text-muted-foreground">{getApplicationStatusLabel(t, "submitted")}</p>
           </CardContent>
         </Card>
       </section>
@@ -92,8 +95,8 @@ export function ApplicantApplicationsPage() {
             <CardHeader>
               <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <span>{item.universityName}</span>
-                <Badge variant="secondary" className="capitalize">
-                  {item.status}
+                <Badge variant={getApplicationStatusBadgeVariant(item.status)}>
+                  {getApplicationStatusLabel(t, item.status)}
                 </Badge>
               </CardTitle>
             </CardHeader>

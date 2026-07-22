@@ -1,0 +1,171 @@
+{
+  "header": {
+    "primaryNavigation": "Asosiy navigatsiya",
+    "mobileNavigation": "Mobil navigatsiya",
+    "toggleMenu": "Menyuni ochish"
+  },
+  "nav": {
+    "universities": "Universitetlar",
+    "compare": "Solishtirish",
+    "scholarships": "Grantlar",
+    "howItWorks": "Qanday ishlaydi",
+    "forUniversities": "Universitetlar uchun"
+  },
+  "actions": {
+    "signIn": "Kirish",
+    "getStarted": "Boshlash",
+    "exploreUniversities": "Universitetlarni ko'rish",
+    "startApplication": "Arizani boshlash",
+    "viewCatalog": "Katalogni ochish",
+    "viewDetails": "Batafsil",
+    "partnerWithKallisto": "Kallisto hamkori bo'lish",
+    "createAccount": "Akkaunt yaratish"
+  },
+  "hero": {
+    "eyebrow": "Qabul jarayoni aniqroq",
+    "title": "Mos xususiy universitetni toping va ishonch bilan ariza topshiring.",
+    "subtitle": "Kallisto talabalarga universitetlarni solishtirish, talablarni tushunish, hujjatlarni tayyorlash va arizalarni bitta qulay joyda boshqarishga yordam beradi.",
+    "previewTitle": "Abituriyent ish maydoni",
+    "previewSubtitle": "Qidiruvdan topshirishgacha aniq yo'l",
+    "previewBadge": "Jonli ko'rinish",
+    "metrics": {
+      "fit": { "label": "Fit Score", "value": "82/100" },
+      "deadline": { "label": "Keyingi muddat", "value": "24 kun" },
+      "documents": { "label": "Hujjatlar tayyor", "value": "6 / 8" }
+    },
+    "tracker": {
+      "title": "Ariza trekeri",
+      "subtitle": "Har bir dasturni nazorat qiling",
+      "done": "Tayyor",
+      "next": "Keyingi",
+      "items": {
+        "profile": "Abituriyent profilini to'ldirish",
+        "compare": "Tanlangan dasturlarni solishtirish",
+        "documents": "Kerakli hujjatlarni yuklash",
+        "submit": "Arizani yuborish"
+      }
+    }
+  },
+  "stats": {
+    "values": {
+      "editable": "Tahrirlanadi",
+      "live": "Dolzarb",
+      "steps": "8",
+      "regions": "14"
+    },
+    "universities": "Jamoa yangilab borishi mumkin bo'lgan universitet katalogi",
+    "programs": "Dastur va talab ma'lumotlari yangilashga tayyor",
+    "steps": "Ariza bosqichlari abituriyentlarga ko'rinadi",
+    "regions": "Aniq qidiruv uchun hududlar"
+  },
+  "features": {
+    "title": "Talabaga arizadan oldin kerak bo'ladigan hamma narsa",
+    "subtitle": "Qidiruv, solishtirish, tayyorgarlik va ariza jarayoni real qabul qarorlari atrofida tartiblangan.",
+    "discovery": { "title": "Universitet qidiruvi", "description": "Xususiy universitetlarni dasturlar, to'lov va qabul ma'lumotlari bilan ko'ring." },
+    "filters": { "title": "Foydali filtrlar", "description": "Shahar, til, to'lov, grant, dastur va muddat bo'yicha variantlarni toraytiring." },
+    "compare": { "title": "Yonma-yon solishtirish", "description": "Qaror qilishdan oldin dasturlarni saralab, muhim faktlarni solishtiring." },
+    "planner": { "title": "Arizani rejalash", "description": "Qiziqishdan draft va topshirishgacha qadamlarni yo'qotmasdan o'ting." },
+    "deadlines": { "title": "Muddat nazorati", "description": "Yaqin qabul sanalari ko'rinib turadi, shunda oldindan harakat qilasiz." },
+    "scholarships": { "title": "Grantlar ko'rinishi", "description": "Qayerda moliyaviy yordam borligini va qayerda budjet riski borligini biling." },
+    "documents": { "title": "Hujjat tayyorgarligi", "description": "Pasport, transkript, test ballari, tarjimalar va qo'shimcha fayllarni kuzating." },
+    "progress": { "title": "Aniq progress", "description": "Abituriyent, hamkor va staff keyingi qadamlarni taxmin qilmasdan ko'radi." }
+  },
+  "how": {
+    "title": "Qabulga amaliy yo'l",
+    "subtitle": "Kallisto jarayonni og'irlashtirmasdan tartiblaydi.",
+    "steps": {
+      "explore": { "title": "Universitetlarni o'rganing", "description": "Real dastur ma'lumotlarini ko'ring va maqsadingizga mos universitetlarni tanlang." },
+      "compare": { "title": "Talablarni solishtiring", "description": "To'lov, til, muddat, hujjatlar va Fit Score signallarini bitta joyda tekshiring." },
+      "prepare": { "title": "Profilingizni tayyorlang", "description": "Abituriyent profilini yangilang va dastur kutadigan hujjatlarni yuklang." },
+      "apply": { "title": "Topshiring va kuzating", "description": "Arizalarni platforma orqali yuboring va status o'zgarishlarini kuzating." }
+    }
+  },
+  "universities": {
+    "title": "Real universitet tanlovi atrofida qurilgan",
+    "subtitle": "Talaba ariza oqimiga kirishdan oldin dasturlar, narxlar, sanalar va tayyorgarlik signallarini tez ko'radi.",
+    "labels": {
+      "tuition": "To'lov",
+      "deadline": "Muddat"
+    },
+    "cards": {
+      "wiut": { "meta": "Toshkent · Ingliz tili", "programs": "Biznes, iqtisod, IT, huquq va foundation yo'nalishlari", "tuition": "$4,000/yildan", "deadline": "Qabul davom etmoqda" },
+      "team": { "meta": "Toshkent · Ingliz tili", "programs": "Texnologiya, tadbirkorlik, menejment va digital business", "tuition": "$3,200/yildan", "deadline": "Yaqin qabul" },
+      "akfa": { "meta": "Toshkent · Ingliz tili", "programs": "Tibbiyot, muhandislik, biznes, arxitektura va dizayn", "tuition": "Dasturga bog'liq", "deadline": "Dasturni tekshiring" }
+    }
+  },
+  "compare": {
+    "title": "Qaror qabul qilishga yordam beradigan solishtirish",
+    "subtitle": "Abituriyent beshta tab ochmasdan asosiy farqlarni ko'ra oladi.",
+    "rows": {
+      "tuition": "To'lov aniqligi",
+      "location": "Joylashuv",
+      "language": "Ta'lim tili",
+      "scholarships": "Grantlar",
+      "deadlines": "Muddatlar"
+    },
+    "values": {
+      "clear": "Yillik ko'rinish",
+      "varies": "Dastur bo'yicha",
+      "tashkent": "Toshkent variantlari",
+      "regional": "Hududiy tanlovlar",
+      "english": "Ingliz tilidagi dasturlar",
+      "uzbekRussian": "Mavjud bo'lsa o'zbek va rus tillari",
+      "available": "Taklif qilinsa ko'rinadi",
+      "check": "Talab tekshiruvlari",
+      "tracked": "Dastur bo'yicha kuzatiladi",
+      "reminders": "Eslatma uchun tayyor"
+    }
+  },
+  "journey": {
+    "title": "Ariza tayyorgarligi bitta joyda",
+    "subtitle": "Platforma asosiy talablarni ko'rinarli qiladi, shunda talaba nima tayyor va nima ustida ishlash kerakligini biladi.",
+    "checklist": {
+      "passport": "Pasport yoki ID",
+      "diploma": "Diplom yoki transkript",
+      "photo": "Abituriyent rasmi",
+      "language": "IELTS, TOEFL, HSK yoki CSCA bali",
+      "exam": "SAT, ACT yoki kirish imtihoni natijasi",
+      "motivation": "Motivatsion xat",
+      "translation": "Tasdiqlangan tarjimalar",
+      "verification": "Yuborishdan oldin tekshiruv"
+    }
+  },
+  "partners": {
+    "eyebrow": "Hamkor portali",
+    "title": "Qabul jamoalari uchun tozaroq ariza oqimi",
+    "subtitle": "Universitetlar talablarni ko'rsatishi, strukturali arizalarni olishi va abituriyent qiziqishini kamroq qo'lda tozalash bilan ko'rishi mumkin.",
+    "benefits": {
+      "structured": "Dasturga xos ariza strukturalari va majburiy maydonlar",
+      "pipeline": "Yuborilgan arizalar status va qabul bo'yicha tartiblangan",
+      "statistics": "Qiziqish, draft va topshirishlar uchun dashboard metrikalari",
+      "recruitment": "Follow-up uchun tozaroq recruitment ma'lumotlari",
+      "communication": "So'rovlar va keyingi qadamlar uchun kengaytirishga tayyor oqimlar"
+    }
+  },
+  "finalCta": {
+    "title": "Universitet tanlovini aniqroq boshlang.",
+    "subtitle": "Abituriyent akkaunti yarating, dasturlarni solishtiring va ariza ishlarini birinchi kundanoq tartibli olib boring."
+  },
+  "footer": {
+    "description": "Kallisto talabalar, xususiy universitetlar va qabul jarayonini aniqroq qilishni xohlaydigan jamoalar uchun admissions platforma.",
+    "platform": {
+      "title": "Platforma",
+      "first": { "label": "Imkoniyatlar", "href": "#features" },
+      "second": { "label": "Solishtirish", "href": "#compare" },
+      "third": { "label": "Qanday ishlaydi", "href": "#how-it-works" }
+    },
+    "students": {
+      "title": "Talabalar",
+      "first": { "label": "Universitet topish", "href": "/applicant/universities" },
+      "second": { "label": "Akkaunt yaratish", "href": "/auth/sign-up" },
+      "third": { "label": "Kirish", "href": "/auth/sign-in" }
+    },
+    "universities": {
+      "title": "Universitetlar",
+      "first": { "label": "Hamkor portali", "href": "#partners" },
+      "second": { "label": "Kirish", "href": "/auth/sign-in" },
+      "third": { "label": "Ariza strukturasi", "href": "#partners" }
+    },
+    "copyright": "© {{year}} Kallisto. Barcha huquqlar himoyalangan."
+  }
+}

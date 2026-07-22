@@ -1,0 +1,171 @@
+{
+  "header": {
+    "primaryNavigation": "Primary navigation",
+    "mobileNavigation": "Mobile navigation",
+    "toggleMenu": "Open navigation menu"
+  },
+  "nav": {
+    "universities": "Universities",
+    "compare": "Compare",
+    "scholarships": "Scholarships",
+    "howItWorks": "How it works",
+    "forUniversities": "For universities"
+  },
+  "actions": {
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "exploreUniversities": "Explore universities",
+    "startApplication": "Start application",
+    "viewCatalog": "View catalog",
+    "viewDetails": "View details",
+    "partnerWithKallisto": "Partner with Kallisto",
+    "createAccount": "Create account"
+  },
+  "hero": {
+    "eyebrow": "Admissions made clearer",
+    "title": "Find the right private university and apply with confidence.",
+    "subtitle": "Kallisto helps students compare universities, understand requirements, prepare documents, and manage applications from one focused workspace.",
+    "previewTitle": "Applicant workspace",
+    "previewSubtitle": "A clear path from discovery to submission",
+    "previewBadge": "Live preview",
+    "metrics": {
+      "fit": { "label": "Fit Score", "value": "82/100" },
+      "deadline": { "label": "Next deadline", "value": "24 days" },
+      "documents": { "label": "Documents ready", "value": "6 of 8" }
+    },
+    "tracker": {
+      "title": "Application tracker",
+      "subtitle": "Keep every program moving",
+      "done": "Done",
+      "next": "Next",
+      "items": {
+        "profile": "Complete applicant profile",
+        "compare": "Compare shortlisted programs",
+        "documents": "Upload required documents",
+        "submit": "Submit application"
+      }
+    }
+  },
+  "stats": {
+    "values": {
+      "editable": "Editable",
+      "live": "Live",
+      "steps": "8",
+      "regions": "14"
+    },
+    "universities": "University catalog that staff can keep current",
+    "programs": "Program and requirement data ready for updates",
+    "steps": "Application stages visible to applicants",
+    "regions": "Regions supported for focused discovery"
+  },
+  "features": {
+    "title": "Everything students need before they apply",
+    "subtitle": "Discovery, comparison, readiness, and application progress are organized around real admission decisions.",
+    "discovery": { "title": "University discovery", "description": "Browse private universities with focused details, programs, tuition, and intake information." },
+    "filters": { "title": "Useful filters", "description": "Narrow options by city, language, tuition, scholarships, programs, and deadlines." },
+    "compare": { "title": "Side-by-side compare", "description": "Shortlist programs and compare the facts that matter before committing time." },
+    "planner": { "title": "Application planning", "description": "Move from interest to draft to submission with fewer missed steps." },
+    "deadlines": { "title": "Deadline awareness", "description": "Keep upcoming admission dates visible so applicants can act early." },
+    "scholarships": { "title": "Scholarship visibility", "description": "See where funding may be available and where budget risk needs attention." },
+    "documents": { "title": "Document readiness", "description": "Track passports, transcripts, test scores, translations, and supporting files." },
+    "progress": { "title": "Clear progress", "description": "Applicants, partners, and staff see cleaner next steps without guessing." }
+  },
+  "how": {
+    "title": "A practical path to admission",
+    "subtitle": "Kallisto keeps the process structured without making it feel heavy.",
+    "steps": {
+      "explore": { "title": "Explore universities", "description": "Review real program details and shortlist the universities that match your goals." },
+      "compare": { "title": "Compare requirements", "description": "Check tuition, language, deadlines, documents, and Fit Score signals in one place." },
+      "prepare": { "title": "Prepare your file", "description": "Update your applicant profile and upload the documents each program expects." },
+      "apply": { "title": "Submit and track", "description": "Send applications through the platform and follow status updates as they move." }
+    }
+  },
+  "universities": {
+    "title": "Built around real university choices",
+    "subtitle": "A student can quickly scan programs, costs, dates, and readiness signals before entering the application flow.",
+    "labels": {
+      "tuition": "Tuition",
+      "deadline": "Deadline"
+    },
+    "cards": {
+      "wiut": { "meta": "Tashkent · English", "programs": "Business, Economics, IT, Law and foundation routes", "tuition": "From $4,000/year", "deadline": "Rolling intake" },
+      "team": { "meta": "Tashkent · English", "programs": "Technology, entrepreneurship, management and digital business", "tuition": "From $3,200/year", "deadline": "Upcoming intake" },
+      "akfa": { "meta": "Tashkent · English", "programs": "Medicine, engineering, business, architecture and design", "tuition": "Program based", "deadline": "Check program" }
+    }
+  },
+  "compare": {
+    "title": "Comparison that feels like a decision tool",
+    "subtitle": "Applicants can see key differences without opening five tabs or losing context.",
+    "rows": {
+      "tuition": "Tuition clarity",
+      "location": "Location",
+      "language": "Instruction language",
+      "scholarships": "Scholarships",
+      "deadlines": "Deadlines"
+    },
+    "values": {
+      "clear": "Clear yearly view",
+      "varies": "Program-specific",
+      "tashkent": "Tashkent options",
+      "regional": "Regional choices",
+      "english": "English programs",
+      "uzbekRussian": "Uzbek and Russian where available",
+      "available": "Visible when offered",
+      "check": "Requirement checks",
+      "tracked": "Tracked by program",
+      "reminders": "Reminder ready"
+    }
+  },
+  "journey": {
+    "title": "Application readiness in one place",
+    "subtitle": "The platform keeps core requirements visible so students know what is ready and what still needs work.",
+    "checklist": {
+      "passport": "Passport or national ID",
+      "diploma": "Diploma or transcript",
+      "photo": "Applicant photo",
+      "language": "IELTS, TOEFL, HSK, or CSCA score",
+      "exam": "SAT, ACT, or entrance exam results",
+      "motivation": "Motivation letter",
+      "translation": "Certified translations",
+      "verification": "Review before submission"
+    }
+  },
+  "partners": {
+    "eyebrow": "Partner portal",
+    "title": "A cleaner intake flow for admissions teams",
+    "subtitle": "Universities can present requirements, receive structured applications, and review applicant interest with less manual cleanup.",
+    "benefits": {
+      "structured": "Program-specific application structures and required fields",
+      "pipeline": "Submitted applications organized by status and intake",
+      "statistics": "Dashboard metrics for interest, drafts, and submissions",
+      "recruitment": "Cleaner recruitment data for follow-up",
+      "communication": "Applicant inquiry and next-step workflows ready to extend"
+    }
+  },
+  "finalCta": {
+    "title": "Start with better university decisions.",
+    "subtitle": "Create an applicant account, compare programs, and keep your application work organized from day one."
+  },
+  "footer": {
+    "description": "Kallisto is an admissions platform for students, private universities, and teams that need a clearer application process.",
+    "platform": {
+      "title": "Platform",
+      "first": { "label": "Features", "href": "#features" },
+      "second": { "label": "Compare", "href": "#compare" },
+      "third": { "label": "How it works", "href": "#how-it-works" }
+    },
+    "students": {
+      "title": "Students",
+      "first": { "label": "Find universities", "href": "/applicant/universities" },
+      "second": { "label": "Create account", "href": "/auth/sign-up" },
+      "third": { "label": "Sign in", "href": "/auth/sign-in" }
+    },
+    "universities": {
+      "title": "Universities",
+      "first": { "label": "Partner portal", "href": "#partners" },
+      "second": { "label": "Sign in", "href": "/auth/sign-in" },
+      "third": { "label": "Application structure", "href": "#partners" }
+    },
+    "copyright": "© {{year}} Kallisto. All rights reserved."
+  }
+}

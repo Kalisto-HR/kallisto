@@ -8,6 +8,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -15,6 +16,7 @@ import { Progress } from "../../components/ui/progress";
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
 import { useApplicantDashboardData } from "../../hooks/useApplicantDashboardData";
 import { routes } from "../../routes/routeConfig";
+import { getApplicationStatusBadgeVariant, getApplicationStatusLabel } from "../../utils/applicationStatus";
 
 function calculateReadiness(completedSteps: number): number {
   if (completedSteps >= 3) {
@@ -24,6 +26,7 @@ function calculateReadiness(completedSteps: number): number {
 }
 
 export function ApplicantDashboardPage() {
+  const { t } = useTranslation(["common"]);
   const { profile, applications, favoritesCount, testScoresCount, loading, error, reload } = useApplicantDashboardData();
 
   if (loading) {
@@ -235,8 +238,8 @@ export function ApplicantDashboardPage() {
                   </div>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  <Badge variant="secondary" className="capitalize">
-                    {item.status}
+                  <Badge variant={getApplicationStatusBadgeVariant(item.status)}>
+                    {getApplicationStatusLabel(t, item.status)}
                   </Badge>
                   {item.status === "draft" ? (
                     <Button

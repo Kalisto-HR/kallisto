@@ -197,12 +197,7 @@ func TestGetStaffOverviewBuildsThresholdBasedHealthMetrics(t *testing.T) {
 	}
 	defer mock.Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM universities")).
-		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(12))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM users")).
-		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(4))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM applications WHERE status = 'submitted'")).
-		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(33))
+	expectStaffOverviewCoreQueries(mock, 12, 4, 33, 2, 9, 7, 6, 5, 4, 3, 2, 1)
 	mock.ExpectQuery(`(?s)` + regexp.QuoteMeta("FROM audit_logs") + `.*` + regexp.QuoteMeta("LIMIT 6")).
 		WillReturnRows(pgxmock.NewRows([]string{"id", "action_type", "action_description", "actor_name", "occurred_at", "outcome"}))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM pg_stat_activity")).
@@ -223,6 +218,12 @@ func TestGetStaffOverviewBuildsThresholdBasedHealthMetrics(t *testing.T) {
 	}
 	if len(result.SystemHealth) != 4 {
 		t.Fatalf("unexpected system health length: got %d want 4", len(result.SystemHealth))
+	}
+	if result.Stats.TotalStudents != 12 || result.Stats.ApplicationsSubmitted != 7 {
+		t.Fatalf("unexpected stats: %+v", result.Stats)
+	}
+	if len(result.ApplicationFunnel) != 8 {
+		t.Fatalf("unexpected funnel length: got %d want 8", len(result.ApplicationFunnel))
 	}
 	if result.SystemHealth[0].Status != "warn" {
 		t.Fatalf("unexpected response-time status: got %s want warn", result.SystemHealth[0].Status)
@@ -247,12 +248,7 @@ func TestGetStaffOverviewHandlesNoTrafficAndUnknownMaxConnections(t *testing.T) 
 	}
 	defer mock.Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM universities")).
-		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM users")).
-		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM applications WHERE status = 'submitted'")).
-		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(0))
+	expectStaffOverviewCoreQueries(mock, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	mock.ExpectQuery(`(?s)` + regexp.QuoteMeta("FROM audit_logs") + `.*` + regexp.QuoteMeta("LIMIT 6")).
 		WillReturnRows(pgxmock.NewRows([]string{"id", "action_type", "action_description", "actor_name", "occurred_at", "outcome"}))
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM pg_stat_activity")).
@@ -280,4 +276,59 @@ func TestGetStaffOverviewHandlesNoTrafficAndUnknownMaxConnections(t *testing.T) 
 	if result.SystemHealth[2].Status != "neutral" || result.SystemHealth[2].Value != "No traffic" {
 		t.Fatalf("unexpected error metric: %+v", result.SystemHealth[2])
 	}
+}
+
+func expectStaffOverviewCoreQueries(
+	mock pgxmock.PgxPoolIface,
+	students int,
+	newStudents int,
+	universities int,
+	programs int,
+	started int,
+	submitted int,
+	pendingDocs int,
+	portalAccounts int,
+	totalApplications int,
+	profileCompleted int,
+	universitySelected int,
+	documentsUploaded int,
+) {
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM users WHERE role = 'applicant'")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(students))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM users WHERE role = 'applicant' AND created_at >= NOW() - INTERVAL '7 days'")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(newStudents))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM universities")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(universities))
+	mock.ExpectQuery(regexp.QuoteMeta("jsonb_path_query_array")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(programs))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM applications")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(started))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM applications WHERE status <> 'draft'")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(submitted))
+	mock.ExpectQuery(regexp.QuoteMeta("FROM application_files af")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(pendingDocs))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM users WHERE role IN ('partner', 'staff')")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(portalAccounts))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(*) FROM applications")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(totalApplications))
+	mock.ExpectQuery(regexp.QuoteMeta("first_name IS NOT NULL AND last_name IS NOT NULL")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(profileCompleted))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(DISTINCT user_id) FROM user_compare")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(universitySelected))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(DISTINCT user_id) FROM applications")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(started))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(DISTINCT user_id) FROM application_files")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(documentsUploaded))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(DISTINCT user_id) FROM applications WHERE status <> 'draft'")).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(submitted))
+	mock.ExpectQuery(regexp.QuoteMeta("generate_series")).
+		WillReturnRows(pgxmock.NewRows([]string{"label", "count"}).AddRow("2026-07-01", newStudents))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT status, COUNT(*)::int AS count")).
+		WillReturnRows(pgxmock.NewRows([]string{"status", "count"}).AddRow("submitted", submitted))
+	mock.ExpectQuery(regexp.QuoteMeta("JOIN universities u ON u.id = a.university_id")).
+		WillReturnRows(pgxmock.NewRows([]string{"label", "count"}).AddRow("Kallisto University", submitted))
+	mock.ExpectQuery(regexp.QuoteMeta("Unknown program")).
+		WillReturnRows(pgxmock.NewRows([]string{"label", "count"}).AddRow("Business", submitted))
+	mock.ExpectQuery(regexp.QuoteMeta("COALESCE(region_code, 'unknown') AS label")).
+		WillReturnRows(pgxmock.NewRows([]string{"label", "count"}).AddRow("tashkent_city", students))
 }

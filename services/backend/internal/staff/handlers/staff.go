@@ -56,6 +56,33 @@ func GetGlobalUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, utils.NewPaginatedResponse(items, total, page, limit), http.StatusOK)
 }
 
+func GetGlobalStudentsHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+	_, err := ensureStaffAccess(r.Context())
+	if err != nil {
+		writeHandlerErr(w, log, err)
+		return
+	}
+
+	query := r.URL.Query()
+	page, limit := parsePagination(query.Get("page"), query.Get("limit"))
+	search := query.Get("q")
+	region := query.Get("region")
+	status := query.Get("status")
+	completion := query.Get("completion")
+	paymentStatus := query.Get("payment_status")
+	registeredFrom := query.Get("registered_from")
+	registeredTo := query.Get("registered_to")
+
+	items, total, err := usecases_impl.GetGlobalStudents(r.Context(), search, region, status, completion, paymentStatus, registeredFrom, registeredTo, page, limit)
+	if err != nil {
+		writeHandlerErr(w, log, err)
+		return
+	}
+
+	utils.WriteJSONResponse(w, utils.NewPaginatedResponse(items, total, page, limit), http.StatusOK)
+}
+
 func GetGlobalServiceLogsHandler(w http.ResponseWriter, r *http.Request) {
 	log := zap.L()
 	_, err := ensureStaffAccess(r.Context())

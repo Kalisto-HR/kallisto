@@ -26,6 +26,10 @@ describe("PortalApplicantsList", () => {
       submittedAt: "2026-02-01T08:00:00Z",
       receivedAt: "2026-02-01T08:00:00Z",
       status: "submitted" as const,
+      statusProgress: 35,
+      statusStage: "application_received" as const,
+      isFinal: false,
+      isSuccessfulOutcome: false,
     },
   ];
 

@@ -92,6 +92,7 @@ export const apiRoutes = {
     submissions: {
       list: (params: QueryParams) => withQuery(`${API_PREFIX}/partner/applications`, params),
       detail: (id: string) => `${API_PREFIX}/partner/applications/${segment(id)}`,
+      status: (id: string) => `${API_PREFIX}/partner/applications/${segment(id)}/status`,
       fileDownload: (applicationId: string, fileId: string) =>
         `${API_PREFIX}/partner/applications/${segment(applicationId)}/files/${segment(fileId)}/download`,
     },
@@ -106,6 +107,9 @@ export const apiRoutes = {
   },
   staff: {
     dashboard: () => `${API_PREFIX}/staff/dashboard`,
+    students: {
+      list: (params: QueryParams) => withQuery(`${API_PREFIX}/staff/students`, params),
+    },
     universities: {
       list: (params: QueryParams) => withQuery(`${API_PREFIX}/staff/universities`, params),
       detail: (id: string) => `${API_PREFIX}/staff/universities/${segment(id)}`,

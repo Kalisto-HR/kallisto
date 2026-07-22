@@ -1,0 +1,21 @@
+{
+  "status": {
+    "draft": "Qoralama",
+    "submitted": "Topshirildi",
+    "under_review": "Ko'rib chiqilmoqda",
+    "additional_information_required": "Qo'shimcha ma'lumot talab qilinadi",
+    "decision_pending": "Qaror kutilmoqda",
+    "accepted": "Qabul qilindi",
+    "waitlisted": "Kutish ro'yxatiga kiritildi",
+    "rejected": "Rad etildi"
+  },
+  "tracking": {
+    "title": "Mening arizalarim",
+    "description": "Qoralama va topshirilgan arizalarni bir joyda kuzating.",
+    "total": "Jami arizalar",
+    "progressTitle": "Ariza statusi",
+    "additionalInfo": "Universitet qo'shimcha ma'lumot so'ramoqda. So'ralgan vazifalar va hujjatlarni tekshiring.",
+    "finalDecision": "Universitet ushbu ariza bo'yicha yakuniy qarorni qayd etdi.",
+    "inProgress": "Arizangiz universitet ko'rib chiqish jarayonidan o'tmoqda."
+  }
+}

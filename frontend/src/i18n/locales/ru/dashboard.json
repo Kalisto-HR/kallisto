@@ -1,0 +1,137 @@
+{
+  "staff": {
+    "title": "Панель администратора",
+    "subtitle": "Операции приема, движение студентов и состояние платформы на живых данных.",
+    "loading": "Загрузка панели...",
+    "errors": {
+      "load": "Не удалось загрузить панель администратора"
+    },
+    "viewAudit": "Открыть аудит",
+    "kpis": {
+      "totalStudents": "Всего студентов",
+      "newStudents": "Новые за 7 дней",
+      "totalUniversities": "Всего университетов",
+      "activePrograms": "Активные программы",
+      "applicationsStarted": "Заявки начаты",
+      "applicationsSubmitted": "Заявки поданы",
+      "underReview": "На проверке",
+      "accepted": "Приняты",
+      "rejected": "Отклонены",
+      "pendingDocuments": "Документы к проверке",
+      "completedPayments": "Завершенные платежи",
+      "revenue": "Доход платформы"
+    },
+    "funnel": {
+      "title": "Воронка заявок",
+      "description": "Текущее движение студентов по процессу поступления.",
+      "steps": {
+        "registered": "Зарегистрирован",
+        "profile_completed": "Профиль заполнен",
+        "university_selected": "Университет выбран",
+        "application_started": "Заявка начата",
+        "documents_uploaded": "Документы загружены",
+        "application_submitted": "Заявка подана",
+        "sent_to_university": "Отправлено в университет",
+        "accepted": "Принят"
+      }
+    },
+    "charts": {
+      "registrations": "Регистрации студентов",
+      "registrationsDescription": "Ежедневные регистрации абитуриентов за последние 14 дней.",
+      "applicationStatuses": "Заявки по статусам",
+      "applicationStatusesDescription": "Распределение текущих статусов заявок.",
+      "popularUniversities": "Популярные университеты",
+      "popularUniversitiesDescription": "Университеты с наибольшей активностью по заявкам.",
+      "studentsByRegion": "Студенты по регионам Узбекистана",
+      "studentsByRegionDescription": "Аккаунты абитуриентов, сгруппированные по стабильному коду региона.",
+      "emptyTitle": "Данных пока нет",
+      "emptyDescription": "График появится, когда в базе будут подходящие записи."
+    },
+    "health": {
+      "title": "Состояние системы",
+      "description": "Операционные метрики из service logs и базы данных.",
+      "emptyTitle": "Метрик пока нет",
+      "emptyDescription": "Метрики появятся после записи активности backend."
+    },
+    "activity": {
+      "title": "Последняя активность",
+      "description": "Последние audit-события платформы.",
+      "emptyTitle": "Активности пока нет",
+      "emptyDescription": "Административные действия появятся здесь после создания audit-записей."
+    }
+  },
+  "partner": {
+    "title": "Панель партнера",
+    "subtitle": "Отслеживайте поданные заявки, состав абитуриентов и ранний интерес студентов.",
+    "stats": {
+      "newSubmissions": "Новые заявки",
+      "last7Days": "За последние 7 дней",
+      "totalSubmissions": "Всего заявок",
+      "allSubmitted": "Все поданные заявки",
+      "suspects": "Потенциальные",
+      "basketOnly": "Интерес через корзину",
+      "prospects": "Черновики",
+      "draftApplications": "Черновики заявок",
+      "averageSat": "Средний SAT",
+      "averageIelts": "Средний IELTS",
+      "reportedScore": "Баллы, указанные абитуриентами"
+    },
+    "contacts": {
+      "none": "Email для {{stage}} пока недоступны.",
+      "copied_one": "Скопирован {{count}} email {{stage}}.",
+      "copied_few": "Скопировано {{count}} email {{stage}}.",
+      "copied_many": "Скопировано {{count}} email {{stage}}.",
+      "copied_other": "Скопировано {{count}} email {{stage}}.",
+      "downloaded_one": "Скачан {{count}} контакт {{stage}}.",
+      "downloaded_few": "Скачано {{count}} контакта {{stage}}.",
+      "downloaded_many": "Скачано {{count}} контактов {{stage}}.",
+      "downloaded_other": "Скачано {{count}} контакта {{stage}}.",
+      "failed": "Не удалось загрузить контакты {{stage}}"
+    },
+    "studentOrigin": {
+      "title": "Статистика по регионам студентов",
+      "description": "Регионы Узбекистана, представленные среди потенциальных кандидатов, абитуриентов и подавших заявку студентов.",
+      "unknownRegion": "Регион не указан",
+      "student_one": "{{count}} студент",
+      "student_few": "{{count}} студента",
+      "student_many": "{{count}} студентов",
+      "student_other": "{{count}} студента",
+      "empty": "Нет данных по регионам",
+      "loading": "Загрузка статистики по регионам...",
+      "other": "Другие регионы"
+    },
+    "gender": {
+      "title": "Распределение по полу",
+      "description": "На основе профилей абитуриентов, подавших заявки в этот университет.",
+      "loading": "Загрузка распределения...",
+      "empty": "Пока нет поданных заявок.",
+      "male": "Мужской",
+      "female": "Женский",
+      "nonBinary": "Небинарный",
+      "preferNotToSay": "Не указано",
+      "applicant_one": "{{count}} абитуриент",
+      "applicant_few": "{{count}} абитуриента",
+      "applicant_many": "{{count}} абитуриентов",
+      "applicant_other": "{{count}} абитуриента"
+    },
+    "recent": {
+      "title": "Последние заявки",
+      "description": "Просмотр последних поданных заявок в режиме чтения.",
+      "loading": "Загрузка активности...",
+      "empty": "Пока нет заявок.",
+      "applicant": "Абитуриент",
+      "program": "Программа",
+      "citizenship": "Гражданство",
+      "submitted": "Подано",
+      "action": "Действие"
+    },
+    "alerts": {
+      "title": "Уведомления по заявкам",
+      "description": "Последние автоматические уведомления по активности заявок.",
+      "loading": "Загрузка уведомлений...",
+      "empty": "Сейчас уведомлений нет.",
+      "alert": "Уведомление",
+      "new": "Новое"
+    }
+  }
+}

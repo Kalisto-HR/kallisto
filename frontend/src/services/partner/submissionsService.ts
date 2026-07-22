@@ -1,7 +1,7 @@
 import { apiRoutes, buildApiProxyUrl } from "../api/routes";
 import { api } from "../api/httpClient";
 import { normalizeSubmittedApplication, normalizePagination } from "../mappers/responseMappers";
-import type { SubmittedApplication, Pagination } from "../../types/domain";
+import type { ApplicationStatus, SubmittedApplication, Pagination } from "../../types/domain";
 
 export interface PartnerApplicationsQuery {
   universityId?: string;
@@ -9,10 +9,27 @@ export interface PartnerApplicationsQuery {
   program?: string;
   citizenship?: string;
   intake?: string;
-  sortBy?: "received_at" | "submitted_at" | "gpa";
+  status?: Exclude<ApplicationStatus, "draft">;
+  sortBy?: "received_at" | "submitted_at" | "gpa" | "status";
   sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
+}
+
+export interface ApplicationStatusTaskInput {
+  title: string;
+  description?: string | null;
+  required: boolean;
+  due_at?: string | null;
+}
+
+export interface ApplicationStatusTransitionInput {
+  status: Exclude<ApplicationStatus, "draft">;
+  public_comment?: string | null;
+  internal_note?: string | null;
+  internal_explanation?: string | null;
+  confirm_final_correction?: boolean;
+  tasks?: ApplicationStatusTaskInput[];
 }
 
 export async function fetchPartnerApplications(query: PartnerApplicationsQuery = {}): Promise<Pagination<SubmittedApplication>> {
@@ -21,6 +38,7 @@ export async function fetchPartnerApplications(query: PartnerApplicationsQuery =
     program: query.program,
     citizenship: query.citizenship,
     intake: query.intake,
+    status: query.status,
     sort_by: query.sortBy,
     sort_order: query.sortOrder,
     page: query.page ?? 1,
@@ -35,6 +53,14 @@ export async function fetchPartnerApplications(query: PartnerApplicationsQuery =
     ...pageData,
     items: pageData.items.map(normalizeSubmittedApplication),
   };
+}
+
+export async function updatePartnerApplicationStatus(id: string, input: ApplicationStatusTransitionInput): Promise<SubmittedApplication> {
+  const result = await api.patch<unknown>(apiRoutes.partner.submissions.status(id), input);
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to update application status");
+  }
+  return normalizeSubmittedApplication(result.data);
 }
 
 export async function fetchPartnerApplication(id: string): Promise<SubmittedApplication> {

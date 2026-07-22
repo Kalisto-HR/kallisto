@@ -169,26 +169,36 @@ export function normalizeProfile(value: unknown): Profile {
 
 export function normalizeApplicantApplicationListItem(value: unknown): ApplicantApplicationListItem {
   const source = (value ?? {}) as Record<string, unknown>;
+  const status = toString(source.status) as ApplicantApplicationListItem["status"];
   return {
     universityId: toString(source.university_id ?? source.universityId),
     universityName: toString(source.university_name ?? source.universityName),
     applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
-    status: toString(source.status) as ApplicantApplicationListItem["status"],
+    status,
     createdAt: toString(source.created_at ?? source.createdAt),
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
+    statusProgress: toNumber(source.status_progress ?? source.statusProgress, fallbackStatusProgress(status)),
+    statusStage: toString(source.status_stage ?? source.statusStage ?? fallbackStatusStage(status)) as ApplicantApplicationListItem["statusStage"],
+    isFinal: toBoolean(source.is_final ?? source.isFinal, isFinalApplicationStatus(status)),
+    isSuccessfulOutcome: toBoolean(source.is_successful_outcome ?? source.isSuccessfulOutcome, status === "accepted"),
   };
 }
 
 export function normalizeApplicantApplication(value: unknown): ApplicantApplication {
   const source = (value ?? {}) as Record<string, unknown>;
+  const status = toString(source.status) as ApplicantApplication["status"];
   return {
     userId: toString(source.user_id ?? source.userId),
     universityId: toString(source.university_id ?? source.universityId),
     applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
-    status: toString(source.status) as ApplicantApplication["status"],
+    status,
     data: toRecord(source.data),
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
     createdAt: toString(source.created_at ?? source.createdAt),
+    statusProgress: toNumber(source.status_progress ?? source.statusProgress, fallbackStatusProgress(status)),
+    statusStage: toString(source.status_stage ?? source.statusStage ?? fallbackStatusStage(status)) as ApplicantApplication["statusStage"],
+    isFinal: toBoolean(source.is_final ?? source.isFinal, isFinalApplicationStatus(status)),
+    isSuccessfulOutcome: toBoolean(source.is_successful_outcome ?? source.isSuccessfulOutcome, status === "accepted"),
   };
 }
 
@@ -232,6 +242,7 @@ export function normalizeApplicationTestScoreImportResult(value: unknown): Appli
 
 export function normalizeSubmittedApplication(value: unknown): SubmittedApplication {
   const source = (value ?? {}) as Record<string, unknown>;
+  const status = toString(source.status) as SubmittedApplication["status"];
   return {
     id: toString(source.id),
     userId: toString(source.user_id ?? source.userId),
@@ -241,7 +252,11 @@ export function normalizeSubmittedApplication(value: unknown): SubmittedApplicat
     applicationData: toRecord(source.application_data ?? source.applicationData) ?? {},
     submittedAt: toNullableString(source.submitted_at ?? source.submittedAt),
     receivedAt: toString(source.received_at ?? source.receivedAt),
-    status: toString(source.status) as SubmittedApplication["status"],
+    status,
+    statusProgress: toNumber(source.status_progress ?? source.statusProgress, fallbackStatusProgress(status)),
+    statusStage: toString(source.status_stage ?? source.statusStage ?? fallbackStatusStage(status)) as SubmittedApplication["statusStage"],
+    isFinal: toBoolean(source.is_final ?? source.isFinal, isFinalApplicationStatus(status)),
+    isSuccessfulOutcome: toBoolean(source.is_successful_outcome ?? source.isSuccessfulOutcome, status === "accepted"),
   };
 }
 
@@ -257,8 +272,57 @@ function toNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function toBoolean(value: unknown, fallback = false): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function toNullableNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function fallbackStatusProgress(status: string): number {
+  switch (status) {
+    case "draft":
+      return 15;
+    case "submitted":
+      return 35;
+    case "under_review":
+    case "additional_information_required":
+      return 55;
+    case "decision_pending":
+      return 80;
+    case "waitlisted":
+      return 90;
+    case "accepted":
+    case "rejected":
+      return 100;
+    default:
+      return 0;
+  }
+}
+
+function fallbackStatusStage(status: string): string {
+  switch (status) {
+    case "draft":
+      return "application_preparation";
+    case "submitted":
+      return "application_received";
+    case "under_review":
+    case "additional_information_required":
+      return "review_in_progress";
+    case "decision_pending":
+      return "decision_pending";
+    case "accepted":
+    case "waitlisted":
+    case "rejected":
+      return "final_decision";
+    default:
+      return "unknown";
+  }
+}
+
+function isFinalApplicationStatus(status: string): boolean {
+  return status === "accepted" || status === "waitlisted" || status === "rejected";
 }
 
 function toNullableBool(value: unknown): boolean | null {

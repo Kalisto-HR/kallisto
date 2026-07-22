@@ -111,7 +111,25 @@ export interface ApplicantTestScore {
   updatedAt: string;
 }
 
-export type ApplicantApplicationStatus = "draft" | "submitted";
+export type ApplicationStatus =
+  | "draft"
+  | "submitted"
+  | "under_review"
+  | "additional_information_required"
+  | "decision_pending"
+  | "accepted"
+  | "waitlisted"
+  | "rejected";
+
+export type ApplicationStatusStage =
+  | "application_preparation"
+  | "application_received"
+  | "review_in_progress"
+  | "decision_pending"
+  | "final_decision"
+  | "unknown";
+
+export type ApplicantApplicationStatus = ApplicationStatus;
 
 export interface ApplicantApplicationListItem {
   universityId: string;
@@ -120,6 +138,10 @@ export interface ApplicantApplicationListItem {
   status: ApplicantApplicationStatus;
   createdAt: string;
   submittedAt: string | null;
+  statusProgress: number;
+  statusStage: ApplicationStatusStage;
+  isFinal: boolean;
+  isSuccessfulOutcome: boolean;
 }
 
 export interface ApplicantApplication {
@@ -130,6 +152,10 @@ export interface ApplicantApplication {
   data: Record<string, unknown> | null;
   submittedAt: string | null;
   createdAt: string;
+  statusProgress: number;
+  statusStage: ApplicationStatusStage;
+  isFinal: boolean;
+  isSuccessfulOutcome: boolean;
 }
 
 export interface ApplicationTestScoreImportResult {
@@ -145,7 +171,7 @@ export interface ApplicationTestScoreImportResult {
   }>;
 }
 
-export type SubmissionStatus = "submitted";
+export type SubmissionStatus = Exclude<ApplicationStatus, "draft">;
 
 export interface SubmittedApplication {
   id: string;
@@ -157,6 +183,10 @@ export interface SubmittedApplication {
   submittedAt: string | null;
   receivedAt: string;
   status: SubmissionStatus;
+  statusProgress: number;
+  statusStage: ApplicationStatusStage;
+  isFinal: boolean;
+  isSuccessfulOutcome: boolean;
 }
 
 export interface PartnerDashboardRecentApplication {

@@ -24,12 +24,12 @@ func TestGetSubmittedApplicationsSingleDBReadsUnifiedApplicationsTable(t *testin
 		Limit: 20,
 	}
 
-	countPattern := `(?s)SELECT COUNT\(\*\) FROM applications WHERE status = 'submitted'`
+	countPattern := `(?s)SELECT COUNT\(\*\) FROM applications WHERE status IN`
 	mock.ExpectQuery(countPattern).
 		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(1))
 
 	now := time.Now().UTC()
-	selectPattern := `(?s)SELECT .*data AS application_data.*FROM applications WHERE status = 'submitted'.*LIMIT \$1 OFFSET \$2`
+	selectPattern := `(?s)SELECT .*data AS application_data.*FROM applications WHERE status IN.*LIMIT \$1 OFFSET \$2`
 	mock.ExpectQuery(selectPattern).
 		WithArgs(20, 0).
 		WillReturnRows(
@@ -43,6 +43,10 @@ func TestGetSubmittedApplicationsSingleDBReadsUnifiedApplicationsTable(t *testin
 				"submitted_at",
 				"received_at",
 				"status",
+				"status_progress",
+				"status_stage",
+				"is_final",
+				"is_successful_outcome",
 			}).AddRow(
 				"app-1",
 				"user-1",
@@ -53,6 +57,10 @@ func TestGetSubmittedApplicationsSingleDBReadsUnifiedApplicationsTable(t *testin
 				nil,
 				now,
 				"submitted",
+				35,
+				"application_received",
+				false,
+				false,
 			),
 		)
 
@@ -108,6 +116,10 @@ func TestGetSubmittedApplicationsBuildsFallbackSearchAndCitizenshipFilters(t *te
 				"submitted_at",
 				"received_at",
 				"status",
+				"status_progress",
+				"status_stage",
+				"is_final",
+				"is_successful_outcome",
 			}).AddRow(
 				"app-1",
 				"user-1",
@@ -117,7 +129,11 @@ func TestGetSubmittedApplicationsBuildsFallbackSearchAndCitizenshipFilters(t *te
 				[]byte(`{"citizenship":"Kazakhstan"}`),
 				nil,
 				now,
-				"pending",
+				"under_review",
+				55,
+				"review_in_progress",
+				false,
+				false,
 			),
 		)
 

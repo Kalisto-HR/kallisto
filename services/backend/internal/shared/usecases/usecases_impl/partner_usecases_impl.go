@@ -71,7 +71,7 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 					''
 				))) AS gender_value
 			FROM applications
-			WHERE university_id = $1::uuid AND status = 'submitted'
+			WHERE university_id = $1::uuid AND status <> 'draft'
 		)
 		SELECT
 			COUNT(*) FILTER (WHERE received_at >= NOW() - INTERVAL '7 days') AS new_applications,
@@ -122,11 +122,11 @@ func GetPartnerDashboard(ctx context.Context, universityId string) (*models.Part
 			COALESCE(NULLIF(`+unifiedSubmittedApplicantNameExpr+`, ''), 'Applicant') AS name,
 			COALESCE(NULLIF(data->>'program', ''), NULLIF(applicant_info->>'program', ''), 'General') AS program,
 			COALESCE(NULLIF(`+unifiedSubmittedApplicantCitizenExpr+`, ''), 'Unknown') AS citizenship,
-			'submitted' AS status,
+			status,
 			submitted_at,
 			NULL::double precision AS acceptance_pct
 		FROM applications
-		WHERE university_id = $1::uuid AND status = 'submitted'
+		WHERE university_id = $1::uuid AND status <> 'draft'
 		ORDER BY `+unifiedSubmittedReceivedAtExpr+` DESC
 		LIMIT 10
 	`, universityId)
@@ -167,7 +167,7 @@ func loadPartnerFunnelCounts(ctx context.Context, conn middlewares.DB, universit
 		WITH submitted_users AS (
 			SELECT DISTINCT user_id
 			FROM applications
-			WHERE university_id = $1::uuid AND status = 'submitted'
+			WHERE university_id = $1::uuid AND status <> 'draft'
 		),
 		draft_users AS (
 			SELECT DISTINCT user_id
@@ -226,7 +226,7 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 				) AS country
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
-			WHERE a.university_id = $1::uuid AND a.status = 'submitted'
+			WHERE a.university_id = $1::uuid AND a.status <> 'draft'
 			ORDER BY a.user_id, COALESCE(a.received_at, a.submitted_at, a.created_at) DESC
 		),
 		prospects AS (
@@ -356,7 +356,7 @@ const partnerProspectContactsSQL = `
 		FROM applications submitted
 		WHERE submitted.user_id = a.user_id
 		  AND submitted.university_id = $1::uuid
-		  AND submitted.status = 'submitted'
+		  AND submitted.status <> 'draft'
 	  )
 	ORDER BY u.id, COALESCE(a.updated_at, a.created_at) DESC
 `

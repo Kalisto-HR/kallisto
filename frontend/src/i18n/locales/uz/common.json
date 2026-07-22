@@ -1,0 +1,158 @@
+{
+  "language": {
+    "label": "Interfeys tili",
+    "en": "EN — English",
+    "ru": "RU — Русский",
+    "uz": "UZ — O‘zbekcha"
+  },
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "findUniversities": "Universitetlarni topish",
+    "compare": "Taqqoslash",
+    "billing": "To‘lov",
+    "settings": "Sozlamalar",
+    "help": "Yordam",
+    "university": "Universitet",
+    "universityProfile": "Universitet profili",
+    "applicationStructure": "Ariza tuzilmasi",
+    "submissions": "Arizalar",
+    "staffWorkspace": "Staff ish maydoni",
+    "students": "Talabalar",
+    "universities": "Universitetlar",
+    "programs": "Dasturlar",
+    "applications": "Arizalar",
+    "documentReview": "Hujjatlarni tekshirish",
+    "payments": "To‘lovlar",
+    "analytics": "Analitika",
+    "notifications": "Bildirishnomalar",
+    "adminUsers": "Administratorlar",
+    "serviceLogs": "Servis loglari",
+    "auditLogs": "Audit loglari",
+    "portalConsole": "Portal",
+    "partnerAccess": "Hamkor kirishi",
+    "staffAccess": "Staff kirishi",
+    "staffWorkspaceMode": "Staff ish maydoni",
+    "universityMode": "Universitet rejimi",
+    "expandSidebar": "Yon menyuni ochish",
+    "collapseSidebar": "Yon menyuni yopish",
+    "applicantNavigation": "Abituriyent navigatsiyasi",
+    "applicantNavigationDescription": "Abituriyent kabineti navigatsiya havolalari.",
+    "portalNavigation": "Navigatsiya menyusi",
+    "portalNavigationDescription": "Hamkor va staff portali funksiyalariga kirish"
+  },
+  "actions": {
+    "view": "Ko‘rish",
+    "openSubmissions": "Arizalarni ochish",
+    "copyEmails": "Emaillarni nusxalash",
+    "copying": "Nusxalanmoqda",
+    "csv": "CSV",
+    "exporting": "Eksport qilinmoqda",
+    "signOut": "Chiqish",
+    "logOut": "Chiqish",
+    "save": "Saqlash",
+    "uploading": "Yuklanmoqda...",
+    "uploadPhoto": "Rasm yuklash"
+  },
+  "labels": {
+    "applicantAccount": "Abituriyent akkaunti",
+    "applications_one": "{{count}} ariza",
+    "applications_other": "{{count}} ariza",
+    "basketItems_one": "{{count}} savat elementi",
+    "basketItems_other": "{{count}} savat elementi",
+    "staff": "Staff",
+    "partner": "Hamkor",
+    "unknown": "Noma’lum",
+    "planned": "rejalashtirilgan",
+    "regionOfResidence": "Yashash hududi",
+    "selectRegion": "Hududni tanlang"
+  },
+  "regions": {
+    "tashkent_city": "Toshkent shahri",
+    "karakalpakstan": "Qoraqalpog‘iston Respublikasi",
+    "andijan": "Andijon viloyati",
+    "bukhara": "Buxoro viloyati",
+    "fergana": "Farg‘ona viloyati",
+    "jizzakh": "Jizzax viloyati",
+    "khorezm": "Xorazm viloyati",
+    "namangan": "Namangan viloyati",
+    "navoiy": "Navoiy viloyati",
+    "qashqadaryo": "Qashqadaryo viloyati",
+    "samarqand": "Samarqand viloyati",
+    "sirdaryo": "Sirdaryo viloyati",
+    "surxondaryo": "Surxondaryo viloyati",
+    "tashkent_region": "Toshkent viloyati"
+  },
+  "validation": {
+    "invalidRegion": "O‘zbekiston hududi noto‘g‘ri ko‘rsatilgan."
+  },
+  "staffSections": {
+    "status": "Bo‘lim ochiq",
+    "programs": {
+      "title": "Dasturlar",
+      "subtitle": "Dasturlarni boshqarish ish maydoni.",
+      "workspaceTitle": "Dasturlar bo‘limi",
+      "workspaceDescription": "Bu yerda dasturga xos qabul ma’lumotlari keyingi bosqichda boshqariladi.",
+      "nextStep": "Marshrut endi ochiq. To‘liq yaratish, tahrirlash va nashr qilish jarayonlari uchun backend dastur jadvallari va validatsiya kerak."
+    },
+    "applications": {
+      "title": "Arizalar",
+      "subtitle": "Platforma bo‘yicha arizalar operatsiyalari ish maydoni.",
+      "workspaceTitle": "Arizalar bo‘limi",
+      "workspaceDescription": "Bu bo‘lim umumiy ariza statuslarini boshqarish uchun ajratilgan.",
+      "nextStep": "Marshrut endi ochiq. Status tarixi va mas’ul admin biriktirish vositalari ariza statuslari migratsiyasidan keyin ulanadi."
+    },
+    "documentReview": {
+      "title": "Hujjatlarni tekshirish",
+      "subtitle": "Abituriyent hujjatlarini tekshirish markaziy navbati.",
+      "workspaceTitle": "Hujjat tekshirish bo‘limi",
+      "workspaceDescription": "Bu bo‘lim himoyalangan fayl kirishi va tekshiruv statuslaridan foydalanadi.",
+      "nextStep": "Marshrut endi ochiq. Approve/reject/replacement amallari uchun hujjat tekshiruvi status maydonlari va backend endpointlar kerak."
+    },
+    "payments": {
+      "title": "To‘lovlar",
+      "subtitle": "To‘lov va tranzaksiyalar monitoringi.",
+      "workspaceTitle": "To‘lovlar bo‘limi",
+      "workspaceDescription": "Bu bo‘lim kelajakdagi to‘lov ma’lumotlari modeli uchun tayyor.",
+      "nextStep": "Marshrut endi ochiq. Jonli tranzaksiyalar uchun payments jadvali yoki to‘lov provayderi integratsiyasi kerak."
+    },
+    "analytics": {
+      "title": "Analitika",
+      "subtitle": "Qabul analitikasi va O‘zbekiston hududlari hisobotlari.",
+      "workspaceTitle": "Analitika bo‘limi",
+      "workspaceDescription": "Dashboard allaqachon jonli ma’lumotlardan foydalanadi; bu bo‘lim hisobotlarni kengaytiradi.",
+      "nextStep": "Marshrut endi ochiq. Batafsil analitikani mavjud dashboard querylari asosida qo‘shish mumkin."
+    },
+    "notifications": {
+      "title": "Bildirishnomalar",
+      "subtitle": "Admin bildirishnoma targetingi va shablonlari.",
+      "workspaceTitle": "Bildirishnomalar bo‘limi",
+      "workspaceDescription": "Bu bo‘lim in-app, email yoki real ulangan kanallar uchun ajratilgan.",
+      "nextStep": "Marshrut endi ochiq. Yuborish vositalari faqat real kanallarga ulanadi, fake delivery bo‘lmaydi."
+    },
+    "adminUsers": {
+      "title": "Administratorlar",
+      "subtitle": "Staff va partner administratorlarini boshqarish.",
+      "workspaceTitle": "Administratorlar bo‘limi",
+      "workspaceDescription": "Staff akkaunt yaratish backend account endpoint orqali allaqachon mavjud.",
+      "nextStep": "Marshrut endi ochiq. Role management UI role-specific permissions yakunlangandan keyin qo‘shiladi."
+    }
+  },
+  "applicationStatuses": {
+    "draft": "Qoralama",
+    "submitted": "Topshirildi",
+    "under_review": "Ko'rib chiqilmoqda",
+    "additional_information_required": "Qo'shimcha ma'lumot talab qilinadi",
+    "decision_pending": "Qaror kutilmoqda",
+    "accepted": "Qabul qilindi",
+    "waitlisted": "Kutish ro'yxatiga kiritildi",
+    "rejected": "Rad etildi"
+  },
+  "applicationProgressStages": {
+    "application_preparation": "Arizani tayyorlash",
+    "application_received": "Ariza qabul qilindi",
+    "review_in_progress": "Ko'rib chiqish jarayonida",
+    "decision_pending": "Qaror kutilmoqda",
+    "final_decision": "Yakuniy qaror",
+    "unknown": "Noma'lum"
+  }
+}

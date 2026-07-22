@@ -1,0 +1,129 @@
+{
+  "staff": {
+    "title": "Admin boshqaruv paneli",
+    "subtitle": "Qabul jarayoni, talabalar harakati va platforma holati jonli ma’lumotlar asosida.",
+    "loading": "Panel yuklanmoqda...",
+    "errors": {
+      "load": "Admin panelini yuklab bo‘lmadi"
+    },
+    "viewAudit": "Audit logini ko‘rish",
+    "kpis": {
+      "totalStudents": "Jami talabalar",
+      "newStudents": "7 kundagi yangi talabalar",
+      "totalUniversities": "Jami universitetlar",
+      "activePrograms": "Faol dasturlar",
+      "applicationsStarted": "Boshlangan arizalar",
+      "applicationsSubmitted": "Topshirilgan arizalar",
+      "underReview": "Tekshiruvda",
+      "accepted": "Qabul qilingan",
+      "rejected": "Rad etilgan",
+      "pendingDocuments": "Tekshiriladigan hujjatlar",
+      "completedPayments": "Yakunlangan to‘lovlar",
+      "revenue": "Platforma daromadi"
+    },
+    "funnel": {
+      "title": "Ariza voronkasi",
+      "description": "Talabalarning qabul jarayonidagi joriy harakati.",
+      "steps": {
+        "registered": "Ro‘yxatdan o‘tgan",
+        "profile_completed": "Profil to‘ldirilgan",
+        "university_selected": "Universitet tanlangan",
+        "application_started": "Ariza boshlangan",
+        "documents_uploaded": "Hujjatlar yuklangan",
+        "application_submitted": "Ariza topshirilgan",
+        "sent_to_university": "Universitetga yuborilgan",
+        "accepted": "Qabul qilingan"
+      }
+    },
+    "charts": {
+      "registrations": "Talabalar ro‘yxati",
+      "registrationsDescription": "So‘nggi 14 kundagi kunlik abituriyent ro‘yxatdan o‘tishlari.",
+      "applicationStatuses": "Arizalar status bo‘yicha",
+      "applicationStatusesDescription": "Joriy ariza statuslarining taqsimoti.",
+      "popularUniversities": "Eng ommabop universitetlar",
+      "popularUniversitiesDescription": "Ariza faolligi eng yuqori universitetlar.",
+      "studentsByRegion": "O‘zbekiston hududlari bo‘yicha talabalar",
+      "studentsByRegionDescription": "Abituriyent akkauntlari barqaror hudud kodi bo‘yicha guruhlangan.",
+      "emptyTitle": "Hali ma’lumot yo‘q",
+      "emptyDescription": "Mos yozuvlar paydo bo‘lganda grafik shu yerda chiqadi."
+    },
+    "health": {
+      "title": "Tizim holati",
+      "description": "Service loglar va baza holatidan operatsion metrikalar.",
+      "emptyTitle": "Metrikalar yo‘q",
+      "emptyDescription": "Backend faollik yozgandan keyin metrikalar ko‘rinadi."
+    },
+    "activity": {
+      "title": "So‘nggi faollik",
+      "description": "Platformadagi oxirgi audit voqealari.",
+      "emptyTitle": "Hali faollik yo‘q",
+      "emptyDescription": "Admin amallari audit yozuvlaridan keyin shu yerda chiqadi."
+    }
+  },
+  "partner": {
+    "title": "Hamkor paneli",
+    "subtitle": "Yuborilgan arizalar, abituriyentlar tarkibi va dastlabki qiziqishni kuzating.",
+    "stats": {
+      "newSubmissions": "Yangi arizalar",
+      "last7Days": "Oxirgi 7 kun",
+      "totalSubmissions": "Jami arizalar",
+      "allSubmitted": "Barcha yuborilgan arizalar",
+      "suspects": "Potensiallar",
+      "basketOnly": "Savat orqali qiziqish",
+      "prospects": "Jarayondagilar",
+      "draftApplications": "Qoralama arizalar",
+      "averageSat": "O‘rtacha SAT",
+      "averageIelts": "O‘rtacha IELTS",
+      "reportedScore": "Abituriyent ko‘rsatgan ball"
+    },
+    "contacts": {
+      "none": "{{stage}} emaillari hozircha mavjud emas.",
+      "copied_one": "{{count}} ta {{stage}} emaili nusxalandi.",
+      "copied_other": "{{count}} ta {{stage}} emaili nusxalandi.",
+      "downloaded_one": "{{count}} ta {{stage}} kontakti yuklab olindi.",
+      "downloaded_other": "{{count}} ta {{stage}} kontakti yuklab olindi.",
+      "failed": "{{stage}} kontaktlarini yuklab bo‘lmadi"
+    },
+    "studentOrigin": {
+      "title": "Talabalarning hududlar bo‘yicha statistikasi",
+      "description": "Potensial nomzodlar, abituriyentlar va ariza topshirgan talabalar orasida O‘zbekiston hududlari.",
+      "unknownRegion": "Hudud ko‘rsatilmagan",
+      "student_one": "{{count}} talaba",
+      "student_other": "{{count}} talaba",
+      "empty": "Hududlar bo‘yicha ma’lumot mavjud emas",
+      "loading": "Hududlar statistikasi yuklanmoqda...",
+      "other": "Boshqa hududlar"
+    },
+    "gender": {
+      "title": "Jins bo‘yicha taqsimot",
+      "description": "Ushbu universitetga ariza topshirgan abituriyent profillari asosida.",
+      "loading": "Taqsimot yuklanmoqda...",
+      "empty": "Hozircha yuborilgan arizalar yo‘q.",
+      "male": "Erkak",
+      "female": "Ayol",
+      "nonBinary": "Nobinar",
+      "preferNotToSay": "Ko‘rsatilmagan",
+      "applicant_one": "{{count}} abituriyent",
+      "applicant_other": "{{count}} abituriyent"
+    },
+    "recent": {
+      "title": "So‘nggi arizalar",
+      "description": "So‘nggi yuborilgan arizalarni faqat ko‘rish rejimida kuzatish.",
+      "loading": "Arizalar faolligi yuklanmoqda...",
+      "empty": "Hozircha arizalar mavjud emas.",
+      "applicant": "Abituriyent",
+      "program": "Dastur",
+      "citizenship": "Fuqarolik",
+      "submitted": "Yuborilgan",
+      "action": "Amal"
+    },
+    "alerts": {
+      "title": "Ariza bildirishnomalari",
+      "description": "Arizalar faolligi bo‘yicha so‘nggi avtomatik bildirishnomalar.",
+      "loading": "Bildirishnomalar yuklanmoqda...",
+      "empty": "Hozircha bildirishnomalar yo‘q.",
+      "alert": "Bildirishnoma",
+      "new": "Yangi"
+    }
+  }
+}

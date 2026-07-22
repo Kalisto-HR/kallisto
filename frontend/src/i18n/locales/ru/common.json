@@ -1,0 +1,162 @@
+{
+  "language": {
+    "label": "Язык интерфейса",
+    "en": "EN — English",
+    "ru": "RU — Русский",
+    "uz": "UZ — O‘zbekcha"
+  },
+  "nav": {
+    "dashboard": "Панель",
+    "findUniversities": "Найти университеты",
+    "compare": "Сравнение",
+    "billing": "Оплата",
+    "settings": "Настройки",
+    "help": "Помощь",
+    "university": "Университет",
+    "universityProfile": "Профиль университета",
+    "applicationStructure": "Структура заявки",
+    "submissions": "Заявки",
+    "staffWorkspace": "Рабочая область staff",
+    "students": "Студенты",
+    "universities": "Университеты",
+    "programs": "Программы",
+    "applications": "Заявки",
+    "documentReview": "Проверка документов",
+    "payments": "Платежи",
+    "analytics": "Аналитика",
+    "notifications": "Уведомления",
+    "adminUsers": "Администраторы",
+    "serviceLogs": "Сервисные логи",
+    "auditLogs": "Аудит",
+    "portalConsole": "Портал",
+    "partnerAccess": "Доступ партнера",
+    "staffAccess": "Доступ staff",
+    "staffWorkspaceMode": "Рабочая область staff",
+    "universityMode": "Режим университета",
+    "expandSidebar": "Развернуть меню",
+    "collapseSidebar": "Свернуть меню",
+    "applicantNavigation": "Навигация абитуриента",
+    "applicantNavigationDescription": "Ссылки навигации личного кабинета абитуриента.",
+    "portalNavigation": "Меню навигации",
+    "portalNavigationDescription": "Доступ к функциям портала партнеров и staff"
+  },
+  "actions": {
+    "view": "Открыть",
+    "openSubmissions": "Открыть заявки",
+    "copyEmails": "Копировать email",
+    "copying": "Копирование",
+    "csv": "CSV",
+    "exporting": "Экспорт",
+    "signOut": "Выйти",
+    "logOut": "Выйти",
+    "save": "Сохранить",
+    "uploading": "Загрузка...",
+    "uploadPhoto": "Загрузить фото"
+  },
+  "labels": {
+    "applicantAccount": "Аккаунт абитуриента",
+    "applications_one": "{{count}} заявка",
+    "applications_few": "{{count}} заявки",
+    "applications_many": "{{count}} заявок",
+    "applications_other": "{{count}} заявки",
+    "basketItems_one": "{{count}} в корзине",
+    "basketItems_few": "{{count}} в корзине",
+    "basketItems_many": "{{count}} в корзине",
+    "basketItems_other": "{{count}} в корзине",
+    "staff": "Staff",
+    "partner": "Партнер",
+    "unknown": "Неизвестно",
+    "planned": "запланировано",
+    "regionOfResidence": "Регион проживания",
+    "selectRegion": "Выберите регион"
+  },
+  "regions": {
+    "tashkent_city": "Город Ташкент",
+    "karakalpakstan": "Республика Каракалпакстан",
+    "andijan": "Андижанская область",
+    "bukhara": "Бухарская область",
+    "fergana": "Ферганская область",
+    "jizzakh": "Джизакская область",
+    "khorezm": "Хорезмская область",
+    "namangan": "Наманганская область",
+    "navoiy": "Навоийская область",
+    "qashqadaryo": "Кашкадарьинская область",
+    "samarqand": "Самаркандская область",
+    "sirdaryo": "Сырдарьинская область",
+    "surxondaryo": "Сурхандарьинская область",
+    "tashkent_region": "Ташкентская область"
+  },
+  "validation": {
+    "invalidRegion": "Указан недопустимый регион Узбекистана."
+  },
+  "staffSections": {
+    "status": "Раздел доступен",
+    "programs": {
+      "title": "Программы",
+      "subtitle": "Рабочая область управления программами.",
+      "workspaceTitle": "Раздел программ",
+      "workspaceDescription": "Здесь будет следующий этап управления программными требованиями приема.",
+      "nextStep": "Маршрут теперь доступен. Полные сценарии создания, редактирования и публикации программ требуют backend-таблиц программ и валидации."
+    },
+    "applications": {
+      "title": "Заявки",
+      "subtitle": "Общая рабочая область операций с заявками.",
+      "workspaceTitle": "Раздел заявок",
+      "workspaceDescription": "Этот раздел зарезервирован для глобального управления статусами заявок.",
+      "nextStep": "Маршрут теперь доступен. История статусов и назначение менеджеров будут подключены после миграции статусов заявок."
+    },
+    "documentReview": {
+      "title": "Проверка документов",
+      "subtitle": "Центральная очередь проверки документов абитуриентов.",
+      "workspaceTitle": "Раздел проверки документов",
+      "workspaceDescription": "Этот раздел будет использовать защищенный доступ к файлам и статусы проверки.",
+      "nextStep": "Маршрут теперь доступен. Действия approve/reject/replacement требуют полей статуса проверки документов и backend endpoints."
+    },
+    "payments": {
+      "title": "Платежи",
+      "subtitle": "Мониторинг платежей и транзакций.",
+      "workspaceTitle": "Раздел платежей",
+      "workspaceDescription": "Раздел готов для будущей модели платежных данных.",
+      "nextStep": "Маршрут теперь доступен. Для живых транзакций нужна таблица payments или интеграция платежного провайдера."
+    },
+    "analytics": {
+      "title": "Аналитика",
+      "subtitle": "Аналитика приема и отчеты по регионам Узбекистана.",
+      "workspaceTitle": "Раздел аналитики",
+      "workspaceDescription": "Dashboard уже использует живые данные; этот раздел расширит отчеты.",
+      "nextStep": "Маршрут теперь доступен. Детальную аналитику можно добавить на базе существующих dashboard queries."
+    },
+    "notifications": {
+      "title": "Уведомления",
+      "subtitle": "Таргетинг уведомлений и шаблоны.",
+      "workspaceTitle": "Раздел уведомлений",
+      "workspaceDescription": "Раздел зарезервирован для in-app, email или реально подключенных каналов.",
+      "nextStep": "Маршрут теперь доступен. Отправка будет подключена только к реальным каналам, без fake delivery."
+    },
+    "adminUsers": {
+      "title": "Администраторы",
+      "subtitle": "Управление staff и partner администраторами.",
+      "workspaceTitle": "Раздел администраторов",
+      "workspaceDescription": "Создание staff аккаунтов уже существует через backend account endpoint.",
+      "nextStep": "Маршрут теперь доступен. UI управления ролями будет добавлен после финализации role-specific permissions."
+    }
+  },
+  "applicationStatuses": {
+    "draft": "Черновик",
+    "submitted": "Подано",
+    "under_review": "На рассмотрении",
+    "additional_information_required": "Требуется дополнительная информация",
+    "decision_pending": "Ожидается решение",
+    "accepted": "Принято",
+    "waitlisted": "В списке ожидания",
+    "rejected": "Отклонено"
+  },
+  "applicationProgressStages": {
+    "application_preparation": "Подготовка заявки",
+    "application_received": "Заявка получена",
+    "review_in_progress": "Идет рассмотрение",
+    "decision_pending": "Ожидается решение",
+    "final_decision": "Финальное решение",
+    "unknown": "Неизвестно"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "status": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "under_review": "Under review",
+    "additional_information_required": "Additional information required",
+    "decision_pending": "Decision pending",
+    "accepted": "Accepted",
+    "waitlisted": "Waitlisted",
+    "rejected": "Rejected"
+  },
+  "tracking": {
+    "title": "My Applications",
+    "description": "Track draft and submitted applications in one place.",
+    "total": "Total Applications",
+    "progressTitle": "Application Status",
+    "additionalInfo": "The university needs additional information. Check your requested tasks and documents.",
+    "finalDecision": "The university has recorded a final decision for this application.",
+    "inProgress": "Your application is moving through the university review process."
+  }
+}

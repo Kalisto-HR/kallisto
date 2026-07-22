@@ -38,6 +38,31 @@ type essayValidationFieldDetails struct {
 	WordLimit *float64 `json:"wordLimit"`
 }
 
+const applicationStatusMetaSelect = `CASE a.status
+			WHEN 'draft' THEN 15
+			WHEN 'submitted' THEN 35
+			WHEN 'under_review' THEN 55
+			WHEN 'additional_information_required' THEN 55
+			WHEN 'decision_pending' THEN 80
+			WHEN 'waitlisted' THEN 90
+			WHEN 'accepted' THEN 100
+			WHEN 'rejected' THEN 100
+			ELSE 0
+		END AS status_progress,
+		CASE a.status
+			WHEN 'draft' THEN 'application_preparation'
+			WHEN 'submitted' THEN 'application_received'
+			WHEN 'under_review' THEN 'review_in_progress'
+			WHEN 'additional_information_required' THEN 'review_in_progress'
+			WHEN 'decision_pending' THEN 'decision_pending'
+			WHEN 'accepted' THEN 'final_decision'
+			WHEN 'waitlisted' THEN 'final_decision'
+			WHEN 'rejected' THEN 'final_decision'
+			ELSE 'unknown'
+		END AS status_stage,
+		(a.status IN ('accepted', 'waitlisted', 'rejected')) AS is_final,
+		(a.status = 'accepted') AS is_successful_outcome`
+
 func GetApplicationsByUser(ctx context.Context, userId string) ([]models.ApplicationListItem, error) {
 	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
 	if !ok {
@@ -45,7 +70,8 @@ func GetApplicationsByUser(ctx context.Context, userId string) ([]models.Applica
 	}
 
 	rows, err := conn.Query(ctx,
-		`SELECT a.university_id, u.name as university_name, a.application_cycle, a.status, a.created_at, a.submitted_at
+		`SELECT a.university_id, u.name as university_name, a.application_cycle, a.status, a.created_at, a.submitted_at,
+		`+applicationStatusMetaSelect+`
 		FROM applications a JOIN universities u ON a.university_id = u.id
 		WHERE a.user_id=$1 ORDER BY a.created_at DESC`, userId)
 	if err != nil {
@@ -68,7 +94,9 @@ func GetApplicationById(ctx context.Context, userId, universityId, cycle string)
 	}
 
 	rows, err := conn.Query(ctx,
-		"SELECT user_id, university_id, application_cycle, status, data, submitted_at, created_at FROM applications WHERE user_id=$1 AND university_id=$2 AND application_cycle=$3",
+		`SELECT a.user_id, a.university_id, a.application_cycle, a.status, a.data, a.submitted_at, a.created_at,
+		`+applicationStatusMetaSelect+`
+		FROM applications a WHERE a.user_id=$1 AND a.university_id=$2 AND a.application_cycle=$3`,
 		userId, universityId, cycle)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform database query: %s", err.Error())

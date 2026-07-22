@@ -61,6 +61,7 @@ describe("response mappers", () => {
     ).toEqual({
       id: "uni-1",
       name: "Example",
+      description: null,
       province: "Tashkent",
       city: "Tashkent",
       country: "UZ",
@@ -74,6 +75,7 @@ describe("response mappers", () => {
       scholarshipAvailable: true,
       cityType: "urban",
       campusVibe: "modern",
+      programGroups: null,
     });
 
     expect(
@@ -189,6 +191,10 @@ describe("response mappers", () => {
       status: "draft",
       createdAt: "2026-01-01",
       submittedAt: null,
+      statusProgress: 15,
+      statusStage: "application_preparation",
+      isFinal: false,
+      isSuccessfulOutcome: false,
     });
 
     expect(
@@ -209,6 +215,10 @@ describe("response mappers", () => {
       data: { major: "CS" },
       submittedAt: "2026-03-01",
       createdAt: "2026-01-01",
+      statusProgress: 35,
+      statusStage: "application_received",
+      isFinal: false,
+      isSuccessfulOutcome: false,
     });
 
     expect(

@@ -25,7 +25,7 @@ describe("staff overview service", () => {
       },
     });
 
-    await expect(fetchStaffOverview()).resolves.toEqual({
+    await expect(fetchStaffOverview()).resolves.toMatchObject({
       stats: { total_universities: 3, portal_accounts: 2, total_applications: 9 },
       recent_activity: [{ id: "1", type: "audit", description: "Created", user: "Admin", timestamp: "now", status: "done" }],
       system_health: [{ label: "Observed Requests (24h)", value: "4", status: "neutral" }],

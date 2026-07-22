@@ -73,6 +73,10 @@ describe("applicant applications service", () => {
         status: "draft",
         createdAt: "2026-01-01",
         submittedAt: null,
+        statusProgress: 15,
+        statusStage: "application_preparation",
+        isFinal: false,
+        isSuccessfulOutcome: false,
       },
     ]);
     await expect(fetchApplicantApplication("uni-1", "2026")).resolves.toEqual({
@@ -83,6 +87,10 @@ describe("applicant applications service", () => {
       data: { major: "CS" },
       submittedAt: null,
       createdAt: "2026-01-01",
+      statusProgress: 35,
+      statusStage: "application_received",
+      isFinal: false,
+      isSuccessfulOutcome: false,
     });
 
     expect(vi.mocked(api.get)).toHaveBeenNthCalledWith(1, "/v1.0/applicant/applications");

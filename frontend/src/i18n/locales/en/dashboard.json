@@ -1,0 +1,129 @@
+{
+  "staff": {
+    "title": "Admin Dashboard",
+    "subtitle": "Admissions operations, student movement, and platform health from live records.",
+    "loading": "Loading dashboard...",
+    "errors": {
+      "load": "Failed to load admin dashboard"
+    },
+    "viewAudit": "View audit log",
+    "kpis": {
+      "totalStudents": "Total students",
+      "newStudents": "New students, 7 days",
+      "totalUniversities": "Total universities",
+      "activePrograms": "Active programs",
+      "applicationsStarted": "Applications started",
+      "applicationsSubmitted": "Applications submitted",
+      "underReview": "Under review",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "pendingDocuments": "Pending document reviews",
+      "completedPayments": "Completed payments",
+      "revenue": "Platform revenue"
+    },
+    "funnel": {
+      "title": "Application funnel",
+      "description": "Current student movement through the admissions workflow.",
+      "steps": {
+        "registered": "Registered",
+        "profile_completed": "Profile completed",
+        "university_selected": "University selected",
+        "application_started": "Application started",
+        "documents_uploaded": "Documents uploaded",
+        "application_submitted": "Application submitted",
+        "sent_to_university": "Sent to university",
+        "accepted": "Accepted"
+      }
+    },
+    "charts": {
+      "registrations": "Student registrations",
+      "registrationsDescription": "Daily applicant sign-ups during the last 14 days.",
+      "applicationStatuses": "Applications by status",
+      "applicationStatusesDescription": "Live distribution of current application states.",
+      "popularUniversities": "Most popular universities",
+      "popularUniversitiesDescription": "Universities with the most application activity.",
+      "studentsByRegion": "Students by Uzbekistan region",
+      "studentsByRegionDescription": "Applicant accounts grouped by stable region code.",
+      "emptyTitle": "No data yet",
+      "emptyDescription": "This chart will appear once matching records exist."
+    },
+    "health": {
+      "title": "System health",
+      "description": "Operational metrics from service logs and database state.",
+      "emptyTitle": "No health metrics",
+      "emptyDescription": "Metrics will appear after the backend records service activity."
+    },
+    "activity": {
+      "title": "Recent activity",
+      "description": "Latest audit events recorded by the platform.",
+      "emptyTitle": "No activity yet",
+      "emptyDescription": "Administrative actions will appear here once audit entries exist."
+    }
+  },
+  "partner": {
+    "title": "Partner Dashboard",
+    "subtitle": "Monitor submitted applications, applicant mix, and early-stage student interest.",
+    "stats": {
+      "newSubmissions": "New Submissions",
+      "last7Days": "Last 7 days",
+      "totalSubmissions": "Total Submissions",
+      "allSubmitted": "All submitted applications",
+      "suspects": "Suspects",
+      "basketOnly": "Basket-only interest",
+      "prospects": "Prospects",
+      "draftApplications": "Draft applications",
+      "averageSat": "Average SAT",
+      "averageIelts": "Average IELTS",
+      "reportedScore": "Applicant-reported score"
+    },
+    "contacts": {
+      "none": "No {{stage}} emails are available yet.",
+      "copied_one": "Copied {{count}} {{stage}} email.",
+      "copied_other": "Copied {{count}} {{stage}} emails.",
+      "downloaded_one": "Downloaded {{count}} {{stage}} contact.",
+      "downloaded_other": "Downloaded {{count}} {{stage}} contacts.",
+      "failed": "Failed to load {{stage}} contacts"
+    },
+    "studentOrigin": {
+      "title": "Student Origin Statistics",
+      "description": "Regions represented across suspects, prospects, and submitted students.",
+      "unknownRegion": "Unknown region",
+      "student_one": "{{count}} student",
+      "student_other": "{{count}} students",
+      "empty": "No regional data available",
+      "loading": "Loading regional statistics...",
+      "other": "Other regions"
+    },
+    "gender": {
+      "title": "Gender Distribution",
+      "description": "Based on submitted applicant profiles for this university.",
+      "loading": "Loading gender distribution...",
+      "empty": "No submitted applicants are available yet.",
+      "male": "Male",
+      "female": "Female",
+      "nonBinary": "Non-binary",
+      "preferNotToSay": "Prefer not to say",
+      "applicant_one": "{{count}} applicant",
+      "applicant_other": "{{count}} applicants"
+    },
+    "recent": {
+      "title": "Recent Submissions",
+      "description": "Read-only visibility into the latest submitted applications.",
+      "loading": "Loading submission activity...",
+      "empty": "No submissions available yet.",
+      "applicant": "Applicant",
+      "program": "Program",
+      "citizenship": "Citizenship",
+      "submitted": "Submitted",
+      "action": "Action"
+    },
+    "alerts": {
+      "title": "Submission Alerts",
+      "description": "Recent automated notifications from submission activity.",
+      "loading": "Loading alerts...",
+      "empty": "No alerts right now.",
+      "alert": "Alert",
+      "new": "New"
+    }
+  }
+}

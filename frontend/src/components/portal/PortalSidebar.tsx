@@ -4,16 +4,23 @@ import {
   FileText,
   Users,
   Settings,
-  Shield,
   ScrollText,
   Terminal,
   Globe,
+  GraduationCap,
+  CreditCard,
+  BarChart3,
+  Bell,
+  UserCog,
+  ClipboardCheck,
   PanelLeftClose,
   PanelLeftOpen,
   type LucideIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../ui/utils';
 import type { PortalContext, PortalPageView } from '../../types/portal';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface PortalSidebarProps {
   userRole: 'partner' | 'staff';
@@ -27,11 +34,11 @@ interface PortalSidebarProps {
 interface NavItem {
   id: PortalPageView;
   icon: LucideIcon;
-  label: string;
+  labelKey: string;
 }
 
 interface NavSection {
-  title: string;
+  titleKey: string;
   items: NavItem[];
   visible: (role: 'partner' | 'staff', context: PortalContext) => boolean;
 }
@@ -44,34 +51,43 @@ export function PortalSidebar({
   onNavigate,
   onCollapsedChange,
 }: PortalSidebarProps) {
+  const { t } = useTranslation("common");
   const isGlobalMode = currentContext.type === 'global';
   const isStaff = userRole === 'staff';
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
   const navSections: NavSection[] = [
     {
-      title: 'University',
+      titleKey: 'nav.university',
       visible: (role, context) => {
         return role === 'partner' && context.type === 'university';
       },
       items: [
-        { id: 'partner-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { id: 'partner-university-profile', icon: Building2, label: 'University Profile' },
-        { id: 'partner-application-structure', icon: FileText, label: 'Application Structure' },
-        { id: 'partner-applications', icon: Users, label: 'Submissions' },
+        { id: 'partner-dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+        { id: 'partner-university-profile', icon: Building2, labelKey: 'nav.universityProfile' },
+        { id: 'partner-application-structure', icon: FileText, labelKey: 'nav.applicationStructure' },
+        { id: 'partner-applications', icon: Users, labelKey: 'nav.submissions' },
       ],
     },
     {
-      title: 'Staff Workspace',
+      titleKey: 'nav.staffWorkspace',
       visible: (role, context) => {
         return role === 'staff' && context.type === 'global';
       },
       items: [
-        { id: 'staff-dashboard', icon: Globe, label: 'Dashboard' },
-        { id: 'staff-universities', icon: Building2, label: 'Universities' },
-        { id: 'staff-service-logs', icon: Terminal, label: 'Service Logs' },
-        { id: 'staff-audit-logs', icon: ScrollText, label: 'Audit Logs' },
-        { id: 'staff-settings', icon: Settings, label: 'Settings' },
+        { id: 'staff-dashboard', icon: Globe, labelKey: 'nav.dashboard' },
+        { id: 'staff-students', icon: Users, labelKey: 'nav.students' },
+        { id: 'staff-universities', icon: Building2, labelKey: 'nav.universities' },
+        { id: 'staff-programs', icon: GraduationCap, labelKey: 'nav.programs' },
+        { id: 'staff-applications', icon: FileText, labelKey: 'nav.applications' },
+        { id: 'staff-document-review', icon: ClipboardCheck, labelKey: 'nav.documentReview' },
+        { id: 'staff-payments', icon: CreditCard, labelKey: 'nav.payments' },
+        { id: 'staff-analytics', icon: BarChart3, labelKey: 'nav.analytics' },
+        { id: 'staff-notifications', icon: Bell, labelKey: 'nav.notifications' },
+        { id: 'staff-admin-users', icon: UserCog, labelKey: 'nav.adminUsers' },
+        { id: 'staff-service-logs', icon: Terminal, labelKey: 'nav.serviceLogs' },
+        { id: 'staff-audit-logs', icon: ScrollText, labelKey: 'nav.auditLogs' },
+        { id: 'staff-settings', icon: Settings, labelKey: 'nav.settings' },
       ],
     },
   ];
@@ -89,9 +105,7 @@ export function PortalSidebar({
     >
       <div className="border-b p-4">
         <div className={cn('flex gap-2', collapsed ? 'flex-col items-center justify-center' : 'mb-1 items-center')}>
-          <div className="brand-logo-mark flex h-8 w-8 items-center justify-center rounded-2xl">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
+          <BrandLogo className="h-8 w-8" />
           {collapsed ? null : (
             <div>
               <h1 className="font-semibold text-sm">Portal Console</h1>
@@ -119,23 +133,24 @@ export function PortalSidebar({
 
       <nav className={cn('flex-1 overflow-y-auto p-4', collapsed ? 'space-y-4 px-3' : 'space-y-6')}>
         {visibleSections.map((section) => (
-          <div key={section.title}>
+          <div key={section.titleKey}>
             {collapsed ? null : (
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
-                {section.title}
+                {t(section.titleKey)}
               </h3>
             )}
             <div className={cn('space-y-1', collapsed && 'flex flex-col items-center')}>
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
+                const label = t(item.labelKey);
 
                 return (
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
-                    title={collapsed ? item.label : undefined}
-                    aria-label={item.label}
+                    title={collapsed ? label : undefined}
+                    aria-label={label}
                     className={cn(
                       'flex items-center rounded-xl py-2.5 transition-colors',
                       collapsed ? 'h-11 w-11 justify-center px-0' : 'w-full gap-3 px-3',
@@ -145,7 +160,7 @@ export function PortalSidebar({
                     )}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
-                    {collapsed ? null : <span className="text-sm truncate">{item.label}</span>}
+                    {collapsed ? null : <span className="text-sm truncate">{label}</span>}
                   </button>
                 );
               })}
@@ -160,14 +175,14 @@ export function PortalSidebar({
           {isGlobalMode ? (
             <>
               <Globe className="w-3.5 h-3.5" />
-              {collapsed ? null : <span className="truncate">Staff workspace</span>}
+              {collapsed ? null : <span className="truncate">{t("nav.staffWorkspaceMode")}</span>}
             </>
           ) : (
             <>
               <Building2 className="w-3.5 h-3.5" />
               {collapsed ? null : (
                 <span className="truncate">
-                  {currentContext.type === 'university' ? currentContext.universityName : 'University Mode'}
+                  {currentContext.type === 'university' ? currentContext.universityName : t("nav.universityMode")}
                 </span>
               )}
             </>

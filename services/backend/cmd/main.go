@@ -191,6 +191,7 @@ func registerPartnerRoutes(router *mux.Router) {
 	router.HandleFunc("/university/application-structure/publish", withLinkedUniversityID(partnerHandlers.PublishApplicationStructureHandler)).Methods(http.MethodPost)
 	router.HandleFunc("/applications", withLinkedUniversityQuery(sharedHandlers.GetApplicationsHandler)).Methods(http.MethodGet)
 	router.HandleFunc("/applications/{id}", sharedHandlers.GetApplicationHandler).Methods(http.MethodGet)
+	router.HandleFunc("/applications/{id}/status", sharedHandlers.UpdateApplicationStatusHandler).Methods(http.MethodPatch)
 	router.HandleFunc("/applications/{id}/files", sharedHandlers.ListSubmittedApplicationFilesHandler).Methods(http.MethodGet)
 	router.HandleFunc("/applications/{id}/files/{fileId}/download", sharedHandlers.DownloadSubmittedApplicationFileHandler).Methods(http.MethodGet)
 }
@@ -198,6 +199,7 @@ func registerPartnerRoutes(router *mux.Router) {
 func registerStaffRoutes(router *mux.Router, authHandler *authHandlers.AuthHandler) {
 	router.HandleFunc("/dashboard", staffHandlers.GetGlobalOverviewHandler).Methods(http.MethodGet)
 	router.HandleFunc("/accounts", authHandler.CreateRoleAccount).Methods(http.MethodPost)
+	router.HandleFunc("/students", staffHandlers.GetGlobalStudentsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities", staffHandlers.GetGlobalUniversitiesHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities", sharedHandlers.CreateUniversityHandler).Methods(http.MethodPost)
 	router.HandleFunc("/universities/import", sharedHandlers.ImportUniversitiesHandler).Methods(http.MethodPost)
@@ -210,6 +212,7 @@ func registerStaffRoutes(router *mux.Router, authHandler *authHandlers.AuthHandl
 	router.HandleFunc("/universities/{id}/application-structure/history", partnerHandlers.GetApplicationStructureHistoryHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities/{id}/application-structure/publish", partnerHandlers.PublishApplicationStructureHandler).Methods(http.MethodPost)
 	router.HandleFunc("/universities/{id}/applications", withPathIDQuery("university_id", sharedHandlers.GetApplicationsHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/applications/{id}/status", sharedHandlers.UpdateApplicationStatusHandler).Methods(http.MethodPatch)
 	router.HandleFunc("/service-logs", staffHandlers.GetGlobalServiceLogsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/audit-logs", staffHandlers.GetGlobalAuditLogsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/settings", staffHandlers.GetGlobalSettingsHandler).Methods(http.MethodGet)

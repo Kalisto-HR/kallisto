@@ -1,173 +1,241 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
-  AlertTriangle,
+  BadgeCheck,
+  Ban,
   Building2,
-  CheckCircle,
+  CircleDollarSign,
+  ClipboardCheck,
   FileText,
-  MinusCircle,
+  GraduationCap,
+  ShieldCheck,
   TrendingUp,
   Users,
-  XCircle,
 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { StaffOverviewPayload } from "../../services/staff/overviewService";
 import { routes } from "../../routes/routeConfig";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { EmptyState } from "../common/PageState";
+import { translateRegionCode } from "../../i18n/regions";
 
 interface StaffOverviewProps {
   data: StaffOverviewPayload;
 }
 
-type StatTone = "primary" | "accent" | "success";
-
-function statToneClass(tone: StatTone): string {
-  switch (tone) {
-    case "accent":
-      return "bg-accent text-accent-foreground";
-    case "success":
-      return "bg-success/10 text-success";
-    default:
-      return "bg-primary/10 text-primary";
-  }
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat().format(value);
 }
 
-function healthToneClass(status: string): string {
-  switch (status) {
-    case "warn":
-      return "text-warning";
-    case "critical":
-      return "text-destructive";
-    case "neutral":
-      return "text-muted-foreground";
-    default:
-      return "text-success";
-  }
+function formatUzs(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(value) + " UZS";
 }
 
-function HealthIcon({ status }: { status: string }) {
-  const className = `h-4 w-4 ${healthToneClass(status)}`;
-  switch (status) {
-    case "warn":
-      return <AlertTriangle className={className} />;
-    case "critical":
-      return <XCircle className={className} />;
-    case "neutral":
-      return <MinusCircle className={className} />;
-    default:
-      return <CheckCircle className={className} />;
-  }
+function normalizeStatusLabel(status: string): string {
+  return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function SimpleBarSummary({
+  title,
+  description,
+  data,
+  labelKey = "label",
+  emptyTitle,
+  emptyDescription,
+}: {
+  title: string;
+  description: string;
+  data: Array<Record<string, string | number>>;
+  labelKey?: string;
+  emptyTitle: string;
+  emptyDescription: string;
+}) {
+  const hasData = data.some((item) => Number(item.count) > 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {hasData ? (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} margin={{ top: 8, right: 8, bottom: 18, left: -18 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey={labelKey} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#0f766e" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <EmptyState title={emptyTitle} description={emptyDescription} />
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function StaffOverview({ data }: StaffOverviewProps) {
-  const stats = [
-    {
-      label: "Total Universities",
-      value: String(data.stats.total_universities ?? 0),
-      change: "Live data",
-      icon: Building2,
-      tone: "primary" as const,
-    },
-    {
-      label: "Portal Accounts",
-      value: String(data.stats.portal_accounts ?? 0),
-      change: "Live data",
-      icon: Users,
-      tone: "accent" as const,
-    },
-    {
-      label: "Total Applications",
-      value: String(data.stats.total_applications ?? 0),
-      change: "Live data",
-      icon: FileText,
-      tone: "success" as const,
-    },
+  const { t } = useTranslation(["common", "dashboard"]);
+  const stats = data.stats;
+  const maxFunnelCount = Math.max(...data.application_funnel.map((step) => step.count), 1);
+
+  const kpis = [
+    { label: t("dashboard:staff.kpis.totalStudents"), value: stats.total_students, icon: Users },
+    { label: t("dashboard:staff.kpis.newStudents"), value: stats.new_students_last_7_days, icon: TrendingUp },
+    { label: t("dashboard:staff.kpis.totalUniversities"), value: stats.total_universities, icon: Building2 },
+    { label: t("dashboard:staff.kpis.activePrograms"), value: stats.active_programs, icon: GraduationCap },
+    { label: t("dashboard:staff.kpis.applicationsStarted"), value: stats.applications_started, icon: FileText },
+    { label: t("dashboard:staff.kpis.applicationsSubmitted"), value: stats.applications_submitted, icon: ClipboardCheck },
+    { label: t("dashboard:staff.kpis.underReview"), value: stats.applications_under_review, icon: ShieldCheck },
+    { label: t("dashboard:staff.kpis.accepted"), value: stats.accepted_applications, icon: BadgeCheck },
+    { label: t("dashboard:staff.kpis.rejected"), value: stats.rejected_applications, icon: Ban },
+    { label: t("dashboard:staff.kpis.pendingDocuments"), value: stats.pending_document_reviews, icon: ClipboardCheck },
+    { label: t("dashboard:staff.kpis.completedPayments"), value: stats.completed_student_payments, icon: CircleDollarSign },
+    { label: t("dashboard:staff.kpis.revenue"), value: formatUzs(stats.total_platform_revenue), icon: CircleDollarSign, formatted: true },
   ];
 
+  const regionRows = data.students_by_region.map((row) => ({
+    ...row,
+    label: row.label === "unknown" ? t("labels.unknown") : translateRegionCode(t, row.label),
+  }));
+  const statusRows = data.applications_by_status.map((row) => ({
+    label: normalizeStatusLabel(row.status),
+    count: row.count,
+  }));
+
   return (
-    <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-2xl font-semibold text-foreground">Overview</h1>
-        <p className="text-muted-foreground">Monitor platform activity and system health.</p>
+    <div className="mx-auto max-w-[1600px] space-y-8 p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">{t("dashboard:staff.title")}</h1>
+          <p className="mt-1 text-muted-foreground">{t("dashboard:staff.subtitle")}</p>
+        </div>
+        <Link to={routes.staff.auditLogs} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-brand-primary-hover">
+          {t("dashboard:staff.viewAudit")}
+          <ArrowUpRight className="h-4 w-4" />
+        </Link>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {kpis.map((item) => {
+          const Icon = item.icon;
           return (
-            <div key={stat.label} className="brand-panel p-6">
-              <div className="mb-4 flex items-start justify-between">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${statToneClass(stat.tone)}`}>
-                  <Icon className="h-5 w-5" />
+            <Card key={item.label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{item.label}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-semibold" data-i18n-dynamic="true">
+                  {item.formatted ? item.value : formatNumber(Number(item.value))}
                 </div>
-              </div>
-              <div className="mb-1 text-3xl font-semibold text-foreground">{stat.value}</div>
-              <div className="mb-2 text-sm text-muted-foreground">{stat.label}</div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground/80">
-                <TrendingUp className="h-3 w-3" />
-                {stat.change}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
-      <div className="mb-8">
-        <div className="brand-panel overflow-hidden">
-          <div className="border-b border-border/70 p-6">
-            <h2 className="font-semibold text-foreground">System Health</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Real-time metrics</p>
-          </div>
-          <div className="space-y-4 p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("dashboard:staff.funnel.title")}</CardTitle>
+          <CardDescription>{t("dashboard:staff.funnel.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {data.application_funnel.map((step) => {
+            const width = `${Math.max((step.count / maxFunnelCount) * 100, step.count > 0 ? 8 : 0)}%`;
+            return (
+              <div key={step.stage} className="grid gap-2 md:grid-cols-[220px_1fr_72px] md:items-center">
+                <div className="text-sm font-medium">{t(`dashboard:staff.funnel.steps.${step.stage}`)}</div>
+                <div className="h-3 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary" style={{ width }} />
+                </div>
+                <div className="text-right text-sm font-semibold" data-i18n-dynamic="true">{formatNumber(step.count)}</div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <SimpleBarSummary
+          title={t("dashboard:staff.charts.registrations")}
+          description={t("dashboard:staff.charts.registrationsDescription")}
+          data={data.registrations_by_date}
+          emptyTitle={t("dashboard:staff.charts.emptyTitle")}
+          emptyDescription={t("dashboard:staff.charts.emptyDescription")}
+        />
+        <SimpleBarSummary
+          title={t("dashboard:staff.charts.applicationStatuses")}
+          description={t("dashboard:staff.charts.applicationStatusesDescription")}
+          data={statusRows}
+          emptyTitle={t("dashboard:staff.charts.emptyTitle")}
+          emptyDescription={t("dashboard:staff.charts.emptyDescription")}
+        />
+        <SimpleBarSummary
+          title={t("dashboard:staff.charts.popularUniversities")}
+          description={t("dashboard:staff.charts.popularUniversitiesDescription")}
+          data={data.popular_universities}
+          emptyTitle={t("dashboard:staff.charts.emptyTitle")}
+          emptyDescription={t("dashboard:staff.charts.emptyDescription")}
+        />
+        <SimpleBarSummary
+          title={t("dashboard:staff.charts.studentsByRegion")}
+          description={t("dashboard:staff.charts.studentsByRegionDescription")}
+          data={regionRows}
+          emptyTitle={t("dashboard:staff.charts.emptyTitle")}
+          emptyDescription={t("dashboard:staff.charts.emptyDescription")}
+        />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("dashboard:staff.health.title")}</CardTitle>
+            <CardDescription>{t("dashboard:staff.health.description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {data.system_health.length > 0 ? (
               data.system_health.map((metric) => (
-                <div key={metric.label}>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{metric.label}</span>
-                    <HealthIcon status={metric.status} />
-                  </div>
-                  <div className="font-medium text-foreground">{metric.value}</div>
+                <div key={metric.label} className="flex items-center justify-between gap-4 rounded-lg border p-3">
+                  <span className="text-sm text-muted-foreground">{metric.label}</span>
+                  <span className="text-sm font-semibold">{metric.value}</span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">No system health metrics are available right now.</p>
+              <EmptyState title={t("dashboard:staff.health.emptyTitle")} description={t("dashboard:staff.health.emptyDescription")} />
             )}
-          </div>
-        </div>
-      </div>
+          </CardContent>
+        </Card>
 
-      <div className="brand-panel overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-border/70 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-semibold text-foreground">Recent Activity</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Latest platform actions and events</p>
-          </div>
-          <Link
-            to={routes.staff.auditLogs}
-            className="flex items-center gap-1 text-sm text-primary transition-colors hover:text-brand-primary-hover"
-          >
-            View audit log
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="divide-y divide-border/60">
-          {data.recent_activity.length > 0 ? (
-            data.recent_activity.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-4 p-6">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-success/10">
-                  <CheckCircle className="h-4 w-4 text-success" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-1 font-medium text-foreground">{activity.type}</div>
-                  <div className="mb-2 text-sm text-muted-foreground">{activity.description}</div>
-                  <div className="text-xs text-muted-foreground/80">
-                    by {activity.user} | {activity.timestamp}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("dashboard:staff.activity.title")}</CardTitle>
+            <CardDescription>{t("dashboard:staff.activity.description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.recent_activity.length > 0 ? (
+              data.recent_activity.map((activity) => (
+                <div key={activity.id} className="rounded-lg border p-3">
+                  <div className="font-medium">{activity.type}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{activity.description}</div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {activity.user} | {activity.timestamp}
                   </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-6 text-sm text-muted-foreground">No recent activity has been recorded yet.</div>
-          )}
-        </div>
+              ))
+            ) : (
+              <EmptyState title={t("dashboard:staff.activity.emptyTitle")} description={t("dashboard:staff.activity.emptyDescription")} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

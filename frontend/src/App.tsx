@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Outlet, Route, Routes } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { SessionProvider } from "./context/SessionContext";
 import { RoleProtectedRoute } from "./components/routing/RoleProtectedRoute";
@@ -27,6 +27,8 @@ import { PartnerUniversityProfilePage } from "./pages/partner/PartnerUniversityP
 import { PartnerApplicationStructurePage } from "./pages/partner/PartnerApplicationStructurePage";
 import { PartnerApplicationsPage } from "./pages/partner/PartnerApplicationsPage";
 import { StaffOverviewPage } from "./pages/staff/StaffOverviewPage";
+import { StaffStudentsPage } from "./pages/staff/StaffStudentsPage";
+import { StaffSectionPage } from "./pages/staff/StaffSectionPage";
 import { StaffUniversitiesPage } from "./pages/staff/StaffUniversitiesPage";
 import { StaffServiceLogsPage } from "./pages/staff/StaffServiceLogsPage";
 import { StaffAuditLogsPage } from "./pages/staff/StaffAuditLogsPage";
@@ -34,6 +36,7 @@ import { StaffSettingsPage } from "./pages/staff/StaffSettingsPage";
 import { StaffUniversityDetailPage } from "./pages/staff/StaffUniversityDetailPage";
 import { StaffUniversityEditPage } from "./pages/staff/StaffUniversityEditPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
+import { LandingPage } from "./pages/LandingPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function ApplicantAreaLayout() {
@@ -57,7 +60,7 @@ export default function App() {
     <SessionProvider>
       <Toaster position="top-center" richColors />
       <Routes>
-        <Route path="/" element={<Navigate to={routes.auth.signIn} replace />} />
+        <Route path="/" element={<LandingPage />} />
 
         <Route path="/auth" element={<Outlet />}>
           <Route path="sign-in" element={<SignInPage />} />
@@ -98,7 +101,15 @@ export default function App() {
         <Route element={<RoleProtectedRoute allowedRoles={["staff"]} />}>
           <Route path="/staff" element={<PartnerOrStaffLayout />}>
             <Route path="dashboard" element={<StaffOverviewPage />} />
+            <Route path="students" element={<StaffStudentsPage />} />
             <Route path="universities" element={<StaffUniversitiesPage />} />
+            <Route path="programs" element={<StaffSectionPage section="programs" />} />
+            <Route path="applications" element={<StaffSectionPage section="applications" />} />
+            <Route path="document-review" element={<StaffSectionPage section="documentReview" />} />
+            <Route path="payments" element={<StaffSectionPage section="payments" />} />
+            <Route path="analytics" element={<StaffSectionPage section="analytics" />} />
+            <Route path="notifications" element={<StaffSectionPage section="notifications" />} />
+            <Route path="admin-users" element={<StaffSectionPage section="adminUsers" />} />
             <Route path="universities/:id" element={<StaffUniversityDetailPage />} />
             <Route path="universities/:id/edit" element={<StaffUniversityEditPage />} />
             <Route path="service-logs" element={<StaffServiceLogsPage />} />

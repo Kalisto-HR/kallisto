@@ -3,33 +3,46 @@ package models
 
 import (
 	"encoding/json"
+	"kallisto/services/backend/internal/shared/applicationstatus"
 	"time"
 )
 
 const (
-	StatusDraft     = "draft"
-	StatusSubmitted = "submitted"
-	StatusAccepted  = "accepted"
-	StatusRejected  = "rejected"
+	StatusDraft                         = applicationstatus.StatusDraft
+	StatusSubmitted                     = applicationstatus.StatusSubmitted
+	StatusUnderReview                   = applicationstatus.StatusUnderReview
+	StatusAdditionalInformationRequired = applicationstatus.StatusAdditionalInformationRequired
+	StatusDecisionPending               = applicationstatus.StatusDecisionPending
+	StatusAccepted                      = applicationstatus.StatusAccepted
+	StatusWaitlisted                    = applicationstatus.StatusWaitlisted
+	StatusRejected                      = applicationstatus.StatusRejected
 )
 
 type Application struct {
-	UserId           string          `json:"user_id" db:"user_id"`
-	UniversityId     string          `json:"university_id" db:"university_id"`
-	ApplicationCycle string          `json:"application_cycle" db:"application_cycle"`
-	Status           string          `json:"status" db:"status"`
-	Data             json.RawMessage `json:"data,omitempty" db:"data"`
-	SubmittedAt      *time.Time      `json:"submitted_at,omitempty" db:"submitted_at"`
-	CreatedAt        time.Time       `json:"created_at" db:"created_at"`
+	UserId              string          `json:"user_id" db:"user_id"`
+	UniversityId        string          `json:"university_id" db:"university_id"`
+	ApplicationCycle    string          `json:"application_cycle" db:"application_cycle"`
+	Status              string          `json:"status" db:"status"`
+	Data                json.RawMessage `json:"data,omitempty" db:"data"`
+	SubmittedAt         *time.Time      `json:"submitted_at,omitempty" db:"submitted_at"`
+	CreatedAt           time.Time       `json:"created_at" db:"created_at"`
+	StatusProgress      int             `json:"status_progress" db:"status_progress"`
+	StatusStage         string          `json:"status_stage" db:"status_stage"`
+	IsFinal             bool            `json:"is_final" db:"is_final"`
+	IsSuccessfulOutcome bool            `json:"is_successful_outcome" db:"is_successful_outcome"`
 }
 
 type ApplicationListItem struct {
-	UniversityId     string     `json:"university_id" db:"university_id"`
-	UniversityName   string     `json:"university_name" db:"university_name"`
-	ApplicationCycle string     `json:"application_cycle" db:"application_cycle"`
-	Status           string     `json:"status" db:"status"`
-	CreatedAt        time.Time  `json:"created_at" db:"created_at"`
-	SubmittedAt      *time.Time `json:"submitted_at,omitempty" db:"submitted_at"`
+	UniversityId        string     `json:"university_id" db:"university_id"`
+	UniversityName      string     `json:"university_name" db:"university_name"`
+	ApplicationCycle    string     `json:"application_cycle" db:"application_cycle"`
+	Status              string     `json:"status" db:"status"`
+	CreatedAt           time.Time  `json:"created_at" db:"created_at"`
+	SubmittedAt         *time.Time `json:"submitted_at,omitempty" db:"submitted_at"`
+	StatusProgress      int        `json:"status_progress" db:"status_progress"`
+	StatusStage         string     `json:"status_stage" db:"status_stage"`
+	IsFinal             bool       `json:"is_final" db:"is_final"`
+	IsSuccessfulOutcome bool       `json:"is_successful_outcome" db:"is_successful_outcome"`
 }
 
 type ApplicationCreateRequest struct {

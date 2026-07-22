@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS applications (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     university_id UUID NOT NULL REFERENCES universities(id) ON DELETE CASCADE,
     application_cycle TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted')),
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'under_review', 'additional_information_required', 'decision_pending', 'accepted', 'waitlisted', 'rejected')),
     data JSONB,
     applicant_info JSONB,
     submitted_at TIMESTAMPTZ,
@@ -110,12 +110,46 @@ CREATE TABLE IF NOT EXISTS applications (
 ALTER TABLE applications ADD COLUMN IF NOT EXISTS applicant_info JSONB;
 ALTER TABLE applications ADD COLUMN IF NOT EXISTS received_at TIMESTAMPTZ;
 ALTER TABLE applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE applications DROP CONSTRAINT IF EXISTS applications_status_check;
+UPDATE applications SET status = 'submitted' WHERE status NOT IN ('draft', 'submitted', 'under_review', 'additional_information_required', 'decision_pending', 'accepted', 'waitlisted', 'rejected');
+ALTER TABLE applications ADD CONSTRAINT applications_status_check CHECK (status IN ('draft', 'submitted', 'under_review', 'additional_information_required', 'decision_pending', 'accepted', 'waitlisted', 'rejected'));
 
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_applications_university_id ON applications(university_id);
 CREATE INDEX IF NOT EXISTS idx_applications_submitted_at ON applications(submitted_at DESC);
 CREATE INDEX IF NOT EXISTS idx_applications_created_at ON applications(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS application_status_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    from_status TEXT NOT NULL CHECK (from_status IN ('draft', 'submitted', 'under_review', 'additional_information_required', 'decision_pending', 'accepted', 'waitlisted', 'rejected')),
+    to_status TEXT NOT NULL CHECK (to_status IN ('draft', 'submitted', 'under_review', 'additional_information_required', 'decision_pending', 'accepted', 'waitlisted', 'rejected')),
+    public_comment TEXT,
+    internal_note TEXT,
+    internal_explanation TEXT,
+    changed_by UUID REFERENCES users(id),
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_application_status_events_application_id ON application_status_events(application_id);
+CREATE INDEX IF NOT EXISTS idx_application_status_events_changed_at ON application_status_events(changed_at DESC);
+
+CREATE TABLE IF NOT EXISTS application_tasks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    application_id UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    required BOOLEAN NOT NULL DEFAULT TRUE,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    due_at TIMESTAMPTZ,
+    created_by UUID REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_application_tasks_application_id ON application_tasks(application_id);
+CREATE INDEX IF NOT EXISTS idx_application_tasks_completed ON application_tasks(completed);
 
 CREATE TABLE IF NOT EXISTS application_transcripts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -141,6 +141,8 @@ export const api = {
     requestJson<T>("/api", path, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
   put: <T>(path: string, body?: unknown) =>
     requestJson<T>("/api", path, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
+  patch: <T>(path: string, body?: unknown) =>
+    requestJson<T>("/api", path, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => requestJson<T>("/api", path, { method: "DELETE" }),
   raw: (path: string, init: RequestInit = {}) => requestRaw("/api", path, init),
 };

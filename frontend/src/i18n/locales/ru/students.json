@@ -1,0 +1,67 @@
+{
+  "fields": {
+    "regionOfResidence": "Регион проживания",
+    "selectRegion": "Выберите регион"
+  },
+  "admin": {
+    "title": "Студенты",
+    "subtitle": "Поиск и проверка аккаунтов абитуриентов на живых данных профиля и заявок.",
+    "loading": "Загрузка студентов...",
+    "errors": {
+      "load": "Не удалось загрузить студентов"
+    },
+    "filters": {
+      "title": "Фильтры",
+      "description": "Серверные фильтры по аккаунту, региону, профилю и статусу оплаты.",
+      "search": "Искать по имени, email, телефону или ID...",
+      "region": "Регион",
+      "allRegions": "Все регионы",
+      "accountStatus": "Статус аккаунта",
+      "allStatuses": "Все статусы",
+      "completion": "Заполнение профиля",
+      "allCompletion": "Любая готовность",
+      "paymentStatus": "Статус оплаты",
+      "allPayments": "Все платежи",
+      "clear": "Очистить фильтры"
+    },
+    "status": {
+      "active": "Активен",
+      "blocked": "Заблокирован",
+      "suspended": "Приостановлен"
+    },
+    "completion": {
+      "complete": "Заполнен",
+      "partial": "Частично",
+      "low": "Низкая"
+    },
+    "payment": {
+      "unpaid": "Не оплачено",
+      "paid": "Оплачено",
+      "pending": "Ожидает"
+    },
+    "table": {
+      "title": "Аккаунты абитуриентов",
+      "count_one": "{{count}} студент",
+      "count_few": "{{count}} студента",
+      "count_many": "{{count}} студентов",
+      "count_other": "{{count}} студента",
+      "student": "Студент",
+      "region": "Регион",
+      "language": "Язык",
+      "profile": "Профиль",
+      "applications": "Заявки",
+      "payment": "Оплата",
+      "status": "Статус",
+      "registered": "Регистрация",
+      "lastActivity": "Активность",
+      "never": "Никогда",
+      "page": "Страница {{page}} из {{totalPages}}",
+      "previous": "Назад",
+      "next": "Далее"
+    },
+    "empty": {
+      "title": "Студенты не найдены",
+      "description": "Измените фильтры или дождитесь создания аккаунтов абитуриентов."
+    }
+  }
+}

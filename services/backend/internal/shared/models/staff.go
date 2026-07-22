@@ -6,9 +6,20 @@ import (
 )
 
 type GlobalOverviewStats struct {
-	TotalUniversities  int `json:"total_universities"`
-	PortalAccounts     int `json:"portal_accounts"`
-	TotalApplications  int `json:"total_applications"`
+	TotalStudents            int     `json:"total_students"`
+	NewStudentsLast7Days     int     `json:"new_students_last_7_days"`
+	TotalUniversities        int     `json:"total_universities"`
+	ActivePrograms           int     `json:"active_programs"`
+	ApplicationsStarted      int     `json:"applications_started"`
+	ApplicationsSubmitted    int     `json:"applications_submitted"`
+	ApplicationsUnderReview  int     `json:"applications_under_review"`
+	AcceptedApplications     int     `json:"accepted_applications"`
+	RejectedApplications     int     `json:"rejected_applications"`
+	PendingDocumentReviews   int     `json:"pending_document_reviews"`
+	CompletedStudentPayments int     `json:"completed_student_payments"`
+	TotalPlatformRevenue     float64 `json:"total_platform_revenue"`
+	PortalAccounts           int     `json:"portal_accounts"`
+	TotalApplications        int     `json:"total_applications"`
 }
 
 type GlobalOverviewActivity struct {
@@ -35,10 +46,32 @@ type GlobalOverviewHealthMetric struct {
 	Status string `json:"status"`
 }
 
+type GlobalOverviewFunnelStep struct {
+	Stage string `json:"stage" db:"stage"`
+	Count int    `json:"count" db:"count"`
+}
+
+type GlobalOverviewSeriesPoint struct {
+	Label string `json:"label" db:"label"`
+	Count int    `json:"count" db:"count"`
+}
+
+type GlobalOverviewStatusPoint struct {
+	Status string `json:"status" db:"status"`
+	Count  int    `json:"count" db:"count"`
+}
+
 type GlobalOverviewResponse struct {
-	Stats          GlobalOverviewStats          `json:"stats"`
-	RecentActivity []GlobalOverviewActivity     `json:"recent_activity"`
-	SystemHealth   []GlobalOverviewHealthMetric `json:"system_health"`
+	Stats                 GlobalOverviewStats          `json:"stats"`
+	ApplicationFunnel     []GlobalOverviewFunnelStep   `json:"application_funnel"`
+	RegistrationsByDate   []GlobalOverviewSeriesPoint  `json:"registrations_by_date"`
+	ApplicationsByStatus  []GlobalOverviewStatusPoint  `json:"applications_by_status"`
+	PopularUniversities   []GlobalOverviewSeriesPoint  `json:"popular_universities"`
+	PopularPrograms       []GlobalOverviewSeriesPoint  `json:"popular_programs"`
+	StudentsByRegion      []GlobalOverviewSeriesPoint  `json:"students_by_region"`
+	ApplicationConversion []GlobalOverviewSeriesPoint  `json:"application_conversion"`
+	RecentActivity        []GlobalOverviewActivity     `json:"recent_activity"`
+	SystemHealth          []GlobalOverviewHealthMetric `json:"system_health"`
 }
 
 type GlobalUniversityListItem struct {
@@ -53,6 +86,22 @@ type GlobalUniversityListItem struct {
 	AcceptanceRate string `json:"acceptance_rate" db:"acceptance_rate"`
 	JoinedDate     string `json:"joined_date" db:"joined_date"`
 	LastActive     string `json:"last_active" db:"last_active"`
+}
+
+type GlobalStudentListItem struct {
+	StudentId                  string     `json:"student_id" db:"student_id"`
+	FullName                   string     `json:"full_name" db:"full_name"`
+	Email                      string     `json:"email" db:"email"`
+	PhoneNumber                *string    `json:"phone_number,omitempty" db:"phone_number"`
+	RegionCode                 *string    `json:"region_code,omitempty" db:"region_code"`
+	InterfaceLanguage          string     `json:"interface_language" db:"interface_language"`
+	ProfileCompletionPercent   int        `json:"profile_completion_percent" db:"profile_completion_percent"`
+	ApplicationsCount          int        `json:"applications_count" db:"applications_count"`
+	SubmittedApplicationsCount int        `json:"submitted_applications_count" db:"submitted_applications_count"`
+	PaymentStatus              string     `json:"payment_status" db:"payment_status"`
+	AccountStatus              string     `json:"account_status" db:"account_status"`
+	RegistrationDate           time.Time  `json:"registration_date" db:"registration_date"`
+	LastActivity               *time.Time `json:"last_activity,omitempty" db:"last_activity"`
 }
 
 type GlobalServiceLogItem struct {

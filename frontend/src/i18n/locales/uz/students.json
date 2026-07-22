@@ -1,0 +1,65 @@
+{
+  "fields": {
+    "regionOfResidence": "Yashash hududi",
+    "selectRegion": "Hududni tanlang"
+  },
+  "admin": {
+    "title": "Talabalar",
+    "subtitle": "Abituriyent akkauntlarini profil va ariza ma’lumotlari asosida qidiring va ko‘ring.",
+    "loading": "Talabalar yuklanmoqda...",
+    "errors": {
+      "load": "Talabalarni yuklab bo‘lmadi"
+    },
+    "filters": {
+      "title": "Filtrlar",
+      "description": "Akkaunt, hudud, profil va to‘lov statusi bo‘yicha server filtrlaridan foydalaning.",
+      "search": "Ism, email, telefon yoki ID bo‘yicha qidirish...",
+      "region": "Hudud",
+      "allRegions": "Barcha hududlar",
+      "accountStatus": "Akkaunt statusi",
+      "allStatuses": "Barcha statuslar",
+      "completion": "Profil to‘liqligi",
+      "allCompletion": "Barcha darajalar",
+      "paymentStatus": "To‘lov statusi",
+      "allPayments": "Barcha to‘lovlar",
+      "clear": "Filtrlarni tozalash"
+    },
+    "status": {
+      "active": "Faol",
+      "blocked": "Bloklangan",
+      "suspended": "To‘xtatilgan"
+    },
+    "completion": {
+      "complete": "To‘liq",
+      "partial": "Qisman",
+      "low": "Past"
+    },
+    "payment": {
+      "unpaid": "To‘lanmagan",
+      "paid": "To‘langan",
+      "pending": "Kutilmoqda"
+    },
+    "table": {
+      "title": "Abituriyent akkauntlari",
+      "count_one": "{{count}} talaba",
+      "count_other": "{{count}} talaba",
+      "student": "Talaba",
+      "region": "Hudud",
+      "language": "Til",
+      "profile": "Profil",
+      "applications": "Arizalar",
+      "payment": "To‘lov",
+      "status": "Status",
+      "registered": "Ro‘yxatdan o‘tgan",
+      "lastActivity": "Oxirgi faollik",
+      "never": "Hech qachon",
+      "page": "{{page}} / {{totalPages}} sahifa",
+      "previous": "Oldingi",
+      "next": "Keyingi"
+    },
+    "empty": {
+      "title": "Talabalar topilmadi",
+      "description": "Filtrlarni o‘zgartiring yoki abituriyent akkauntlari yaratilishini kuting."
+    }
+  }
+}

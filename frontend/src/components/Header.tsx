@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { BrandLogo } from "./common/BrandLogo";
 
 interface HeaderProps {
   userName: string;
@@ -45,9 +46,7 @@ export function Header({
         </Button>
 
         <div className="flex items-center gap-3">
-          <div className="brand-logo-mark h-9 w-9 rounded-2xl">
-            <span className="text-sm font-semibold text-white">K</span>
-          </div>
+          <BrandLogo alt="" className="h-9 w-9" />
           <span className="hidden text-xl font-semibold tracking-tight sm:inline">Kallisto</span>
         </div>
 

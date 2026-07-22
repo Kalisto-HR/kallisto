@@ -1,0 +1,65 @@
+{
+  "fields": {
+    "regionOfResidence": "Region of residence",
+    "selectRegion": "Select a region"
+  },
+  "admin": {
+    "title": "Students",
+    "subtitle": "Search and review applicant accounts using live profile and application data.",
+    "loading": "Loading students...",
+    "errors": {
+      "load": "Failed to load students"
+    },
+    "filters": {
+      "title": "Filters",
+      "description": "Use server-side filters for account, region, profile, and payment status.",
+      "search": "Search by name, email, phone, or student ID...",
+      "region": "Region",
+      "allRegions": "All regions",
+      "accountStatus": "Account status",
+      "allStatuses": "All statuses",
+      "completion": "Profile completion",
+      "allCompletion": "All completion",
+      "paymentStatus": "Payment status",
+      "allPayments": "All payments",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "active": "Active",
+      "blocked": "Blocked",
+      "suspended": "Suspended"
+    },
+    "completion": {
+      "complete": "Complete",
+      "partial": "Partial",
+      "low": "Low"
+    },
+    "payment": {
+      "unpaid": "Unpaid",
+      "paid": "Paid",
+      "pending": "Pending"
+    },
+    "table": {
+      "title": "Applicant accounts",
+      "count_one": "{{count}} student",
+      "count_other": "{{count}} students",
+      "student": "Student",
+      "region": "Region",
+      "language": "Language",
+      "profile": "Profile",
+      "applications": "Applications",
+      "payment": "Payment",
+      "status": "Status",
+      "registered": "Registered",
+      "lastActivity": "Last activity",
+      "never": "Never",
+      "page": "Page {{page}} of {{totalPages}}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "empty": {
+      "title": "No students found",
+      "description": "Adjust filters or wait until applicant accounts are created."
+    }
+  }
+}

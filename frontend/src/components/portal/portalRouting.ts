@@ -18,7 +18,15 @@ export function resolveUniversityId(primaryId?: string | null, fallbackId?: stri
 
 export function routePathToPortalPage(pathname: string): PortalPageView {
   if (pathname.startsWith("/staff/dashboard")) return "staff-dashboard";
+  if (pathname.startsWith("/staff/students")) return "staff-students";
   if (pathname.startsWith("/staff/universities")) return "staff-universities";
+  if (pathname.startsWith("/staff/programs")) return "staff-programs";
+  if (pathname.startsWith("/staff/applications")) return "staff-applications";
+  if (pathname.startsWith("/staff/document-review")) return "staff-document-review";
+  if (pathname.startsWith("/staff/payments")) return "staff-payments";
+  if (pathname.startsWith("/staff/analytics")) return "staff-analytics";
+  if (pathname.startsWith("/staff/notifications")) return "staff-notifications";
+  if (pathname.startsWith("/staff/admin-users")) return "staff-admin-users";
   if (pathname.startsWith("/staff/service-logs")) return "staff-service-logs";
   if (pathname.startsWith("/staff/audit-logs")) return "staff-audit-logs";
   if (pathname.startsWith("/staff/settings")) return "staff-settings";
@@ -55,7 +63,15 @@ export function portalPageToRoutePath(
 
   const globalPageMap: Record<string, string> = {
     "staff-dashboard": routes.staff.dashboard,
+    "staff-students": routes.staff.students,
     "staff-universities": routes.staff.universities,
+    "staff-programs": routes.staff.programs,
+    "staff-applications": routes.staff.applications,
+    "staff-document-review": routes.staff.documentReview,
+    "staff-payments": routes.staff.payments,
+    "staff-analytics": routes.staff.analytics,
+    "staff-notifications": routes.staff.notifications,
+    "staff-admin-users": routes.staff.adminUsers,
     "staff-service-logs": routes.staff.serviceLogs,
     "staff-audit-logs": routes.staff.auditLogs,
     "staff-settings": routes.staff.settings,

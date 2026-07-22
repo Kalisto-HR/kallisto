@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -185,6 +186,79 @@ func GetApplicationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSONResponse(w, application, http.StatusOK)
+}
+
+func UpdateApplicationStatusHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	claims, err := middlewares.GetClaimsFromContext(r.Context())
+	if err != nil {
+		utils.WriteJSONResponseWithMsg(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	applicationId := mux.Vars(r)["id"]
+	if err := validation.ValidateUUID(applicationId, "id"); err != nil {
+		validation.WriteValidationErrors(w, []*validation.ValidationError{err})
+		return
+	}
+
+	var req models.ApplicationStatusTransitionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteJSONResponseWithMsg(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	var linkedUniversityId *string
+	if claims.Role == "partner" {
+		linkedUniversityId, err = getLinkedUniversityForUser(r.Context(), claims.UID)
+		if err != nil {
+			handleFuncErr, ok := err.(utils.HandlerFuncErr)
+			status := http.StatusInternalServerError
+			if ok {
+				status = handleFuncErr.Status()
+			}
+			log.Error(err.Error())
+			utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+			return
+		}
+	}
+
+	application, err := usecases_impl.GetSubmittedApplicationById(r.Context(), applicationId)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+	if err := enforcePartnerUniversityAccess(claims.Role, linkedUniversityId, application.UniversityId); err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	updated, err := usecases_impl.TransitionApplicationStatus(r.Context(), applicationId, claims.UID, claims.Role, req)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	utils.WriteJSONResponse(w, updated, http.StatusOK)
 }
 
 func DownloadSubmittedApplicationFileHandler(w http.ResponseWriter, r *http.Request) {

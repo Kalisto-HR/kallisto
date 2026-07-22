@@ -1,0 +1,158 @@
+{
+  "language": {
+    "label": "Interface language",
+    "en": "EN — English",
+    "ru": "RU — Русский",
+    "uz": "UZ — O‘zbekcha"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "findUniversities": "Find Universities",
+    "compare": "Compare",
+    "billing": "Billing",
+    "settings": "Settings",
+    "help": "Help",
+    "university": "University",
+    "universityProfile": "University Profile",
+    "applicationStructure": "Application Structure",
+    "submissions": "Submissions",
+    "staffWorkspace": "Staff Workspace",
+    "students": "Students",
+    "universities": "Universities",
+    "programs": "Programs",
+    "applications": "Applications",
+    "documentReview": "Document Review",
+    "payments": "Payments",
+    "analytics": "Analytics",
+    "notifications": "Notifications",
+    "adminUsers": "Admin Users",
+    "serviceLogs": "Service Logs",
+    "auditLogs": "Audit Logs",
+    "portalConsole": "Portal Console",
+    "partnerAccess": "Partner access",
+    "staffAccess": "Staff access",
+    "staffWorkspaceMode": "Staff workspace",
+    "universityMode": "University Mode",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "applicantNavigation": "Applicant Navigation",
+    "applicantNavigationDescription": "Access applicant dashboard navigation links.",
+    "portalNavigation": "Navigation Menu",
+    "portalNavigationDescription": "Access partner and staff console features"
+  },
+  "actions": {
+    "view": "View",
+    "openSubmissions": "Open submissions",
+    "copyEmails": "Copy emails",
+    "copying": "Copying",
+    "csv": "CSV",
+    "exporting": "Exporting",
+    "signOut": "Sign out",
+    "logOut": "Log out",
+    "save": "Save",
+    "uploading": "Uploading...",
+    "uploadPhoto": "Upload photo"
+  },
+  "labels": {
+    "applicantAccount": "Applicant account",
+    "applications_one": "{{count}} Application",
+    "applications_other": "{{count}} Applications",
+    "basketItems_one": "{{count}} Basket Item",
+    "basketItems_other": "{{count}} Basket Items",
+    "staff": "Staff",
+    "partner": "Partner",
+    "unknown": "Unknown",
+    "planned": "planned",
+    "regionOfResidence": "Region of residence",
+    "selectRegion": "Select a region"
+  },
+  "regions": {
+    "tashkent_city": "Tashkent City",
+    "karakalpakstan": "Republic of Karakalpakstan",
+    "andijan": "Andijan Region",
+    "bukhara": "Bukhara Region",
+    "fergana": "Fergana Region",
+    "jizzakh": "Jizzakh Region",
+    "khorezm": "Khorezm Region",
+    "namangan": "Namangan Region",
+    "navoiy": "Navoiy Region",
+    "qashqadaryo": "Qashqadaryo Region",
+    "samarqand": "Samarqand Region",
+    "sirdaryo": "Sirdaryo Region",
+    "surxondaryo": "Surxondaryo Region",
+    "tashkent_region": "Tashkent Region"
+  },
+  "validation": {
+    "invalidRegion": "Invalid Uzbekistan region."
+  },
+  "staffSections": {
+    "status": "Workspace ready",
+    "programs": {
+      "title": "Programs",
+      "subtitle": "Program-level management workspace.",
+      "workspaceTitle": "Programs workspace",
+      "workspaceDescription": "Use this area for the next phase of program-specific admissions data.",
+      "nextStep": "The route is now accessible. Full create/edit/publish program workflows still need backend program tables and validation."
+    },
+    "applications": {
+      "title": "Applications",
+      "subtitle": "Platform-wide application operations workspace.",
+      "workspaceTitle": "Applications workspace",
+      "workspaceDescription": "This area is reserved for global application status management.",
+      "nextStep": "The route is now accessible. Full status history and assignment tools will be connected after the application-status migration."
+    },
+    "documentReview": {
+      "title": "Document Review",
+      "subtitle": "Central queue for reviewing uploaded applicant documents.",
+      "workspaceTitle": "Document review workspace",
+      "workspaceDescription": "This area will use authorized file access and review status updates.",
+      "nextStep": "The route is now accessible. Full approve/reject/replacement actions require document review status fields and backend endpoints."
+    },
+    "payments": {
+      "title": "Payments",
+      "subtitle": "Payment and transaction monitoring workspace.",
+      "workspaceTitle": "Payments workspace",
+      "workspaceDescription": "This area is ready for the future payments data model.",
+      "nextStep": "The route is now accessible. Real transaction records need a payments table or provider integration before live data can appear."
+    },
+    "analytics": {
+      "title": "Analytics",
+      "subtitle": "Admissions analytics and Uzbekistan regional reporting.",
+      "workspaceTitle": "Analytics workspace",
+      "workspaceDescription": "Dashboard analytics already use live data; this section will expand those reports.",
+      "nextStep": "The route is now accessible. Dedicated drill-down analytics can be added from the existing dashboard queries."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Admin notification targeting and templates.",
+      "workspaceTitle": "Notifications workspace",
+      "workspaceDescription": "This area is reserved for in-app, email, or real integrated channels.",
+      "nextStep": "The route is now accessible. Sending tools will be connected only to real notification channels, not fake delivery."
+    },
+    "adminUsers": {
+      "title": "Administrators",
+      "subtitle": "Staff and partner administrator management.",
+      "workspaceTitle": "Administrator workspace",
+      "workspaceDescription": "Staff account creation already exists through the backend account endpoint.",
+      "nextStep": "The route is now accessible. Role management UI will be added after role-specific permissions are finalized."
+    }
+  },
+  "applicationStatuses": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "under_review": "Under review",
+    "additional_information_required": "Additional information required",
+    "decision_pending": "Decision pending",
+    "accepted": "Accepted",
+    "waitlisted": "Waitlisted",
+    "rejected": "Rejected"
+  },
+  "applicationProgressStages": {
+    "application_preparation": "Application preparation",
+    "application_received": "Application received",
+    "review_in_progress": "Review in progress",
+    "decision_pending": "Decision pending",
+    "final_decision": "Final decision",
+    "unknown": "Unknown"
+  }
+}
