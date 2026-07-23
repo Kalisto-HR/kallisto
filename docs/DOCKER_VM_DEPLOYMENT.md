@@ -32,11 +32,12 @@ cp .env.example .env
 Edit `.env` and set:
 
 - `POSTGRES_PASSWORD` to a strong database password
-- `DATABASE_URL` with the same password and the Docker host `postgres`
 - `SECRET_KEY` to a high-entropy value of at least 32 characters
 - `CORS_ALLOWED_ORIGINS` to the real browser origin, for example `https://kallisto.ink`
 - `COOKIE_SECURE=true` when serving over HTTPS
 - `COOKIE_DOMAIN` only if cookies must be shared across subdomains
+
+`docker-compose.yml` builds the internal backend `DATABASE_URL` from `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, so do not add a separate `DATABASE_URL` unless you intentionally override the compose file.
 
 Generate a secret on Linux:
 
@@ -75,13 +76,19 @@ Health checks:
 
 ```bash
 curl http://127.0.0.1:${BACKEND_PORT:-8081}/healthz
-curl http://127.0.0.1:${FRONTEND_PORT:-80}/healthz
+curl http://127.0.0.1:${FRONTEND_PORT:-8080}/healthz
 ```
 
 If `FRONTEND_PORT=80`, open:
 
 ```text
 http://your-vm-ip/
+```
+
+If you do not set `FRONTEND_PORT`, Docker Compose exposes the frontend on `8080` by default:
+
+```text
+http://your-vm-ip:8080/
 ```
 
 ## 6. Reverse Proxy Notes

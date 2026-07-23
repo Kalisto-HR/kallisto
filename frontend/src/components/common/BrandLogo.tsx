@@ -10,7 +10,7 @@ export function BrandLogo({ alt = "Kallisto", className, imageClassName }: Brand
   return (
     <div className={cn("overflow-hidden rounded-2xl bg-[#051321] shadow-sm", className)}>
       <img
-        src="/kallisto-logo.png"
+        src="/kallisto-logo.png?v=20260723-platform"
         alt={alt}
         className={cn("h-full w-full object-cover", imageClassName)}
       />

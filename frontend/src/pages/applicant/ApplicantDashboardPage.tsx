@@ -3,11 +3,11 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock,
+  CreditCard,
   FileText,
   Target,
   TrendingUp,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
@@ -17,20 +17,16 @@ import { EmptyState, ErrorState, LoadingState } from "../../components/common/Pa
 import { useApplicantDashboardData } from "../../hooks/useApplicantDashboardData";
 import { routes } from "../../routes/routeConfig";
 import { getApplicationStatusBadgeVariant, getApplicationStatusLabel } from "../../utils/applicationStatus";
+import { getApplicantProfileCompletion } from "../../utils/applicantProfileCompletion";
 
-function calculateReadiness(completedSteps: number): number {
-  if (completedSteps >= 3) {
-    return 100;
-  }
-  return Math.round((completedSteps / 3) * 100);
-}
+const REQUIRED_PROFILE_FIELD_COUNT = 13;
 
 export function ApplicantDashboardPage() {
   const { t } = useTranslation(["common"]);
-  const { profile, applications, favoritesCount, testScoresCount, loading, error, reload } = useApplicantDashboardData();
+  const { profile, applications, favoritesCount, testScoresCount, billingSummary, loading, error, reload } = useApplicantDashboardData();
 
   if (loading) {
-    return <LoadingState label="Loading applicant dashboard..." />;
+    return <LoadingState label={t("applicantFlow.dashboard.loading")} />;
   }
   if (error) {
     return <ErrorState message={error} onRetry={() => void reload()} />;
@@ -38,26 +34,35 @@ export function ApplicantDashboardPage() {
   if (!profile) {
     return (
       <EmptyState
-        title="No profile found"
-        description="Sign in again to load your applicant profile."
+        title={t("applicantFlow.dashboard.noProfileTitle")}
+        description={t("applicantFlow.dashboard.noProfileDescription")}
       />
     );
   }
 
   const draftCount = applications.filter((item) => item.status === "draft").length;
   const submittedCount = applications.filter((item) => item.status !== "draft").length;
-  const basicInfoComplete = Boolean(profile.firstName && profile.lastName);
-  const applicationProfileComplete = applications.length > 0;
+  const profileCompletion = getApplicantProfileCompletion(profile);
+  const missingRequiredCount = profileCompletion.missing.length;
+  const readiness = Math.max(
+    0,
+    Math.round(((REQUIRED_PROFILE_FIELD_COUNT - missingRequiredCount) / REQUIRED_PROFILE_FIELD_COUNT) * 100),
+  );
+  const basicInfoComplete = !profileCompletion.missing.some((item) =>
+    ["last name", "first name", "gender", "date of birth", "region", "district or city"].includes(item),
+  );
+  const applicationProfileComplete = !profileCompletion.missing.some((item) =>
+    ["GPA", "GPA scale", "intended major", "budget per year", "preferred language", "preferred city"].includes(item),
+  );
+  const documentsComplete = !profileCompletion.missing.includes("documents readiness");
   const testScoresComplete = testScoresCount > 0;
-  const completedSteps = [basicInfoComplete, applicationProfileComplete, testScoresComplete].filter(Boolean).length;
-  const readiness = calculateReadiness(completedSteps);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <section>
-        <h1 className="text-3xl font-semibold sm:text-4xl">Dashboard</h1>
+        <h1 className="text-3xl font-semibold sm:text-4xl">{t("applicantFlow.dashboard.title")}</h1>
         <p className="mt-1 text-muted-foreground">
-          Welcome back! Here&apos;s your application overview
+          {t("applicantFlow.dashboard.subtitle")}
         </p>
       </section>
 
@@ -71,7 +76,7 @@ export function ApplicantDashboardPage() {
               <TrendingUp className="h-4 w-4 text-green-500" />
             </div>
             <div className="text-3xl font-semibold">{favoritesCount}</div>
-            <p className="text-xs text-muted-foreground">Universities Shortlisted</p>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.shortlisted")}</p>
           </CardContent>
         </Card>
 
@@ -81,7 +86,7 @@ export function ApplicantDashboardPage() {
               <FileText className="h-4 w-4 text-accent-foreground" />
             </div>
             <div className="text-3xl font-semibold">{draftCount}</div>
-            <p className="text-xs text-muted-foreground">Applications In Progress</p>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.drafts")}</p>
           </CardContent>
         </Card>
 
@@ -91,17 +96,27 @@ export function ApplicantDashboardPage() {
               <CheckCircle2 className="h-4 w-4 text-accent-foreground" />
             </div>
             <div className="text-3xl font-semibold">{submittedCount}</div>
-            <p className="text-xs text-muted-foreground">Applications Submitted</p>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.submitted")}</p>
           </CardContent>
         </Card>
 
         <Card className="brand-panel-accent">
           <CardContent className="pt-6">
-            <Badge className="mb-3 brand-soft-badge" variant="secondary">
-              Billing
-            </Badge>
-            <div className="text-lg font-semibold">Unavailable</div>
-            <p className="text-xs text-muted-foreground">Credit purchases are not live yet</p>
+            <div className="mb-2 flex items-start justify-between">
+              <div className="rounded-lg bg-accent p-2">
+                <CreditCard className="h-4 w-4 text-accent-foreground" />
+              </div>
+              <Badge className="brand-soft-badge" variant="secondary">
+                {t("billingPage.title", { defaultValue: "Billing" })}
+              </Badge>
+            </div>
+            <div className="text-3xl font-semibold">
+              {billingSummary ? billingSummary.creditBalance : "-"}
+            </div>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.creditsAvailable")}</p>
+            <Link to={routes.applicant.billing} className="mt-3 inline-flex text-xs font-medium text-primary">
+              {t("applicantFlow.dashboard.buyCredits")} <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
           </CardContent>
         </Card>
       </section>
@@ -111,14 +126,14 @@ export function ApplicantDashboardPage() {
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle>Profile Readiness</CardTitle>
+                <CardTitle>{t("applicantFlow.dashboard.readinessTitle")}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Complete your profile for better matches
+                  {t("applicantFlow.dashboard.readinessDescription")}
                 </p>
               </div>
               <div className="text-right">
                 <div className="text-3xl font-semibold text-primary">{readiness}%</div>
-                <div className="text-xs text-muted-foreground">Complete</div>
+                <div className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.complete")}</div>
               </div>
             </div>
           </CardHeader>
@@ -128,7 +143,7 @@ export function ApplicantDashboardPage() {
             ) : (
               <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Profile complete</span>
+                <span>{t("applicantFlow.dashboard.profileComplete")}</span>
               </div>
             )}
             <div className="space-y-2">
@@ -138,8 +153,8 @@ export function ApplicantDashboardPage() {
                 ) : (
                   <Clock className="h-5 w-5 text-muted-foreground" />
                 )}
-                <div className="flex-1 text-sm font-medium">Basic Information</div>
-                <Badge variant="secondary">{basicInfoComplete ? "Complete" : "Pending"}</Badge>
+                <div className="flex-1 text-sm font-medium">{t("applicantFlow.dashboard.basicInformation")}</div>
+                <Badge variant="secondary">{basicInfoComplete ? t("applicantFlow.dashboard.complete") : t("applicantFlow.dashboard.pending")}</Badge>
               </div>
               <div className={`flex flex-wrap items-center gap-3 rounded-lg p-3 ${applicationProfileComplete ? "bg-accent/50" : "border-2 border-dashed"}`}>
                 {applicationProfileComplete ? (
@@ -147,8 +162,30 @@ export function ApplicantDashboardPage() {
                 ) : (
                   <Clock className="h-5 w-5 text-muted-foreground" />
                 )}
-                <div className="flex-1 text-sm font-medium">Application Profile</div>
-                <Badge variant="secondary">{applicationProfileComplete ? "Complete" : "Pending"}</Badge>
+                <div className="flex-1 text-sm font-medium">{t("applicantFlow.dashboard.applicationProfile")}</div>
+                <Badge variant="secondary">{applicationProfileComplete ? t("applicantFlow.dashboard.complete") : t("applicantFlow.dashboard.pending")}</Badge>
+              </div>
+              <div className={`flex flex-wrap items-center gap-3 rounded-lg p-3 ${documentsComplete ? "bg-accent/50" : "border-2 border-dashed"}`}>
+                {documentsComplete ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{t("applicantFlow.dashboard.documentReadiness")}</p>
+                  {!documentsComplete ? (
+                    <p className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.documentReadinessHelp")}</p>
+                  ) : null}
+                </div>
+                {documentsComplete ? (
+                  <Badge variant="secondary">{t("applicantFlow.dashboard.complete")}</Badge>
+                ) : (
+                  <Link to={`${routes.applicant.settings}?tab=match-profile`}>
+                    <Button size="sm" variant="ghost">
+                      {t("applicantFlow.dashboard.update")} <ArrowRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Link>
+                )}
               </div>
               <div className={`flex flex-wrap items-center gap-3 rounded-lg p-3 ${testScoresComplete ? "bg-accent/50" : "border-2 border-dashed"}`}>
                 {testScoresComplete ? (
@@ -157,20 +194,16 @@ export function ApplicantDashboardPage() {
                   <Clock className="h-5 w-5 text-muted-foreground" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">Test Scores</p>
+                  <p className="text-sm font-medium">{t("applicantFlow.dashboard.testScores")}</p>
                   {!testScoresComplete ? (
-                    <p className="text-xs text-muted-foreground">Add IELTS, TOEFL, or GRE scores</p>
+                    <p className="text-xs text-muted-foreground">{t("applicantFlow.dashboard.testScoresHelp")}</p>
                   ) : null}
                 </div>
-                {testScoresComplete ? (
-                  <Badge variant="secondary">Complete</Badge>
-                ) : (
-                  <Link to={routes.applicant.settings}>
-                    <Button size="sm" variant="ghost">
-                      Add <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </Link>
-                )}
+                <Link to={routes.applicant.settings}>
+                  <Button size="sm" variant="ghost">
+                    {testScoresComplete ? t("applicantFlow.dashboard.manage") : t("applicantFlow.dashboard.add")} <ArrowRight className="ml-1 h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </div>
           </CardContent>
@@ -178,30 +211,30 @@ export function ApplicantDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>{t("applicantFlow.dashboard.quickActions")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Link to={routes.applicant.universities} className="block">
               <Button className="w-full justify-start" variant="outline">
                 <Target className="mr-2 h-4 w-4" />
-                Find More Universities
+                {t("applicantFlow.dashboard.findMore")}
               </Button>
             </Link>
             <Link to={routes.applicant.compare} className="block">
               <Button className="w-full justify-start" variant="outline">
                 <TrendingUp className="mr-2 h-4 w-4" />
-                Compare Options
+                {t("applicantFlow.dashboard.compareOptions")}
               </Button>
             </Link>
             <Link to={routes.applicant.applications} className="block">
               <Button className="w-full justify-start" variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
-                View Applications
+                {t("applicantFlow.dashboard.viewApplications")}
               </Button>
             </Link>
             <Link to={routes.applicant.billing} className="block">
               <Button className="w-full justify-start" variant="outline">
-                Billing unavailable
+                {t("billingPage.title", { defaultValue: "Billing" })}
               </Button>
             </Link>
           </CardContent>
@@ -210,13 +243,13 @@ export function ApplicantDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Applications</CardTitle>
+          <CardTitle>{t("applicantFlow.dashboard.recentApplications")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {applications.length === 0 ? (
             <EmptyState
-              title="No applications yet"
-              description="Start by choosing a university and creating your first draft."
+              title={t("applicantFlow.dashboard.noApplicationsTitle")}
+              description={t("applicantFlow.dashboard.noApplicationsDescription")}
             />
           ) : (
             applications.slice(0, 6).map((item) => {
@@ -234,7 +267,7 @@ export function ApplicantDashboardPage() {
                 <div>
                   <div className="font-medium">{item.universityName}</div>
                   <div className="text-xs text-muted-foreground">
-                    Cycle {item.applicationCycle}
+                    {t("applicantFlow.dashboard.cycle", { cycle: item.applicationCycle })}
                   </div>
                 </div>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -242,18 +275,15 @@ export function ApplicantDashboardPage() {
                     {getApplicationStatusLabel(t, item.status)}
                   </Badge>
                   {item.status === "draft" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full sm:w-auto"
-                      onClick={() => toast.info("Coming soon", { description: "Currently not available. Please check back later." })}
-                    >
-                      Open draft
-                    </Button>
+                    <Link to={openHref}>
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                        {t("applicantFlow.dashboard.openDraft")}
+                      </Button>
+                    </Link>
                   ) : (
                     <Link to={openHref}>
                       <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                        Open
+                        {t("actions.open")}
                       </Button>
                     </Link>
                   )}

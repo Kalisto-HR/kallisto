@@ -13,7 +13,6 @@ function normalizeFavoritesArray(items: unknown[]): UniversityListItem[] {
           province: null,
           city: null,
           country: null,
-          ranking: null,
           applicationFee: null,
           acceptanceRate: null,
           tuitionFee: null,

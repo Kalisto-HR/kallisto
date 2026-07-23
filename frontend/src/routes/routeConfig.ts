@@ -21,12 +21,11 @@ export const routes = {
     settings: "/applicant/settings",
     help: "/applicant/help",
     billing: "/applicant/billing",
-    checkout: "/applicant/checkout",
   },
   partner: {
     dashboard: (universityId: string) => `/partner/${universityId}/dashboard`,
     profile: (universityId: string) => `/partner/${universityId}/profile`,
-    applicationStructure: (universityId: string) => `/partner/${universityId}/application-structure`,
+    applicationBuilder: (universityId: string) => `/partner/${universityId}/application-builder`,
     applications: (universityId: string) => `/partner/${universityId}/applications`,
   },
   staff: {

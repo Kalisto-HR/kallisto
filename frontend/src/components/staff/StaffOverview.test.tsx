@@ -49,7 +49,7 @@ describe("StaffOverview", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "dashboard:staff.viewAudit" })).toHaveAttribute("href", routes.staff.auditLogs);
+    expect(screen.getByRole("link", { name: "View audit log" })).toHaveAttribute("href", routes.staff.auditLogs);
   });
 
   it("renders non-good system health statuses distinctly", () => {

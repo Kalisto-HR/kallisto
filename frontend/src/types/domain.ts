@@ -20,7 +20,6 @@ export interface UniversityListItem {
   province: string | null;
   city: string | null;
   country: string | null;
-  ranking: number | null;
   applicationFee: number | null;
   acceptanceRate: number | null;
   tuitionFee: number | null;
@@ -33,6 +32,93 @@ export interface UniversityListItem {
   programGroups?: string | null;
 }
 
+export type CompareStatus =
+  | "available"
+  | "not_available"
+  | "limited"
+  | "varies"
+  | "not_provided"
+  | "verified"
+  | "active"
+  | "pending_verification"
+  | "provided"
+  | "free"
+  | "open"
+  | "closed";
+
+export interface CompareFinancialSupport {
+  scholarships: CompareStatus;
+  governmentGrants: CompareStatus;
+  tuitionDiscounts: CompareStatus;
+  otherSupport: CompareStatus;
+}
+
+export interface CompareAccreditation {
+  licenceStatus: CompareStatus;
+  nationalAccreditationStatus: CompareStatus;
+  internationalAccreditationStatus: CompareStatus;
+}
+
+export interface CompareInternationalPartnerships {
+  status: CompareStatus;
+  verifiedCount: number;
+  partners: string[];
+}
+
+export interface CompareMobility {
+  exchange: CompareStatus;
+  academicMobility: CompareStatus;
+  doubleDegree: CompareStatus;
+  semesterAbroad: CompareStatus;
+}
+
+export interface CompareCareerSupport {
+  careerCentre: CompareStatus;
+  internshipSupport: CompareStatus;
+  employerPartnerships: CompareStatus;
+  jobFairs: CompareStatus;
+  entrepreneurshipSupport: CompareStatus;
+  employmentData: string | null;
+}
+
+export interface CompareApplicationFee {
+  amount: number | null;
+  currency: string;
+  status: CompareStatus;
+}
+
+export interface CompareAdmissions {
+  deadline: string | null;
+  deadlineStatus: "exact" | "open" | "closed" | "varies_by_program" | "not_provided";
+  universityApplicationFee: CompareApplicationFee;
+  kallistoApplicationFee: CompareApplicationFee;
+  canApplyThroughKallisto: boolean;
+  kallistoApplicationStatus: "open" | "closed" | "opening_soon" | "not_available";
+}
+
+export interface CompareUniversityItem {
+  id: string;
+  slug?: string | null;
+  name: string;
+  logoUrl?: string | null;
+  region: string | null;
+  city: string | null;
+  averageContractAmount: number | null;
+  contractCurrency: "UZS" | string;
+  contractPeriod: "year" | string;
+  universityType: "public" | "private" | "international_university" | "foreign_university_branch" | null;
+  languagesOfInstruction: string[];
+  studyFormats: string[];
+  financialSupport: CompareFinancialSupport;
+  dormitoryStatus: CompareStatus;
+  dormitoryNote?: string | null;
+  accreditation: CompareAccreditation;
+  internationalPartnerships: CompareInternationalPartnerships;
+  mobility: CompareMobility;
+  careerSupport: CompareCareerSupport;
+  admissions: CompareAdmissions;
+}
+
 export interface University {
   id: string;
   managerId: string | null;
@@ -41,7 +127,6 @@ export interface University {
   province: string | null;
   city: string | null;
   country: string | null;
-  ranking: number | null;
   applicationFee: number | null;
   acceptanceRate: number | null;
   tuitionFee: number | null;
@@ -132,6 +217,7 @@ export type ApplicationStatusStage =
 export type ApplicantApplicationStatus = ApplicationStatus;
 
 export interface ApplicantApplicationListItem {
+  id: string;
   universityId: string;
   universityName: string;
   applicationCycle: string;
@@ -144,7 +230,54 @@ export interface ApplicantApplicationListItem {
   isSuccessfulOutcome: boolean;
 }
 
+export interface ApplicationStatusEvent {
+  id: string;
+  applicationId: string;
+  fromStatus: ApplicationStatus;
+  toStatus: ApplicationStatus;
+  publicComment: string | null;
+  internalNote?: string | null;
+  changedBy: string | null;
+  changedByRole: string | null;
+  changedAt: string;
+  notificationCreated: boolean;
+}
+
+export type ApplicationTaskStatus = "pending" | "in_progress" | "submitted" | "completed" | "rejected" | "not_applicable";
+
+export interface ApplicationTask {
+  id: string;
+  applicationId: string;
+  title: string;
+  description: string | null;
+  category: string;
+  status: ApplicationTaskStatus;
+  assignedRole: string;
+  required: boolean;
+  dueAt: string | null;
+  completedAt: string | null;
+  verifiedAt: string | null;
+  relatedDocumentId: string | null;
+  studentResponse: string | null;
+  universityFeedback: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApplicationDecision {
+  applicationId: string;
+  decisionStatus: Exclude<ApplicationStatus, "draft" | "submitted" | "under_review" | "additional_information_required" | "decision_pending">;
+  decisionDate: string;
+  publicMessage: string;
+  studentVisibleReason: string | null;
+  responseDeadline: string | null;
+  waitlistPosition: number | null;
+  decisionDocumentId: string | null;
+}
+
 export interface ApplicantApplication {
+  id: string;
   userId: string;
   universityId: string;
   applicationCycle: string;
@@ -156,6 +289,9 @@ export interface ApplicantApplication {
   statusStage: ApplicationStatusStage;
   isFinal: boolean;
   isSuccessfulOutcome: boolean;
+  history: ApplicationStatusEvent[];
+  tasks: ApplicationTask[];
+  decision: ApplicationDecision | null;
 }
 
 export interface ApplicationTestScoreImportResult {
@@ -187,6 +323,9 @@ export interface SubmittedApplication {
   statusStage: ApplicationStatusStage;
   isFinal: boolean;
   isSuccessfulOutcome: boolean;
+  history: ApplicationStatusEvent[];
+  tasks: ApplicationTask[];
+  decision: ApplicationDecision | null;
 }
 
 export interface PartnerDashboardRecentApplication {
@@ -301,4 +440,75 @@ export interface FitScoreResult {
   reasons: string[];
   recommendations: string[];
   explanation?: string;
+}
+
+export interface BillingProduct {
+  id: string;
+  productType: "application_credit" | "subscription" | string;
+  name: string;
+  description: string | null;
+  credits: number;
+  priceAmount: number;
+  currency: string;
+  interval: string | null;
+  intervalCount: number | null;
+  active: boolean;
+}
+
+export interface BillingOrder {
+  id: string;
+  userId: string;
+  productId: string;
+  orderNumber: string;
+  orderType: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  currency: string;
+  status: string;
+  paymentProvider: string;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditLedgerEntry {
+  id: string;
+  userId: string;
+  transactionType: string;
+  creditChange: number;
+  balanceAfter: number;
+  sourceType: string;
+  sourceId: string | null;
+  applicationId: string | null;
+  description: string;
+  createdAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  planId: string;
+  status: string;
+  startsAt: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  cancelledAt: string | null;
+  paymentProvider: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingSummary {
+  creditBalance: number;
+  creditsPurchased: number;
+  creditsUsed: number;
+  draftApplications: number;
+  submittedApplications: number;
+  products: BillingProduct[];
+  orders: BillingOrder[];
+  creditHistory: CreditLedgerEntry[];
+  subscription: Subscription | null;
+  hasActivePremium: boolean;
 }

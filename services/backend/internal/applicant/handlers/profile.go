@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,9 @@ var allowedPhotoContentTypes = map[string]struct{}{
 	"image/jpeg": {},
 	"image/webp": {},
 }
+
+var profileNamePattern = regexp.MustCompile(`^[\p{L}\p{M}'\x{2018}\x{2019}` + "`" + ` -]+$`)
+var e164UzbekPhonePattern = regexp.MustCompile(`^\+998\d{9}$`)
 
 func NotImplementedHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -83,14 +87,10 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 	var validationErrors []*validation.ValidationError
 	if req.FirstName != nil {
-		if err := validation.ValidateMinLength(*req.FirstName, "first_name", 1); err != nil {
-			validationErrors = append(validationErrors, err)
-		}
+		validationErrors = append(validationErrors, validateProfileName(*req.FirstName, "first_name")...)
 	}
 	if req.LastName != nil {
-		if err := validation.ValidateMinLength(*req.LastName, "last_name", 1); err != nil {
-			validationErrors = append(validationErrors, err)
-		}
+		validationErrors = append(validationErrors, validateProfileName(*req.LastName, "last_name")...)
 	}
 	if req.Data != nil {
 		var data map[string]any
@@ -99,14 +99,8 @@ func UpdateProfileHandler(w http.ResponseWriter, r *http.Request) {
 				Field:   "data",
 				Message: "must be a valid JSON object",
 			})
-		} else if genderValue, exists := data["gender"]; exists {
-			gender, ok := genderValue.(string)
-			if !ok || !isSupportedStudentGender(gender) {
-				validationErrors = append(validationErrors, &validation.ValidationError{
-					Field:   "data.gender",
-					Message: "must be one of: male, female, non_binary, prefer_not_to_say",
-				})
-			}
+		} else {
+			validationErrors = append(validationErrors, validateProfileData(data)...)
 		}
 	}
 	if len(validationErrors) > 0 {
@@ -320,11 +314,96 @@ func DeleteProfileHandler(w http.ResponseWriter, r *http.Request) {
 
 func isSupportedStudentGender(value string) bool {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "male", "female", "non_binary", "other", "prefer_not_to_say":
+	case "male", "female", "prefer_not_to_say":
 		return true
 	default:
 		return false
 	}
+}
+
+func validateProfileName(value string, field string) []*validation.ValidationError {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return []*validation.ValidationError{{Field: field, Message: "is required"}}
+	}
+	if !profileNamePattern.MatchString(trimmed) || isNumbersOnly(trimmed) {
+		return []*validation.ValidationError{{Field: field, Message: "must contain valid name characters"}}
+	}
+	return nil
+}
+
+func validateProfileData(data map[string]any) []*validation.ValidationError {
+	var errors []*validation.ValidationError
+
+	if genderValue, exists := data["gender"]; exists {
+		gender, ok := genderValue.(string)
+		if !ok || !isSupportedStudentGender(gender) {
+			errors = append(errors, &validation.ValidationError{
+				Field:   "data.gender",
+				Message: "must be one of: male, female, prefer_not_to_say",
+			})
+		}
+	}
+
+	regionCode, hasRegion := dataString(data, "regionCode")
+	districtCode, hasDistrict := dataString(data, "districtCode")
+	if hasRegion {
+		if regionCode == "" || !validation.IsUzbekistanRegionCode(regionCode) {
+			errors = append(errors, &validation.ValidationError{Field: "data.regionCode", Message: "must be a valid Uzbekistan region code"})
+		}
+	}
+	if hasDistrict {
+		if districtCode == "" || !validation.IsUzbekistanDistrictCode(districtCode) {
+			errors = append(errors, &validation.ValidationError{Field: "data.districtCode", Message: "must be a valid Uzbekistan district code"})
+		}
+	}
+	if hasRegion && hasDistrict && regionCode != "" && districtCode != "" && !validation.IsUzbekistanDistrictInRegion(regionCode, districtCode) {
+		errors = append(errors, &validation.ValidationError{
+			Field:   "data.districtCode",
+			Message: "The selected district does not belong to the selected region.",
+		})
+	}
+
+	if value, exists := dataString(data, "dateOfBirth"); exists && value != "" {
+		parsed, err := time.Parse("2006-01-02", value)
+		if err != nil {
+			errors = append(errors, &validation.ValidationError{Field: "data.dateOfBirth", Message: "must be in YYYY-MM-DD format"})
+		} else if parsed.After(time.Now()) {
+			errors = append(errors, &validation.ValidationError{Field: "data.dateOfBirth", Message: "must not be in the future"})
+		}
+	}
+
+	if value, exists := dataString(data, "additionalPhone"); exists && value != "" && !e164UzbekPhonePattern.MatchString(value) {
+		errors = append(errors, &validation.ValidationError{Field: "data.additionalPhone", Message: "must be a valid Uzbekistan phone number in E.164 format"})
+	}
+
+	return errors
+}
+
+func dataString(data map[string]any, key string) (string, bool) {
+	value, exists := data[key]
+	if !exists || value == nil {
+		return "", exists
+	}
+	text, ok := value.(string)
+	if !ok {
+		return "", true
+	}
+	return strings.TrimSpace(text), true
+}
+
+func isNumbersOnly(value string) bool {
+	hasDigit := false
+	for _, r := range value {
+		if r >= '0' && r <= '9' {
+			hasDigit = true
+			continue
+		}
+		if r != ' ' && r != '-' {
+			return false
+		}
+	}
+	return hasDigit
 }
 
 func GetProfileTestScoresHandler(w http.ResponseWriter, r *http.Request) {

@@ -20,7 +20,7 @@ describe("StaffUniversitiesPage", () => {
 
     expect(await screen.findByText("Failed to load universities")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
-    expect(screen.queryByText(/tsinghua university/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/example university/i)).not.toBeInTheDocument();
   });
 
   it("renders an empty state when the live fetch succeeds with no universities", async () => {

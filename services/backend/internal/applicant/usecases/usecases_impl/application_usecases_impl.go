@@ -9,6 +9,7 @@ import (
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
 	"kallisto/services/backend/internal/applicant/models"
+	sharedApplicationUsecases "kallisto/services/backend/internal/shared/usecases/usecases_impl"
 	"net/http"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ const applicationStatusMetaSelect = `CASE a.status
 			WHEN 'decision_pending' THEN 80
 			WHEN 'waitlisted' THEN 90
 			WHEN 'accepted' THEN 100
-			WHEN 'rejected' THEN 100
+			WHEN 'rejected' THEN 80
 			ELSE 0
 		END AS status_progress,
 		CASE a.status
@@ -70,7 +71,7 @@ func GetApplicationsByUser(ctx context.Context, userId string) ([]models.Applica
 	}
 
 	rows, err := conn.Query(ctx,
-		`SELECT a.university_id, u.name as university_name, a.application_cycle, a.status, a.created_at, a.submitted_at,
+		`SELECT a.id, a.university_id, u.name as university_name, a.application_cycle, a.status, a.created_at, a.submitted_at,
 		`+applicationStatusMetaSelect+`
 		FROM applications a JOIN universities u ON a.university_id = u.id
 		WHERE a.user_id=$1 ORDER BY a.created_at DESC`, userId)
@@ -94,7 +95,7 @@ func GetApplicationById(ctx context.Context, userId, universityId, cycle string)
 	}
 
 	rows, err := conn.Query(ctx,
-		`SELECT a.user_id, a.university_id, a.application_cycle, a.status, a.data, a.submitted_at, a.created_at,
+		`SELECT a.id, a.user_id, a.university_id, a.application_cycle, a.status, a.data, a.submitted_at, a.created_at,
 		`+applicationStatusMetaSelect+`
 		FROM applications a WHERE a.user_id=$1 AND a.university_id=$2 AND a.application_cycle=$3`,
 		userId, universityId, cycle)
@@ -112,6 +113,22 @@ func GetApplicationById(ctx context.Context, userId, universityId, cycle string)
 		return nil, fmt.Errorf("failed to convert database results to struct: %s", err.Error())
 	}
 
+	history, err := sharedApplicationUsecases.ListApplicationStatusEvents(ctx, application.Id, false)
+	if err != nil {
+		return nil, err
+	}
+	tasks, err := sharedApplicationUsecases.ListApplicationTasks(ctx, application.Id)
+	if err != nil {
+		return nil, err
+	}
+	decision, err := sharedApplicationUsecases.GetApplicationDecision(ctx, application.Id, false)
+	if err != nil {
+		return nil, err
+	}
+	application.History = history
+	application.Tasks = tasks
+	application.Decision = decision
+
 	return &application, nil
 }
 
@@ -122,7 +139,7 @@ func CreateApplication(ctx context.Context, userId string, req *models.Applicati
 	}
 
 	var universityExists bool
-	err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM universities WHERE id=$1)", req.UniversityId).Scan(&universityExists)
+	err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM universities WHERE id=$1 AND is_active = TRUE)", req.UniversityId).Scan(&universityExists)
 	if err != nil {
 		return fmt.Errorf("failed to check university existence: %s", err.Error())
 	}
@@ -212,7 +229,7 @@ func SubmitApplication(ctx context.Context, userId, universityId, cycle string) 
 		return fmt.Errorf("failed to check application status: %s", err.Error())
 	}
 	if status != models.StatusDraft {
-		return utils.NewHandlerFuncErr(http.StatusBadRequest, "application already submitted")
+		return nil
 	}
 
 	var applicationData json.RawMessage
@@ -282,30 +299,73 @@ func persistUnifiedSubmittedApplication(
 		}
 	}()
 
+	if _, err = tx.Exec(ctx, "SELECT 1 FROM users WHERE id=$1 FOR UPDATE", userId); err != nil {
+		return fmt.Errorf("failed to lock application credit owner: %s", err.Error())
+	}
+
 	var applicationID string
+	var billingExempt bool
 	if err = tx.QueryRow(
+		ctx,
+		`SELECT id, billing_exempt
+		 FROM applications
+		 WHERE user_id = $1
+		   AND university_id = $2
+		   AND application_cycle = $3
+		   AND status = $4
+		 FOR UPDATE`,
+		userId,
+		universityId,
+		cycle,
+		models.StatusDraft,
+	).Scan(&applicationID, &billingExempt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return utils.NewHandlerFuncErr(http.StatusBadRequest, "application already submitted")
+		}
+		return fmt.Errorf("failed to lock draft application: %s", err.Error())
+	}
+
+	var existingCharge bool
+	if err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM application_submission_charges WHERE application_id=$1)", applicationID).Scan(&existingCharge); err != nil {
+		return fmt.Errorf("failed to check application submission charge: %s", err.Error())
+	}
+
+	var ledgerEntryId *string
+	if !billingExempt && !existingCharge {
+		entryId, ledgerErr := addCreditLedgerEntryTx(ctx, tx, userId, "application_submission", -1, "application_submission", nil, &applicationID, "Application submission credit consumed")
+		if ledgerErr != nil {
+			return ledgerErr
+		}
+		ledgerEntryId = &entryId
+
+		if _, err = tx.Exec(ctx, `
+			INSERT INTO application_submission_charges (application_id, user_id, credit_ledger_entry_id, amount_credits)
+			VALUES ($1, $2, $3, 1)`,
+			applicationID,
+			userId,
+			entryId,
+		); err != nil {
+			return fmt.Errorf("failed to record application submission charge: %s", err.Error())
+		}
+	}
+
+	if _, err = tx.Exec(
 		ctx,
 		`UPDATE applications
 		 SET applicant_info = $1,
 		     status = 'submitted',
 		     submitted_at = $2,
 		     received_at = COALESCE(received_at, NOW()),
-		     updated_at = NOW()
-		 WHERE user_id = $3
-		   AND university_id = $4
-		   AND application_cycle = $5
-		   AND status = $6
-		 RETURNING id`,
+		     updated_at = NOW(),
+		     credit_ledger_entry_id = COALESCE($3, credit_ledger_entry_id)
+		 WHERE id = $4
+		   AND status = $5`,
 		applicantInfo,
 		submittedAt,
-		userId,
-		universityId,
-		cycle,
+		ledgerEntryId,
+		applicationID,
 		models.StatusDraft,
-	).Scan(&applicationID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return utils.NewHandlerFuncErr(http.StatusBadRequest, "application already submitted")
-		}
+	); err != nil {
 		return fmt.Errorf("failed to mark application as submitted: %s", err.Error())
 	}
 
@@ -323,6 +383,31 @@ func persistUnifiedSubmittedApplication(
 		applicationID,
 	); err != nil {
 		return fmt.Errorf("failed to persist submitted application data: %s", err.Error())
+	}
+
+	if _, err = tx.Exec(
+		ctx,
+		`INSERT INTO application_status_events (
+			application_id, from_status, to_status, public_comment, changed_by, changed_by_role, notification_created
+		) VALUES ($1, 'draft', 'submitted', $2, $3, 'applicant', TRUE)`,
+		applicationID,
+		"Application submitted by student.",
+		userId,
+	); err != nil {
+		return fmt.Errorf("failed to record application submission history: %s", err.Error())
+	}
+
+	if _, err = tx.Exec(
+		ctx,
+		`INSERT INTO application_notifications (user_id, application_id, university_id, event_type, title, description, action_url)
+		 VALUES ($1, $2, $3, 'application_submitted', 'Application submitted', 'Your application was submitted and is waiting for university review.', $4)
+		 ON CONFLICT (application_id, event_type) DO NOTHING`,
+		userId,
+		applicationID,
+		universityId,
+		"/applicant/applications/"+universityId+"/"+cycle,
+	); err != nil {
+		return fmt.Errorf("failed to create application submission notification: %s", err.Error())
 	}
 
 	if err = tx.Commit(ctx); err != nil {
@@ -669,6 +754,82 @@ func ImportProfileTestScoresToApplication(
 		ImportedCount: len(importedScores),
 		TestScores:    importedScores,
 	}, nil
+}
+
+func RespondToApplicationTask(ctx context.Context, userId, universityId, cycle, taskId, response string) error {
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return err
+	}
+
+	response = strings.TrimSpace(response)
+	if response == "" {
+		return utils.NewHandlerFuncErr(http.StatusBadRequest, "task response is required")
+	}
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start task response transaction: %s", err.Error())
+	}
+	defer tx.Rollback(ctx)
+
+	var applicationId string
+	var applicationStatus string
+	if err = tx.QueryRow(ctx, `
+		SELECT id, status
+		FROM applications
+		WHERE user_id = $1 AND university_id = $2 AND application_cycle = $3
+		FOR UPDATE`,
+		userId,
+		universityId,
+		cycle,
+	).Scan(&applicationId, &applicationStatus); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return utils.NewHandlerFuncErr(http.StatusNotFound, "application not found")
+		}
+		return fmt.Errorf("failed to load application for task response: %s", err.Error())
+	}
+	if applicationStatus != models.StatusAdditionalInformationRequired {
+		return utils.NewHandlerFuncErr(http.StatusBadRequest, "tasks can only be submitted when additional information is required")
+	}
+
+	result, err := tx.Exec(ctx, `
+		UPDATE application_tasks
+		SET student_response = $1,
+		    status = 'submitted',
+		    completed_at = NOW(),
+		    updated_at = NOW()
+		WHERE id = $2
+		  AND application_id = $3
+		  AND assigned_role = 'student'
+		  AND status IN ('pending', 'in_progress', 'rejected')`,
+		response,
+		taskId,
+		applicationId,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to submit application task response: %s", err.Error())
+	}
+	if result.RowsAffected() == 0 {
+		return utils.NewHandlerFuncErr(http.StatusNotFound, "active task not found")
+	}
+
+	if _, err = tx.Exec(ctx, `
+		INSERT INTO application_status_events (
+			application_id, from_status, to_status, public_comment, changed_by, changed_by_role
+		) VALUES ($1, $2, $2, $3, $4, 'applicant')`,
+		applicationId,
+		applicationStatus,
+		"Student submitted a response to a requested task.",
+		userId,
+	); err != nil {
+		return fmt.Errorf("failed to record task response history: %s", err.Error())
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit task response transaction: %s", err.Error())
+	}
+	return nil
 }
 
 func fetchProfileTestScoresForImport(

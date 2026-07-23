@@ -1,4 +1,6 @@
-export interface RmbFormatOptions {
+import i18n, { getCurrentLocale } from "../i18n";
+
+export interface CurrencyFormatOptions {
   fallback?: string;
   withUnit?: boolean;
   minimumFractionDigits?: number;
@@ -12,14 +14,10 @@ function parseNumberValue(value: string): number | null {
   }
 
   const parsed = Number.parseFloat(normalized);
-  if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
-    return null;
-  }
-
-  return parsed;
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatNumeric(amount: number, options: RmbFormatOptions): string {
+function formatNumericRmb(amount: number, options: CurrencyFormatOptions): string {
   const formatter = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: options.minimumFractionDigits,
     maximumFractionDigits: options.maximumFractionDigits ?? 2,
@@ -42,7 +40,7 @@ function replaceCurrencyTokens(value: string, withUnit: boolean): string {
   return next;
 }
 
-export function formatRmb(value: number | string | null | undefined, options: RmbFormatOptions = {}): string {
+export function formatRmb(value: number | string | null | undefined, options: CurrencyFormatOptions = {}): string {
   const fallback = options.fallback ?? "N/A";
 
   if (value === null || value === undefined) {
@@ -50,7 +48,7 @@ export function formatRmb(value: number | string | null | undefined, options: Rm
   }
 
   if (typeof value === "number") {
-    return formatNumeric(value, options);
+    return formatNumericRmb(value, options);
   }
 
   const trimmed = value.trim();
@@ -63,5 +61,31 @@ export function formatRmb(value: number | string | null | undefined, options: Rm
     return replaceCurrencyTokens(trimmed, Boolean(options.withUnit));
   }
 
-  return formatNumeric(parsed, options);
+  return formatNumericRmb(parsed, options);
+}
+
+export function formatUzs(value: number | string | null | undefined, options: CurrencyFormatOptions = {}): string {
+  const fallback = options.fallback ?? "N/A";
+  if (value === null || value === undefined) {
+    return fallback;
+  }
+
+  const amount = typeof value === "number" ? value : parseNumberValue(value);
+  if (amount === null) {
+    return fallback;
+  }
+
+  const formatted = new Intl.NumberFormat(getCurrentLocale(), {
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  }).format(amount);
+  const language = i18n.language.split("-")[0];
+
+  if (language === "ru") {
+    return `${formatted} сум`;
+  }
+  if (language === "uz") {
+    return `${formatted} so'm`;
+  }
+  return `${formatted} UZS`;
 }

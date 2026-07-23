@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/httpClient";
-import { fetchUniversities, fetchUniversityById, searchUniversities } from "./universitiesService";
+import { fetchUniversities, fetchUniversityById, fetchUniversityFilterOptions, searchUniversities } from "./universitiesService";
 
 vi.mock("../api/httpClient", () => ({
   api: {
@@ -70,10 +70,11 @@ describe("applicant universities service", () => {
 
     await searchUniversities({
       q: "computer science",
-      country: "Uzbekistan",
-      minRanking: 1,
-      maxRanking: 100,
-      scholarshipAvailable: true,
+      minPrice: 12000000,
+      maxPrice: 135000000,
+      region: "tashkent",
+      studyFormats: ["full-time", "evening"],
+      languages: ["english", "russian"],
       page: 2,
       limit: 5,
     });
@@ -81,11 +82,38 @@ describe("applicant universities service", () => {
     const [path] = vi.mocked(api.get).mock.calls[0]!;
     expect(path).toContain("/v1.0/applicant/universities/search?");
     expect(path).toContain("q=computer+science");
-    expect(path).toContain("country=Uzbekistan");
-    expect(path).toContain("min_ranking=1");
-    expect(path).toContain("max_ranking=100");
-    expect(path).toContain("scholarship_available=true");
+    expect(path).toContain("minPrice=12000000");
+    expect(path).toContain("maxPrice=135000000");
+    expect(path).toContain("region=tashkent");
+    expect(path).toContain("studyFormats=full-time%2Cevening");
+    expect(path).toContain("languages=english%2Crussian");
     expect(path).toContain("page=2");
     expect(path).toContain("limit=5");
+  });
+
+  it("loads dynamic university filter options", async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      ok: true,
+      status: 200,
+      error: null,
+      data: {
+        success: true,
+        data: {
+          price_range: { min: 12000000, max: 135000000 },
+          regions: [{ value: "tashkent", label: "Toshkent" }],
+          study_formats: [{ value: "full-time", label: "Kunduzgi" }],
+          languages: [{ value: "english", label: "Ingliz" }],
+        },
+        message: "",
+      },
+    });
+
+    await expect(fetchUniversityFilterOptions()).resolves.toEqual({
+      priceRange: { min: 12000000, max: 135000000 },
+      regions: [{ value: "tashkent", label: "Toshkent" }],
+      studyFormats: [{ value: "full-time", label: "Kunduzgi" }],
+      languages: [{ value: "english", label: "Ingliz" }],
+    });
+    expect(vi.mocked(api.get)).toHaveBeenCalledWith("/v1.0/applicant/universities/filter-options");
   });
 });

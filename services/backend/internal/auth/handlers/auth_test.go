@@ -102,6 +102,7 @@ func expectUserLookupQuery(mock pgxmock.PgxPoolIface, email string, passwordHash
 			"last_name",
 			"role",
 			"university_linked",
+			"is_active",
 		}).AddRow(
 			"user-1",
 			email,
@@ -110,6 +111,7 @@ func expectUserLookupQuery(mock pgxmock.PgxPoolIface, email string, passwordHash
 			"User",
 			role,
 			nil,
+			true,
 		))
 }
 

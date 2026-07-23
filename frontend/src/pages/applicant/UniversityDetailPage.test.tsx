@@ -50,7 +50,6 @@ describe("UniversityDetailPage", () => {
       province: "Bukhara Region",
       city: "Bukhara",
       country: "Uzbekistan",
-      ranking: 42,
       applicationFee: 120,
       acceptanceRate: 0.32,
       tuitionFee: 18000,
@@ -133,7 +132,10 @@ describe("UniversityDetailPage", () => {
 
     expect(await screen.findByText(/bukhara state university/i)).toBeInTheDocument();
     expect(screen.getByText("bsu.uz")).toBeInTheDocument();
-    expect(screen.getByText(/78\/100 strong fit/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/match score/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText("78%")).not.toBeInTheDocument();
+    expect(screen.getByText("78")).toBeInTheDocument();
+    expect(screen.getAllByText(/strong fit/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/admissions@bsu\.uz/i)).toBeInTheDocument();
     expect(screen.getByText(/kallisto match score/i)).toBeInTheDocument();
     expect(screen.getByText(/academic fit/i)).toBeInTheDocument();
@@ -147,3 +149,5 @@ describe("UniversityDetailPage", () => {
     expect(screen.getByText(/unable to update your basket right now/i)).toBeInTheDocument();
   });
 });
+
+

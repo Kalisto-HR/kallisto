@@ -1,4 +1,5 @@
 import { CheckCircle2, ClipboardCheck, DollarSign, GraduationCap, Languages, MapPin, Save } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -24,18 +25,18 @@ export interface ApplicantMatchProfileForm {
 }
 
 const EDUCATION_LEVELS = [
-  { value: "high_school", label: "High school" },
-  { value: "foundation", label: "Foundation" },
-  { value: "bachelor", label: "Bachelor" },
-  { value: "master", label: "Master" },
-  { value: "phd", label: "PhD" },
+  { value: "high_school", labelKey: "applicantFlow.matchProfile.educationLevels.high_school" },
+  { value: "foundation", labelKey: "applicantFlow.matchProfile.educationLevels.foundation" },
+  { value: "bachelor", labelKey: "applicantFlow.matchProfile.educationLevels.bachelor" },
+  { value: "master", labelKey: "applicantFlow.matchProfile.educationLevels.master" },
+  { value: "phd", labelKey: "applicantFlow.matchProfile.educationLevels.phd" },
 ];
 
 const LANGUAGE_OPTIONS = [
-  { value: "English", label: "English" },
-  { value: "Chinese", label: "Chinese" },
-  { value: "Russian", label: "Russian" },
-  { value: "Any", label: "Any" },
+  { value: "English", labelKey: "applicantFlow.matchProfile.languages.English" },
+  { value: "Chinese", labelKey: "applicantFlow.matchProfile.languages.Chinese" },
+  { value: "Russian", labelKey: "applicantFlow.matchProfile.languages.Russian" },
+  { value: "Any", labelKey: "applicantFlow.matchProfile.languages.Any" },
 ];
 
 interface ApplicantMatchProfileEditorProps {
@@ -71,6 +72,7 @@ export function ApplicantMatchProfileEditor({
   onSave,
   onReset,
 }: ApplicantMatchProfileEditorProps) {
+  const { t } = useTranslation("common");
   const readiness = calculateDocumentReadiness(value.documentsReady);
   const readyCount = REQUIRED_MATCH_DOCUMENTS.filter((documentName) => value.documentsReady.includes(documentName)).length;
 
@@ -80,43 +82,43 @@ export function ApplicantMatchProfileEditor({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-primary" />
-            Match Profile
+            {t("applicantFlow.matchProfile.title")}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            These fields feed Kallisto Match Score on university and program pages.
+            {t("applicantFlow.matchProfile.description")}
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
           <section className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="match-nationality">Nationality</Label>
+              <Label htmlFor="match-nationality">{t("applicantFlow.matchProfile.nationality")}</Label>
               <Input
                 id="match-nationality"
                 value={value.nationality}
                 onChange={(event) => onChange(updateField(value, "nationality", event.target.value))}
-                placeholder="e.g. Uzbekistan"
+                placeholder={t("applicantFlow.matchProfile.nationalityPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="match-education-level">Education level</Label>
+              <Label htmlFor="match-education-level">{t("applicantFlow.matchProfile.educationLevel")}</Label>
               <Select
                 value={value.educationLevel}
                 onValueChange={(nextValue) => onChange(updateField(value, "educationLevel", nextValue))}
               >
                 <SelectTrigger id="match-education-level">
-                  <SelectValue placeholder="Select level" />
+                  <SelectValue placeholder={t("applicantFlow.matchProfile.selectLevel")} />
                 </SelectTrigger>
                 <SelectContent>
                   {EDUCATION_LEVELS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="match-gpa">GPA</Label>
+              <Label htmlFor="match-gpa">{t("applicantFlow.matchProfile.gpa")} *</Label>
               <Input
                 id="match-gpa"
                 type="number"
@@ -128,7 +130,7 @@ export function ApplicantMatchProfileEditor({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="match-gpa-scale">GPA scale</Label>
+              <Label htmlFor="match-gpa-scale">{t("applicantFlow.matchProfile.gpaScale")} *</Label>
               <Input
                 id="match-gpa-scale"
                 type="number"
@@ -140,12 +142,12 @@ export function ApplicantMatchProfileEditor({
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="match-intended-major">Intended major</Label>
+              <Label htmlFor="match-intended-major">{t("applicantFlow.matchProfile.intendedMajor")} *</Label>
               <Input
                 id="match-intended-major"
                 value={value.intendedMajor}
                 onChange={(event) => onChange(updateField(value, "intendedMajor", event.target.value))}
-                placeholder="e.g. Computer Science"
+                placeholder={t("applicantFlow.matchProfile.intendedMajorPlaceholder")}
               />
             </div>
           </section>
@@ -154,7 +156,7 @@ export function ApplicantMatchProfileEditor({
             <div className="space-y-2">
               <Label htmlFor="match-budget" className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                Budget per year
+                {t("applicantFlow.matchProfile.budgetPerYear")} *
               </Label>
               <Input
                 id="match-budget"
@@ -163,25 +165,25 @@ export function ApplicantMatchProfileEditor({
                 step="100"
                 value={value.budgetPerYear}
                 onChange={(event) => onChange(updateField(value, "budgetPerYear", event.target.value))}
-                placeholder="RMB"
+                placeholder="UZS"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="match-language" className="flex items-center gap-2">
                 <Languages className="h-4 w-4 text-muted-foreground" />
-                Preferred language
+                {t("applicantFlow.matchProfile.preferredLanguage")} *
               </Label>
               <Select
                 value={value.preferredLanguage}
                 onValueChange={(nextValue) => onChange(updateField(value, "preferredLanguage", nextValue))}
               >
                 <SelectTrigger id="match-language">
-                  <SelectValue placeholder="Any" />
+                  <SelectValue placeholder={t("applicantFlow.matchProfile.languages.Any")} />
                 </SelectTrigger>
                 <SelectContent>
                   {LANGUAGE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {t(option.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -190,35 +192,35 @@ export function ApplicantMatchProfileEditor({
             <div className="space-y-2">
               <Label htmlFor="match-city" className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
-                Preferred city
+                {t("applicantFlow.matchProfile.preferredCity")} *
               </Label>
               <Input
                 id="match-city"
                 value={value.preferredCity}
                 onChange={(event) => onChange(updateField(value, "preferredCity", event.target.value))}
-                placeholder="e.g. Shanghai"
+                placeholder={t("applicantFlow.matchProfile.preferredCityPlaceholder")}
               />
             </div>
           </section>
 
           <section className="space-y-3">
-            <Label htmlFor="match-achievements">Achievements</Label>
+            <Label htmlFor="match-achievements">{t("applicantFlow.matchProfile.achievements")}</Label>
             <Textarea
               id="match-achievements"
               rows={4}
               value={value.achievements}
               onChange={(event) => onChange(updateField(value, "achievements", event.target.value))}
-              placeholder="One achievement per line"
+              placeholder={t("applicantFlow.matchProfile.achievementsPlaceholder")}
             />
           </section>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={onReset} disabled={saving}>
-              Reset
+              {t("applicantFlow.matchProfile.reset")}
             </Button>
             <Button type="button" onClick={onSave} disabled={saving}>
               <Save className="mr-2 h-4 w-4" />
-              {saving ? "Saving..." : "Save match profile"}
+              {saving ? t("applicantFlow.matchProfile.saving") : t("applicantFlow.matchProfile.save")}
             </Button>
           </div>
         </CardContent>
@@ -228,20 +230,20 @@ export function ApplicantMatchProfileEditor({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <ClipboardCheck className="h-5 w-5 text-primary" />
-            Document Readiness
+            {t("applicantFlow.matchProfile.documentReadiness")}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Mark documents that are ready to use in applications.
+            {t("applicantFlow.matchProfile.documentHelp")}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-primary/15 bg-primary/5 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium">Readiness</span>
+              <span className="text-sm font-medium">{t("applicantFlow.matchProfile.readiness")}</span>
               <Badge variant="secondary">{readyCount}/{REQUIRED_MATCH_DOCUMENTS.length}</Badge>
             </div>
             <Progress value={readiness} className="h-2" />
-            <p className="mt-2 text-xs text-muted-foreground">{readiness}% ready for document-based scoring.</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t("applicantFlow.matchProfile.readyPercent", { percent: readiness })}</p>
           </div>
 
           <div className="space-y-2">
@@ -255,9 +257,9 @@ export function ApplicantMatchProfileEditor({
                   <Checkbox
                     checked={checked}
                     onCheckedChange={() => onChange(toggleDocument(value, documentName))}
-                    aria-label={documentName}
+                    aria-label={t(`applicantFlow.matchProfile.documents.${documentName}`)}
                   />
-                  <span className="min-w-0 flex-1">{documentName}</span>
+                  <span className="min-w-0 flex-1">{t(`applicantFlow.matchProfile.documents.${documentName}`)}</span>
                   {checked ? <CheckCircle2 className="h-4 w-4 text-primary" /> : null}
                 </label>
               );

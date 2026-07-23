@@ -22,6 +22,10 @@ func GetCompareHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
 		return
 	}
+	if err := usecases_impl.RequirePremium(r.Context(), claims.UID); err != nil {
+		writeCompareError(w, err)
+		return
+	}
 
 	items, err := usecases_impl.GetUserCompareList(r.Context(), claims.UID)
 	if err != nil {
@@ -43,6 +47,10 @@ func AddCompareHandler(w http.ResponseWriter, r *http.Request) {
 		log.Error(err.Error())
 		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
 		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
+		return
+	}
+	if err := usecases_impl.RequirePremium(r.Context(), claims.UID); err != nil {
+		writeCompareError(w, err)
 		return
 	}
 
@@ -81,6 +89,10 @@ func RemoveCompareHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
 		return
 	}
+	if err := usecases_impl.RequirePremium(r.Context(), claims.UID); err != nil {
+		writeCompareError(w, err)
+		return
+	}
 
 	universityId := mux.Vars(r)["id"]
 	errors := validation.Validate(
@@ -112,6 +124,10 @@ func ClearCompareHandler(w http.ResponseWriter, r *http.Request) {
 		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
 		return
 	}
+	if err := usecases_impl.RequirePremium(r.Context(), claims.UID); err != nil {
+		writeCompareError(w, err)
+		return
+	}
 
 	if err := usecases_impl.ClearCompare(r.Context(), claims.UID); err != nil {
 		log.Error(err.Error())
@@ -122,4 +138,12 @@ func ClearCompareHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := utils.NewApiResponse[any](true, nil, "compare list cleared")
 	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
+func writeCompareError(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+	if handleFuncErr, ok := err.(utils.HandlerFuncErr); ok {
+		status = handleFuncErr.Status()
+	}
+	utils.WriteApiResponse(w, utils.NewApiResponse[any](false, nil, err.Error()), status)
 }

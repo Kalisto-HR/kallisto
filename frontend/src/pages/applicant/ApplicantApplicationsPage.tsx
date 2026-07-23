@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { Calendar, FileText, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
+import { deleteApplicantApplicationDraft, fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import type { ApplicantApplicationListItem } from "../../types/domain";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -17,22 +26,48 @@ export function ApplicantApplicationsPage() {
   const [items, setItems] = useState<ApplicantApplicationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [draftToDelete, setDraftToDelete] = useState<ApplicantApplicationListItem | null>(null);
+  const [deletingDraft, setDeletingDraft] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       setItems(await fetchApplicantApplications());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load applications");
+      setError(err instanceof Error ? err.message : t("applicantFlow.applications.loadFailed"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
+
+  const deleteDraft = async () => {
+    if (!draftToDelete) {
+      return;
+    }
+
+    setDeletingDraft(true);
+    setError(null);
+    try {
+      await deleteApplicantApplicationDraft(draftToDelete.universityId, draftToDelete.applicationCycle);
+      setItems((current) =>
+        current.filter(
+          (item) =>
+            item.universityId !== draftToDelete.universityId ||
+            item.applicationCycle !== draftToDelete.applicationCycle,
+        ),
+      );
+      setDraftToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("applicantFlow.applications.deleteFailed"));
+    } finally {
+      setDeletingDraft(false);
+    }
+  };
 
   const summary = useMemo(
     () => ({
@@ -43,13 +78,13 @@ export function ApplicantApplicationsPage() {
     [items],
   );
 
-  if (loading) return <LoadingState label="Loading applications..." />;
+  if (loading) return <LoadingState label={t("applicantFlow.applications.loading")} />;
   if (error) return <ErrorState message={error} onRetry={() => void load()} />;
   if (!items.length) {
     return (
       <EmptyState
-        title="No applications yet"
-        description="Use university search to create your first application draft."
+        title={t("applicantFlow.applications.emptyTitle")}
+        description={t("applicantFlow.applications.emptyDescription")}
       />
     );
   }
@@ -104,26 +139,34 @@ export function ApplicantApplicationsPage() {
               <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
-                  Cycle {item.applicationCycle}
+                  {t("applicantFlow.applications.cycle", { cycle: item.applicationCycle })}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5" />
-                  Created {item.createdAt || "N/A"}
+                  {t("applicantFlow.applications.created", { date: item.createdAt || t("applicantFlow.applications.createdFallback") })}
                 </span>
               </div>
               {item.status === "draft" ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={() => toast.info("Coming soon", { description: "Currently not available. Please check back later." })}
-                >
-                  Open draft
-                </Button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <Link to={openHref}>
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                      {t("applicantFlow.applications.openDraft")}
+                    </Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 sm:w-auto"
+                    onClick={() => setDraftToDelete(item)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t("applicantFlow.applications.deleteDraft")}
+                  </Button>
+                </div>
               ) : (
                 <Link to={openHref}>
                   <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                    Open
+                    {t("applicantFlow.applications.open")}
                   </Button>
                 </Link>
               )}
@@ -132,6 +175,36 @@ export function ApplicantApplicationsPage() {
           );
         })}
       </section>
+
+      <AlertDialog open={draftToDelete !== null} onOpenChange={(open) => {
+        if (!open && !deletingDraft) {
+          setDraftToDelete(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("applicantFlow.applications.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("applicantFlow.applications.deleteDescription", {
+                university: draftToDelete?.universityName ?? t("applicantFlow.applications.deleteFallback"),
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingDraft}>{t("actions.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deletingDraft}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(event) => {
+                event.preventDefault();
+                void deleteDraft();
+              }}
+            >
+              {deletingDraft ? t("applicantFlow.applications.deleting") : t("applicantFlow.applications.deleteDraft")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

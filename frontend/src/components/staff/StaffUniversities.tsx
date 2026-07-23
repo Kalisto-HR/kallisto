@@ -89,13 +89,13 @@ export default function StaffUniversities({
 
   const getTypeBadge = (type: UniversityType) => {
     const styles = {
-      public: "bg-blue-50 text-blue-700",
-      private: "bg-purple-50 text-purple-700",
-      international: "bg-indigo-50 text-indigo-700",
+      public: "bg-secondary text-secondary-foreground border border-border",
+      private: "bg-primary/10 text-primary border border-primary/20",
+      international: "bg-accent text-accent-foreground border border-border",
     };
 
     return (
-      <span className={`rounded px-2 py-0.5 text-xs font-medium ${styles[type]}`}>
+      <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${styles[type]}`}>
         {type.charAt(0).toUpperCase() + type.slice(1)}
       </span>
     );
@@ -114,7 +114,7 @@ export default function StaffUniversities({
         <p className="text-[#737373]">Manage all universities on the platform. All changes go through approval.</p>
       </div>
 
-      <div className="mb-6 rounded-xl border border-[#E5E5E5] bg-white p-4 sm:p-6">
+      <div className="mb-6 rounded-lg border border-[#E5E5E5] bg-white p-4 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#A3A3A3]" />
@@ -166,7 +166,7 @@ export default function StaffUniversities({
       {filteredUniversities.length === 0 ? (
         <EmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[#E5E5E5] bg-white">
+        <div className="overflow-hidden rounded-lg border border-[#E5E5E5] bg-white">
           <div className="space-y-3 p-4 md:hidden">
             {filteredUniversities.map((university) => (
               <div key={university.id} className="space-y-3 rounded-lg border p-4">
@@ -275,7 +275,7 @@ export default function StaffUniversities({
 
       {selectedUniversity ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white">
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white">
             <div className="sticky top-0 flex items-center justify-between border-b border-[#E5E5E5] bg-white p-6">
               <div>
                 <h2 className="text-xl font-semibold text-[#171717]">{selectedUniversity.name}</h2>

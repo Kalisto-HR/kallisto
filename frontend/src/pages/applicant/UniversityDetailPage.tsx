@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ArrowRight,
   AlertCircle,
-  Award,
   BookOpen,
   Building,
   CalendarDays,
@@ -19,14 +19,9 @@ import {
   Phone,
   Send,
 } from "lucide-react";
-import { toast } from "sonner";
 import type {
   ApplicantApplicationListItem,
-  ApplicantTestScore,
-  FitScoreProgram,
   FitScoreResult,
-  FitScoreStudentProfile,
-  Profile,
   University,
 } from "../../types/domain";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
@@ -50,6 +45,10 @@ import { KallistoMatchScoreCard } from "../../components/applicant/KallistoMatch
 import { EmptyState, ErrorState, LoadingState } from "../../components/common/PageState";
 import { routes } from "../../routes/routeConfig";
 import { formatRmb } from "../../utils/currency";
+import {
+  buildFitScoreProgramFromUniversity,
+  buildFitScoreStudentProfile,
+} from "../../utils/fitScorePayload";
 
 interface UniversityProgram {
   id: string;
@@ -365,108 +364,8 @@ function buildSchemaRequirements(university: University) {
   };
 }
 
-function toNumberValue(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-  return undefined;
-}
-
-function pickString(data: Record<string, unknown> | null | undefined, keys: string[]): string | undefined {
-  for (const key of keys) {
-    const value = toStringValue(data?.[key]);
-    if (value) {
-      return value;
-    }
-  }
-  return undefined;
-}
-
-function pickNumber(data: Record<string, unknown> | null | undefined, keys: string[]): number | undefined {
-  for (const key of keys) {
-    const value = toNumberValue(data?.[key]);
-    if (value !== undefined) {
-      return value;
-    }
-  }
-  return undefined;
-}
-
-function pickStringArray(data: Record<string, unknown> | null | undefined, keys: string[]): string[] {
-  for (const key of keys) {
-    const value = toStringArray(data?.[key]);
-    if (value.length > 0) {
-      return value;
-    }
-  }
-  return [];
-}
-
-function highestTestScore(testScores: ApplicantTestScore[], type: string): number | undefined {
-  const scores = testScores
-    .filter((score) => {
-      if (score.testType === type) {
-        return true;
-      }
-      return type === "HSK" && score.testType === "OTHER" && score.otherTestName?.toLowerCase().includes("hsk");
-    })
-    .map((score) => score.score)
-    .filter((score) => Number.isFinite(score));
-  return scores.length > 0 ? Math.max(...scores) : undefined;
-}
-
-function buildFitScoreStudentProfile(profile: Profile | null, testScores: ApplicantTestScore[]): FitScoreStudentProfile {
-  const data = profile?.data ?? {};
-  return {
-    nationality: pickString(data, ["nationality", "country", "citizenship"]),
-    educationLevel: pickString(data, ["educationLevel", "education_level", "currentEducationLevel"]),
-    gpa: pickNumber(data, ["gpa", "GPA"]),
-    gpaScale: pickNumber(data, ["gpaScale", "gpa_scale"]),
-    ielts: highestTestScore(testScores, "IELTS") ?? pickNumber(data, ["ielts", "ieltsScore"]),
-    toefl: highestTestScore(testScores, "TOEFL") ?? pickNumber(data, ["toefl", "toeflScore"]),
-    hsk: highestTestScore(testScores, "HSK") ?? pickNumber(data, ["hsk", "hskLevel"]),
-    sat: highestTestScore(testScores, "SAT") ?? pickNumber(data, ["sat", "satScore"]),
-    intendedMajor: pickString(data, ["intendedMajor", "intended_major", "major", "fieldOfStudy"]),
-    budgetPerYear: pickNumber(data, ["budgetPerYear", "budget_per_year", "annualBudget"]),
-    preferredLanguage: pickString(data, ["preferredLanguage", "preferred_language"]),
-    preferredCity: pickString(data, ["preferredCity", "preferred_city"]),
-    documentsReady: pickStringArray(data, ["documentsReady", "documents_ready", "readyDocuments"]),
-    achievements: pickStringArray(data, ["achievements", "awards"]),
-  };
-}
-
-function buildFitScoreProgram(
-  university: University,
-  primaryProgram: UniversityProgram | null,
-  requiredDocuments: string[],
-): FitScoreProgram {
-  const profile = toRecord(university.universityProfile);
-  const testRequirements = toRecord(profile?.testRequirements);
-  const admissions = toRecord(profile?.admissions);
-  return {
-    universityId: university.id,
-    universityName: university.name,
-    programId: primaryProgram?.id ?? university.id,
-    majorName: primaryProgram?.name ?? pickString(profile, ["programGroups"]) ?? university.name,
-    degreeLevel: primaryProgram?.level ?? pickString(profile, ["degreeLevel", "degree_level"]),
-    language: pickString(profile, ["language", "programLanguage", "teachingLanguage"]) ?? "English",
-    minGpa: pickNumber(admissions, ["minGpa", "min_gpa"]) ?? pickNumber(profile, ["minGpa", "min_gpa"]),
-    minIelts: pickNumber(testRequirements, ["ieltsMin", "ielts_min"]) ?? university.ieltsMin ?? undefined,
-    minToefl: pickNumber(testRequirements, ["toeflMin", "toefl_min"]) ?? university.toeflMin ?? undefined,
-    minHsk: pickNumber(testRequirements, ["hskLevel", "hsk_level", "minHsk", "min_hsk"]),
-    tuition: university.tuitionFee ?? pickNumber(profile, ["tuition", "tuitionFee"]) ?? undefined,
-    scholarshipAvailable: university.scholarshipAvailable ?? undefined,
-    deadline: university.applicationDeadline ?? "",
-    requiredDocuments,
-    competitivenessLevel: pickString(profile, ["competitivenessLevel", "competitiveness_level"]),
-  };
-}
-
 export function UniversityDetailPage() {
+  const { t } = useTranslation("common");
   const { id = "" } = useParams();
   const [university, setUniversity] = useState<University | null>(null);
   const [existingApplications, setExistingApplications] = useState<ApplicantApplicationListItem[]>([]);
@@ -509,11 +408,11 @@ export function UniversityDetailPage() {
         try {
           const result = await calculateFitScore(
             buildFitScoreStudentProfile(profile, testScores),
-            buildFitScoreProgram(universityData, programList[0] ?? null, requirements.requiredDocuments),
+            buildFitScoreProgramFromUniversity(universityData, programList[0] ?? null, requirements.requiredDocuments),
           );
           setFitScore(result);
         } catch (scoreError) {
-          setFitScoreError(scoreError instanceof Error ? scoreError.message : "Fit score is unavailable right now.");
+          setFitScoreError(scoreError instanceof Error ? scoreError.message : t("matchScore.unavailable"));
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load university");
@@ -523,7 +422,7 @@ export function UniversityDetailPage() {
       }
     };
     void load();
-  }, [id]);
+  }, [id, t]);
 
   const toggleCompare = async () => {
     if (!university) return;
@@ -544,7 +443,7 @@ export function UniversityDetailPage() {
         setCompareFeedback(null);
       }
     } catch (error) {
-      setCompareFeedback(error instanceof Error ? error.message : "Failed to update compare list.");
+      setCompareFeedback(error instanceof Error ? error.message : t("applicantFlow.universityDetail.compareUpdateFailed"));
     }
   };
 
@@ -560,7 +459,7 @@ export function UniversityDetailPage() {
       }
       setBasketFeedback(null);
     } catch {
-      setBasketFeedback("Unable to update your basket right now. Please try again.");
+      setBasketFeedback(t("applicantFlow.universityDetail.basketUpdateMessage"));
     }
   };
 
@@ -594,16 +493,16 @@ export function UniversityDetailPage() {
           existingSubmittedApplication.universityId,
           existingSubmittedApplication.applicationCycle,
         ),
-        label: "Open Application",
+        label: t("applicantFlow.universityDetail.openApplication"),
       }
     : existingDraftApplication
       ? {
           href: `${routes.applicant.applicationCreate(university.id)}?mode=draft&cycle=${encodeURIComponent(existingDraftApplication.applicationCycle)}`,
-          label: "Resume Draft",
+          label: t("applicantFlow.universityDetail.resumeDraft"),
         }
       : {
           href: routes.applicant.applicationCreate(university.id),
-          label: "Apply Now",
+          label: t("applicantFlow.universityDetail.applyNow"),
         };
 
   return (
@@ -611,78 +510,59 @@ export function UniversityDetailPage() {
       <Link to={routes.applicant.universities}>
         <Button variant="ghost" size="sm" className="w-full justify-start sm:w-auto">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to results
+          {t("applicantFlow.universityDetail.back")}
         </Button>
       </Link>
 
-      <section className="space-y-4">
+      <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
           <div className="brand-logo-mark flex h-20 w-20 items-center justify-center rounded-[1.75rem] text-xl font-semibold text-white shadow-[0_26px_44px_-28px_rgba(20,90,67,0.7)]">
             {university.name.slice(0, 2).toUpperCase()}
           </div>
-          <div className="flex-1">
-            <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="min-w-0 flex-1 pt-1">
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
               <h1 className="text-2xl font-semibold sm:text-3xl">{university.name}</h1>
-              {fitScore ? (
-                <Badge variant="secondary" className="brand-soft-badge">
-                  {fitScore.finalScore}/100 {fitScore.label}
-                </Badge>
-              ) : null}
             </div>
             <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground sm:gap-4">
               <span className="flex items-center gap-1.5">
                 <MapPin className="h-4 w-4" />
-                {[university.city, university.country, university.province].filter(Boolean).join(", ") || "Location unavailable"}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Award className="h-4 w-4" />
-                Ranking #{university.ranking ?? "N/A"}
+                {[university.city, university.country, university.province].filter(Boolean).join(", ") || t("applicantFlow.universityDetail.locationUnavailable")}
               </span>
               <span className="flex items-center gap-1.5">
                 <Globe className="h-4 w-4" />
-                University profile
+                {t("applicantFlow.universityDetail.universityProfile")}
               </span>
             </div>
             <p className="max-w-3xl text-muted-foreground">
-              {university.description ?? "No description is available for this university yet."}
+              {university.description ?? t("applicantFlow.universityDetail.noDescription")}
             </p>
           </div>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          {existingSubmittedApplication ? (
-            <Link to={primaryAction.href}>
-              <Button className="w-full sm:w-auto">
-                <Send className="mr-2 h-4 w-4" />
-                {primaryAction.label}
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              className="w-full sm:w-auto"
-              onClick={() => toast.info("Coming soon", { description: "Currently not available. Please check back later." })}
-            >
+        <div className="flex flex-col gap-3 sm:ml-[104px] sm:flex-row sm:flex-wrap sm:items-center">
+          <Link to={primaryAction.href}>
+            <Button className="w-full sm:w-auto">
               <Send className="mr-2 h-4 w-4" />
               {primaryAction.label}
             </Button>
-          )}
+          </Link>
           <Button className="w-full sm:w-auto" variant={isInBasket ? "default" : "outline"} onClick={() => void toggleBasket()}>
             {isInBasket ? (
               <>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Added to Basket
+                {t("applicantFlow.universityDetail.addedToBasket")}
               </>
             ) : (
-              "Add to Basket"
+              t("applicantFlow.universityDetail.addToBasket")
             )}
           </Button>
           <Button className="w-full sm:w-auto" variant={isInCompare ? "default" : "outline"} onClick={() => void toggleCompare()}>
             {isInCompare ? (
               <>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                Added to Compare
+                {t("applicantFlow.universityDetail.addedToCompare")}
               </>
             ) : (
-              "Add to Compare"
+              t("applicantFlow.universityDetail.addToCompare")
             )}
           </Button>
         </div>
@@ -690,7 +570,7 @@ export function UniversityDetailPage() {
           <Alert className="border-primary/20 bg-card/80">
             <AlertCircle className="h-4 w-4 text-primary" />
             <AlertTitle>
-              {compareFeedback === COMPARE_LIMIT_MESSAGE ? "Compare table full" : "Compare update failed"}
+              {compareFeedback === COMPARE_LIMIT_MESSAGE ? t("applicantFlow.universityDetail.compareTableFull") : t("applicantFlow.universityDetail.compareUpdateFailed")}
             </AlertTitle>
             <AlertDescription>{compareFeedback}</AlertDescription>
           </Alert>
@@ -698,39 +578,32 @@ export function UniversityDetailPage() {
         {basketFeedback ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Basket update failed</AlertTitle>
+            <AlertTitle>{t("applicantFlow.universityDetail.basketUpdateFailed")}</AlertTitle>
             <AlertDescription>{basketFeedback}</AlertDescription>
           </Alert>
         ) : null}
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <Award className="mb-2 h-5 w-5 text-muted-foreground" />
-            <div className="text-2xl font-semibold">#{university.ranking ?? "N/A"}</div>
-            <p className="text-xs text-muted-foreground">Global Ranking</p>
-          </CardContent>
-        </Card>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardContent className="pt-6">
             <DollarSign className="mb-2 h-5 w-5 text-muted-foreground" />
-            <div className="text-2xl font-semibold">{formatRmb(university.tuitionFee ?? university.applicationFee, { fallback: "N/A" })}</div>
-            <p className="text-xs text-muted-foreground">Tuition / Fee</p>
+            <div className="text-2xl font-semibold">{formatRmb(university.tuitionFee ?? university.applicationFee, { fallback: t("labels.unknown") })}</div>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.universityDetail.tuitionFee")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <Globe className="mb-2 h-5 w-5 text-muted-foreground" />
-            <div className="text-2xl font-semibold">{university.country ?? university.province ?? "N/A"}</div>
-            <p className="text-xs text-muted-foreground">Country</p>
+            <div className="text-2xl font-semibold">{university.country ?? university.province ?? t("labels.unknown")}</div>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.universityDetail.country")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <CheckCircle2 className="mb-2 h-5 w-5 text-muted-foreground" />
-            <div className="text-2xl font-semibold">{university.createdAt ? "Open" : "N/A"}</div>
-            <p className="text-xs text-muted-foreground">Admissions</p>
+            <div className="text-2xl font-semibold">{university.createdAt ? t("applicantFlow.universityDetail.open") : t("labels.unknown")}</div>
+            <p className="text-xs text-muted-foreground">{t("applicantFlow.universityDetail.admissions")}</p>
           </CardContent>
         </Card>
       </section>
@@ -744,16 +617,16 @@ export function UniversityDetailPage() {
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="flex w-full justify-start overflow-x-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="programs">Programs</TabsTrigger>
-          <TabsTrigger value="admissions">Admissions</TabsTrigger>
+          <TabsTrigger value="overview">{t("applicantFlow.universityDetail.overview")}</TabsTrigger>
+          <TabsTrigger value="programs">{t("applicantFlow.universityDetail.programs")}</TabsTrigger>
+          <TabsTrigger value="admissions">{t("applicantFlow.universityDetail.admissions")}</TabsTrigger>
           <TabsTrigger value="costs">Costs</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Overview</CardTitle>
+                <CardTitle>{t("applicantFlow.universityDetail.overview")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-muted-foreground">
                 <p>
@@ -934,7 +807,7 @@ export function UniversityDetailPage() {
         <TabsContent value="programs">
           <Card>
             <CardHeader>
-              <CardTitle>Programs Offered</CardTitle>
+              <CardTitle>{t("applicantFlow.universityDetail.programsOffered")}</CardTitle>
             </CardHeader>
             <CardContent>
               {programs.length > 0 ? (
@@ -984,8 +857,8 @@ export function UniversityDetailPage() {
                   </div>
                   {university.applicationFee ? (
                     <div className="rounded-lg border border-slate-200 p-4">
-                      <div className="mb-1 font-medium text-slate-900">Application Fee</div>
-                      <div>{formatRmb(university.applicationFee, { fallback: "N/A" })}</div>
+                      <div className="mb-1 font-medium text-slate-900">{t("applicantFlow.universityDetail.applicationFee")}</div>
+                      <div>{formatRmb(university.applicationFee, { fallback: t("labels.unknown") })}</div>
                     </div>
                   ) : null}
                 </CardContent>
@@ -1105,9 +978,9 @@ export function UniversityDetailPage() {
               <CardTitle>Costs</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Application fee: {formatRmb(university.applicationFee, { fallback: "N/A" })}</p>
+              <p>{t("applicantFlow.universityDetail.applicationFeeLine")}: {formatRmb(university.applicationFee, { fallback: t("labels.unknown") })}</p>
               <p>
-                Tuition: {formatRmb(university.tuitionFee, { fallback: "N/A" })}
+                {t("applicantFlow.universityDetail.tuition")}: {formatRmb(university.tuitionFee, { fallback: t("labels.unknown") })}
               </p>
             </CardContent>
           </Card>

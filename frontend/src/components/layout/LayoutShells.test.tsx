@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, vi } from "vitest";
@@ -174,10 +174,11 @@ describe("layout shells", () => {
     );
 
     expect(await screen.findByText("Staff child")).toBeInTheDocument();
-    expect(screen.getByText("Staff workspace")).toBeInTheDocument();
+    expect(screen.getAllByText("Staff workspace").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: /collapse sidebar/i }));
 
+    expect(within(screen.getByRole("complementary")).queryByText("Staff workspace")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /expand sidebar/i })).toBeInTheDocument();
   });
 });

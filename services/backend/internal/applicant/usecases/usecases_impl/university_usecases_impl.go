@@ -10,10 +10,75 @@ import (
 	"kallisto/infra/utils"
 	"kallisto/services/backend/internal/applicant/models"
 	"net/http"
+	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
+
+var nonSlugCharacterPattern = regexp.MustCompile(`[^a-z0-9]+`)
+
+var regionAliases = map[string]string{
+	"tashkent":      "tashkent",
+	"toshkent":      "tashkent",
+	"tashkent-city": "tashkent",
+	"toshkent-city": "tashkent",
+	"samarkand":     "samarkand",
+	"samarqand":     "samarkand",
+	"bukhara":       "bukhara",
+	"buxoro":        "bukhara",
+	"andijan":       "andijan",
+	"andijon":       "andijan",
+	"fergana":       "fergana",
+	"fargona":       "fergana",
+	"farg-ona":      "fergana",
+	"namangan":      "namangan",
+	"nukus":         "nukus",
+	"qarshi":        "qarshi",
+	"karshi":        "qarshi",
+	"urganch":       "urganch",
+}
+
+var regionLabels = map[string]string{
+	"tashkent":  "Toshkent",
+	"samarkand": "Samarqand",
+	"bukhara":   "Buxoro",
+	"andijan":   "Andijon",
+	"fergana":   "Farg'ona",
+	"namangan":  "Namangan",
+	"nukus":     "Nukus",
+	"qarshi":    "Qarshi",
+	"urganch":   "Urganch",
+}
+
+var studyFormatTerms = map[string][]string{
+	"full-time": {"full-time", "full time", "kunduzgi", "daytime"},
+	"part-time": {"part-time", "part time", "sirtqi"},
+	"evening":   {"evening", "kechki"},
+	"distance":  {"distance", "online", "remote", "masofaviy"},
+}
+
+var studyFormatLabels = map[string]string{
+	"full-time": "Kunduzgi",
+	"part-time": "Sirtqi",
+	"evening":   "Kechki",
+	"distance":  "Masofaviy",
+}
+
+var languageTerms = map[string][]string{
+	"uzbek":      {"uzbek", "o'zbek", "ozbek", "uzbekcha", "o'zbekcha"},
+	"russian":    {"russian", "rus", "russian language", "rus tili"},
+	"english":    {"english", "ingliz", "english language", "ingliz tili"},
+	"karakalpak": {"karakalpak", "qoraqalpoq", "karakalpak language", "qoraqalpoq tili"},
+}
+
+var languageLabels = map[string]string{
+	"uzbek":      "O'zbek",
+	"russian":    "Rus",
+	"english":    "Ingliz",
+	"karakalpak": "Qoraqalpoq",
+}
 
 func GetAllUniversities(ctx context.Context, page, limit int) ([]models.UniversityListItem, int, error) {
 	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
@@ -22,20 +87,21 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 	}
 
 	var total int
-	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM universities").Scan(&total)
+	err = conn.QueryRow(ctx, "SELECT COUNT(*) FROM universities WHERE is_active = TRUE").Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get total count: %s", err.Error())
 	}
 
 	offset := (page - 1) * limit
 	rows, err := conn.Query(ctx,
-		`SELECT id, name, description, province, city, country, ranking, application_fee,
+		`SELECT id, name, description, province, city, country, application_fee,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
 		        city_type, campus_vibe,
 		        university_profile->>'programGroups' AS program_groups
 		 FROM universities
-		 ORDER BY ranking ASC NULLS LAST, name ASC
+		 WHERE is_active = TRUE
+		 ORDER BY name ASC
 		 LIMIT $1 OFFSET $2`,
 		limit, offset)
 	if err != nil {
@@ -67,10 +133,10 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		            FROM university_application_structure_versions
 		            WHERE university_id = universities.id AND published = TRUE
 		        ) AS application_structure_published,
-		        university_profile, ranking,
+		        university_profile,
 		        created_at, metadata, application_fee
 		 FROM universities
-		 WHERE id=$1`,
+		 WHERE id=$1 AND is_active = TRUE`,
 		id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform database query: %s", err.Error())
@@ -193,13 +259,121 @@ func applicantFallbackApplicationSchema() json.RawMessage {
 	return utils.NormalizeApplicationSchema(raw)
 }
 
+func slugifyFilterValue(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	normalized = strings.ReplaceAll(normalized, "ʻ", "'")
+	normalized = strings.ReplaceAll(normalized, "‘", "'")
+	normalized = strings.ReplaceAll(normalized, "'", "")
+	normalized = nonSlugCharacterPattern.ReplaceAllString(normalized, "-")
+	return strings.Trim(normalized, "-")
+}
+
+func normalizeRegionFilter(value string) string {
+	slug := slugifyFilterValue(value)
+	if canonical, ok := regionAliases[slug]; ok {
+		return canonical
+	}
+	return slug
+}
+
+func regionMatchValues(region string) []string {
+	canonical := normalizeRegionFilter(region)
+	seen := map[string]bool{}
+	values := []string{}
+	add := func(value string) {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value == "" || seen[value] {
+			return
+		}
+		seen[value] = true
+		values = append(values, value)
+	}
+
+	add(canonical)
+	if label := regionLabels[canonical]; label != "" {
+		add(strings.ToLower(label))
+	}
+	for alias, aliasCanonical := range regionAliases {
+		if aliasCanonical != canonical {
+			continue
+		}
+		add(alias)
+		add(strings.ReplaceAll(alias, "-", " "))
+	}
+	return values
+}
+
+func normalizeKnownValue(value string, allowed map[string][]string) string {
+	slug := slugifyFilterValue(value)
+	for canonical, terms := range allowed {
+		if slug == canonical {
+			return canonical
+		}
+		for _, term := range terms {
+			if slug == slugifyFilterValue(term) {
+				return canonical
+			}
+		}
+	}
+	return ""
+}
+
+func normalizeKnownValues(values []string, allowed map[string][]string) []string {
+	seen := map[string]bool{}
+	normalized := make([]string, 0, len(values))
+	for _, value := range values {
+		canonical := normalizeKnownValue(value, allowed)
+		if canonical == "" || seen[canonical] {
+			continue
+		}
+		seen[canonical] = true
+		normalized = append(normalized, canonical)
+	}
+	sort.Strings(normalized)
+	return normalized
+}
+
+func universitySearchTextExpression() string {
+	return `lower(
+		COALESCE(university_profile::text, '') || ' ' ||
+		COALESCE(metadata::text, '') || ' ' ||
+		COALESCE(city_type, '') || ' ' ||
+		COALESCE(campus_vibe, '')
+	)`
+}
+
+func appendAnyTermFilter(whereClauses []string, args []any, argIndex int, values []string, terms map[string][]string) ([]string, []any, int) {
+	if len(values) == 0 {
+		return whereClauses, args, argIndex
+	}
+
+	groupClauses := make([]string, 0, len(values))
+	for _, value := range values {
+		valueTerms := terms[value]
+		if len(valueTerms) == 0 {
+			continue
+		}
+		termClauses := make([]string, 0, len(valueTerms))
+		for _, term := range valueTerms {
+			termClauses = append(termClauses, fmt.Sprintf("%s LIKE $%d", universitySearchTextExpression(), argIndex))
+			args = append(args, "%"+strings.ToLower(term)+"%")
+			argIndex++
+		}
+		groupClauses = append(groupClauses, "("+strings.Join(termClauses, " OR ")+")")
+	}
+	if len(groupClauses) > 0 {
+		whereClauses = append(whereClauses, "("+strings.Join(groupClauses, " OR ")+")")
+	}
+	return whereClauses, args, argIndex
+}
+
 func SearchUniversities(ctx context.Context, params *models.UniversitySearchParams) ([]models.UniversityListItem, int, error) {
 	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var whereClauses []string
+	whereClauses := []string{"is_active = TRUE"}
 	var args []any
 	argIndex := 1
 
@@ -223,16 +397,26 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 		args = append(args, *params.Country)
 		argIndex++
 	}
-	if params.MinRanking != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("ranking >= $%d", argIndex))
-		args = append(args, *params.MinRanking)
+	if params.Region != nil {
+		regions := regionMatchValues(*params.Region)
+		whereClauses = append(whereClauses, fmt.Sprintf("(city_slug = ANY($%d::text[]) OR lower(city) = ANY($%d::text[]) OR lower(province) = ANY($%d::text[]))", argIndex, argIndex, argIndex))
+		args = append(args, regions)
 		argIndex++
 	}
-	if params.MaxRanking != nil {
-		whereClauses = append(whereClauses, fmt.Sprintf("ranking <= $%d", argIndex))
-		args = append(args, *params.MaxRanking)
+	if params.MinPrice != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("tuition_fee IS NOT NULL AND tuition_fee >= $%d", argIndex))
+		args = append(args, *params.MinPrice)
 		argIndex++
 	}
+	if params.MaxPrice != nil {
+		whereClauses = append(whereClauses, fmt.Sprintf("tuition_fee IS NOT NULL AND tuition_fee <= $%d", argIndex))
+		args = append(args, *params.MaxPrice)
+		argIndex++
+	}
+	params.StudyFormats = normalizeKnownValues(params.StudyFormats, studyFormatTerms)
+	params.Languages = normalizeKnownValues(params.Languages, languageTerms)
+	whereClauses, args, argIndex = appendAnyTermFilter(whereClauses, args, argIndex, params.StudyFormats, studyFormatTerms)
+	whereClauses, args, argIndex = appendAnyTermFilter(whereClauses, args, argIndex, params.Languages, languageTerms)
 	if params.MaxFee != nil {
 		whereClauses = append(whereClauses, fmt.Sprintf("application_fee <= $%d", argIndex))
 		args = append(args, *params.MaxFee)
@@ -293,14 +477,14 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 
 	offset := (params.Page - 1) * params.Limit
 	selectQuery := fmt.Sprintf(
-		`SELECT id, name, description, province, city, country, ranking, application_fee,
+		`SELECT id, name, description, province, city, country, application_fee,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
 		        city_type, campus_vibe,
 		        university_profile->>'programGroups' AS program_groups
 		 FROM universities
 		 %s
-		 ORDER BY ranking ASC NULLS LAST, name ASC LIMIT $%d OFFSET $%d`,
+		 ORDER BY name ASC LIMIT $%d OFFSET $%d`,
 		whereClause, argIndex, argIndex+1)
 	args = append(args, params.Limit, offset)
 
@@ -316,4 +500,101 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 	}
 
 	return items, total, nil
+}
+
+func GetUniversityFilterOptions(ctx context.Context) (*models.UniversityFilterOptions, error) {
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, err
+	}
+
+	options := &models.UniversityFilterOptions{
+		Regions:      []models.UniversityFilterOption{},
+		StudyFormats: []models.UniversityFilterOption{},
+		Languages:    []models.UniversityFilterOption{},
+	}
+
+	var minPrice, maxPrice *float64
+	if err := conn.QueryRow(ctx, `
+		SELECT MIN(tuition_fee), MAX(tuition_fee)
+		FROM universities
+		WHERE is_active = TRUE AND country_code = 'UZ' AND tuition_fee IS NOT NULL
+	`).Scan(&minPrice, &maxPrice); err != nil {
+		return nil, fmt.Errorf("failed to load university price filter range: %s", err.Error())
+	}
+	options.PriceRange.Min = minPrice
+	options.PriceRange.Max = maxPrice
+
+	rows, err := conn.Query(ctx, `
+		SELECT city_slug, city, province, COALESCE(university_profile::text, '') || ' ' || COALESCE(metadata::text, '') AS searchable_text
+		FROM universities
+		WHERE is_active = TRUE AND country_code = 'UZ'
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load university filter options: %s", err.Error())
+	}
+	defer rows.Close()
+
+	regionSet := map[string]bool{}
+	studyFormatSet := map[string]bool{}
+	languageSet := map[string]bool{}
+	for rows.Next() {
+		var citySlug, city, province *string
+		var searchableText string
+		if err := rows.Scan(&citySlug, &city, &province, &searchableText); err != nil {
+			return nil, fmt.Errorf("failed to scan university filter option: %s", err.Error())
+		}
+		for _, value := range []*string{citySlug, city, province} {
+			if value == nil || strings.TrimSpace(*value) == "" {
+				continue
+			}
+			region := normalizeRegionFilter(*value)
+			if region != "" {
+				regionSet[region] = true
+				break
+			}
+		}
+		lowerSearchableText := strings.ToLower(searchableText)
+		for value, terms := range studyFormatTerms {
+			for _, term := range terms {
+				if strings.Contains(lowerSearchableText, strings.ToLower(term)) {
+					studyFormatSet[value] = true
+					break
+				}
+			}
+		}
+		for value, terms := range languageTerms {
+			for _, term := range terms {
+				if strings.Contains(lowerSearchableText, strings.ToLower(term)) {
+					languageSet[value] = true
+					break
+				}
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate university filter options: %s", err.Error())
+	}
+
+	options.Regions = filterOptionList(regionSet, regionLabels)
+	options.StudyFormats = filterOptionList(studyFormatSet, studyFormatLabels)
+	options.Languages = filterOptionList(languageSet, languageLabels)
+	return options, nil
+}
+
+func filterOptionList(values map[string]bool, labels map[string]string) []models.UniversityFilterOption {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	options := make([]models.UniversityFilterOption, 0, len(keys))
+	for _, key := range keys {
+		label := labels[key]
+		if label == "" {
+			label = strings.Title(strings.ReplaceAll(key, "-", " "))
+		}
+		options = append(options, models.UniversityFilterOption{Value: key, Label: label})
+	}
+	return options
 }

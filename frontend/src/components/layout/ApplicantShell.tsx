@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "../Header";
 import { Sidebar } from "../Sidebar";
@@ -19,7 +20,6 @@ const pageRouteMap: Record<string, string> = {
   billing: routes.applicant.billing,
   settings: routes.applicant.settings,
   help: routes.applicant.help,
-  checkout: routes.applicant.checkout,
 };
 
 function getCurrentPage(pathname: string): string {
@@ -31,11 +31,11 @@ function getCurrentPage(pathname: string): string {
   if (pathname.startsWith(routes.applicant.billing)) return "billing";
   if (pathname.startsWith(routes.applicant.settings)) return "settings";
   if (pathname.startsWith(routes.applicant.help)) return "help";
-  if (pathname.startsWith(routes.applicant.checkout)) return "checkout";
   return "applicant-dashboard";
 }
 
 export function ApplicantShell({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("common");
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useSession();
@@ -83,7 +83,7 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
   return (
     <div className="brand-shell flex h-screen flex-col overflow-hidden bg-background">
         <Header
-        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "Applicant"}
+        userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || t("labels.applicant")}
         applicationsCount={applicationsCount}
         basketCount={basketCount}
         onNavigate={handleNavigate}
@@ -102,9 +102,9 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetContent side="left" className="p-0 w-64" aria-describedby="applicant-mobile-menu-description">
-            <SheetTitle className="sr-only">Applicant Navigation</SheetTitle>
+            <SheetTitle className="sr-only">{t("nav.applicantNavigation")}</SheetTitle>
             <SheetDescription id="applicant-mobile-menu-description" className="sr-only">
-              Access applicant dashboard navigation links.
+              {t("nav.applicantNavigationDescription")}
             </SheetDescription>
             <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
           </SheetContent>

@@ -10,6 +10,8 @@ import type {
   ApplicantApplication,
   ApplicantApplicationListItem,
   ApplicantTestScore,
+  ApplicationStatus,
+  ApplicationDecision,
   University,
   UniversityListItem,
 } from "../../types/domain";
@@ -68,7 +70,6 @@ export function normalizeUniversityListItem(value: unknown): UniversityListItem 
     province: toNullableString(source.province),
     city: toNullableString(source.city),
     country: toNullableString(source.country),
-    ranking: toNullableNumber(source.ranking),
     applicationFee: toNullableNumber(source.application_fee ?? source.applicationFee),
     acceptanceRate: toNullableNumber(source.acceptance_rate ?? source.acceptanceRate),
     tuitionFee: toNullableNumber(source.tuition_fee ?? source.tuitionFee),
@@ -92,7 +93,6 @@ export function normalizeUniversity(value: unknown): University {
     province: toNullableString(source.province),
     city: toNullableString(source.city),
     country: toNullableString(source.country),
-    ranking: toNullableNumber(source.ranking),
     applicationFee: toNullableNumber(source.application_fee ?? source.applicationFee),
     acceptanceRate: toNullableNumber(source.acceptance_rate ?? source.acceptanceRate),
     tuitionFee: toNullableNumber(source.tuition_fee ?? source.tuitionFee),
@@ -171,6 +171,7 @@ export function normalizeApplicantApplicationListItem(value: unknown): Applicant
   const source = (value ?? {}) as Record<string, unknown>;
   const status = toString(source.status) as ApplicantApplicationListItem["status"];
   return {
+    id: toString(source.id),
     universityId: toString(source.university_id ?? source.universityId),
     universityName: toString(source.university_name ?? source.universityName),
     applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
@@ -188,6 +189,7 @@ export function normalizeApplicantApplication(value: unknown): ApplicantApplicat
   const source = (value ?? {}) as Record<string, unknown>;
   const status = toString(source.status) as ApplicantApplication["status"];
   return {
+    id: toString(source.id),
     userId: toString(source.user_id ?? source.userId),
     universityId: toString(source.university_id ?? source.universityId),
     applicationCycle: toString(source.application_cycle ?? source.applicationCycle),
@@ -199,6 +201,9 @@ export function normalizeApplicantApplication(value: unknown): ApplicantApplicat
     statusStage: toString(source.status_stage ?? source.statusStage ?? fallbackStatusStage(status)) as ApplicantApplication["statusStage"],
     isFinal: toBoolean(source.is_final ?? source.isFinal, isFinalApplicationStatus(status)),
     isSuccessfulOutcome: toBoolean(source.is_successful_outcome ?? source.isSuccessfulOutcome, status === "accepted"),
+    history: normalizeStatusEvents(source.history),
+    tasks: normalizeApplicationTasks(source.tasks),
+    decision: normalizeApplicationDecision(source.decision),
   };
 }
 
@@ -257,6 +262,69 @@ export function normalizeSubmittedApplication(value: unknown): SubmittedApplicat
     statusStage: toString(source.status_stage ?? source.statusStage ?? fallbackStatusStage(status)) as SubmittedApplication["statusStage"],
     isFinal: toBoolean(source.is_final ?? source.isFinal, isFinalApplicationStatus(status)),
     isSuccessfulOutcome: toBoolean(source.is_successful_outcome ?? source.isSuccessfulOutcome, status === "accepted"),
+    history: normalizeStatusEvents(source.history),
+    tasks: normalizeApplicationTasks(source.tasks),
+    decision: normalizeApplicationDecision(source.decision),
+  };
+}
+
+function normalizeStatusEvents(value: unknown): SubmittedApplication["history"] {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw) => {
+    const item = (raw ?? {}) as Record<string, unknown>;
+    return {
+      id: toString(item.id),
+      applicationId: toString(item.application_id ?? item.applicationId),
+      fromStatus: toString(item.from_status ?? item.fromStatus) as ApplicationStatus,
+      toStatus: toString(item.to_status ?? item.toStatus) as ApplicationStatus,
+      publicComment: toNullableString(item.public_comment ?? item.publicComment),
+      internalNote: toNullableString(item.internal_note ?? item.internalNote),
+      changedBy: toNullableString(item.changed_by ?? item.changedBy),
+      changedByRole: toNullableString(item.changed_by_role ?? item.changedByRole),
+      changedAt: toString(item.changed_at ?? item.changedAt),
+      notificationCreated: toBoolean(item.notification_created ?? item.notificationCreated),
+    };
+  });
+}
+
+function normalizeApplicationTasks(value: unknown): SubmittedApplication["tasks"] {
+  if (!Array.isArray(value)) return [];
+  return value.map((raw) => {
+    const item = (raw ?? {}) as Record<string, unknown>;
+    return {
+      id: toString(item.id),
+      applicationId: toString(item.application_id ?? item.applicationId),
+      title: toString(item.title),
+      description: toNullableString(item.description),
+      category: toString(item.category) || "university_request",
+      status: toString(item.status) as SubmittedApplication["tasks"][number]["status"],
+      assignedRole: toString(item.assigned_role ?? item.assignedRole) || "student",
+      required: toBoolean(item.required),
+      dueAt: toNullableString(item.due_at ?? item.dueAt),
+      completedAt: toNullableString(item.completed_at ?? item.completedAt),
+      verifiedAt: toNullableString(item.verified_at ?? item.verifiedAt),
+      relatedDocumentId: toNullableString(item.related_document_id ?? item.relatedDocumentId),
+      studentResponse: toNullableString(item.student_response ?? item.studentResponse),
+      universityFeedback: toNullableString(item.university_feedback ?? item.universityFeedback),
+      sortOrder: toNumber(item.sort_order ?? item.sortOrder),
+      createdAt: toString(item.created_at ?? item.createdAt),
+      updatedAt: toString(item.updated_at ?? item.updatedAt),
+    };
+  });
+}
+
+function normalizeApplicationDecision(value: unknown): SubmittedApplication["decision"] {
+  if (!value || typeof value !== "object") return null;
+  const item = value as Record<string, unknown>;
+  return {
+    applicationId: toString(item.application_id ?? item.applicationId),
+    decisionStatus: toString(item.decision_status ?? item.decisionStatus) as ApplicationDecision["decisionStatus"],
+    decisionDate: toString(item.decision_date ?? item.decisionDate),
+    publicMessage: toString(item.public_message ?? item.publicMessage),
+    studentVisibleReason: toNullableString(item.student_visible_reason ?? item.studentVisibleReason),
+    responseDeadline: toNullableString(item.response_deadline ?? item.responseDeadline),
+    waitlistPosition: toNullableNumber(item.waitlist_position ?? item.waitlistPosition),
+    decisionDocumentId: toNullableString(item.decision_document_id ?? item.decisionDocumentId),
   };
 }
 
@@ -294,8 +362,9 @@ function fallbackStatusProgress(status: string): number {
     case "waitlisted":
       return 90;
     case "accepted":
-    case "rejected":
       return 100;
+    case "rejected":
+      return 80;
     default:
       return 0;
   }

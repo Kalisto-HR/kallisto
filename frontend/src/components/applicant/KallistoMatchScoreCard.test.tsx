@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { KallistoMatchScoreCard } from "./KallistoMatchScoreCard";
+import { KallistoMatchScoreCard, KallistoMatchScoreSummary } from "./KallistoMatchScoreCard";
 import type { FitScoreResult } from "../../types/domain";
 
 describe("KallistoMatchScoreCard", () => {
@@ -34,6 +34,28 @@ describe("KallistoMatchScoreCard", () => {
       "href",
       "/applicant/settings?tab=match-profile",
     );
+  });
+
+  it("renders a locked compact state for non-premium users", () => {
+    render(
+      <MemoryRouter>
+        <KallistoMatchScoreSummary score={null} locked />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/^match score$/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /upgrade to premium/i })).toHaveAttribute(
+      "href",
+      "/applicant/billing",
+    );
+    expect(screen.queryByText(/\/100/)).not.toBeInTheDocument();
+  });
+
+  it("caps compact score display at 100", () => {
+    render(<KallistoMatchScoreSummary score={{ ...scoreResult, finalScore: 283 }} />);
+
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.queryByText("283%")).not.toBeInTheDocument();
   });
 });
 

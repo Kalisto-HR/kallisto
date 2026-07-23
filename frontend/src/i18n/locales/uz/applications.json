@@ -16,6 +16,34 @@
     "progressTitle": "Ariza statusi",
     "additionalInfo": "Universitet qo'shimcha ma'lumot so'ramoqda. So'ralgan vazifalar va hujjatlarni tekshiring.",
     "finalDecision": "Universitet ushbu ariza bo'yicha yakuniy qarorni qayd etdi.",
-    "inProgress": "Arizangiz universitet ko'rib chiqish jarayonidan o'tmoqda."
+    "inProgress": "Arizangiz universitet ko'rib chiqish jarayonidan o'tmoqda.",
+    "tasksTitle": "So'ralgan vazifalar",
+    "timelineTitle": "Status tarixi",
+    "decisionTitle": "Qaror",
+    "decisionDate": "Qaror sanasi"
+  },
+  "tasks": {
+    "required": "Majburiy",
+    "optional": "Ixtiyoriy",
+    "due": "Muddat",
+    "status": {
+      "pending": "Kutilmoqda",
+      "in_progress": "Jarayonda",
+      "submitted": "Topshirildi",
+      "completed": "Bajarildi",
+      "rejected": "Rad etildi",
+      "not_applicable": "Qo'llanilmaydi"
+    },
+    "category": {
+      "document": "Hujjat",
+      "personal_information": "Shaxsiy ma'lumot",
+      "payment": "To'lov",
+      "interview": "Suhbat",
+      "exam": "Imtihon",
+      "correction": "Tuzatish",
+      "university_request": "Universitet so'rovi",
+      "decision": "Qaror",
+      "other": "Boshqa"
+    }
   }
 }

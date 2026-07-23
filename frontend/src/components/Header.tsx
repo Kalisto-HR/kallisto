@@ -9,6 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { BrandLogo } from "./common/BrandLogo";
+import { LanguageSwitcher } from "../i18n/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 interface HeaderProps {
   userName: string;
@@ -34,6 +36,7 @@ export function Header({
   onLogout,
   onMenuClick,
 }: HeaderProps) {
+  const { t } = useTranslation("common");
   const initials = getInitials(userName);
   const count = typeof applicationsCount === "number" ? applicationsCount : 0;
   const basketItems = typeof basketCount === "number" ? basketCount : 0;
@@ -51,6 +54,8 @@ export function Header({
         </div>
 
         <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 md:gap-3">
+          <LanguageSwitcher />
+
           <Button
             variant="outline"
             size="sm"
@@ -59,7 +64,7 @@ export function Header({
           >
             <ShoppingBasket className="h-4 w-4 shrink-0 text-primary" />
             <span className="hidden font-semibold sm:inline">
-              {basketItems} {basketItems === 1 ? "Basket Item" : "Basket Items"}
+              {t("labels.basketItems", { count: basketItems })}
             </span>
             <span className="font-semibold sm:hidden">{basketItems}</span>
           </Button>
@@ -72,7 +77,7 @@ export function Header({
           >
             <CreditCard className="h-4 w-4 shrink-0 text-primary" />
             <span className="hidden font-semibold sm:inline">
-              {count} {count === 1 ? "Application" : "Applications"}
+              {t("labels.applications", { count })}
             </span>
             <span className="font-semibold sm:hidden">{count}</span>
           </Button>
@@ -96,27 +101,27 @@ export function Header({
                 </Avatar>
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <p className="truncate text-sm font-medium">{userName}</p>
-                  <p className="truncate text-xs text-muted-foreground">Applicant account</p>
+                  <p className="truncate text-xs text-muted-foreground">{t("labels.applicantAccount")}</p>
                 </div>
               </div>
 
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onNavigate?.("settings")}>
                 <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+                <span>{t("nav.settings")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onNavigate?.("billing")}>
                 <CreditCard className="mr-2 h-4 w-4" />
-                <span>Billing and Credits</span>
+                <span>{t("nav.billingAndCredits")}</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onNavigate?.("help")}>
                 <HelpCircle className="mr-2 h-4 w-4" />
-                <span>Help</span>
+                <span>{t("nav.help")}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{t("actions.logOut")}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

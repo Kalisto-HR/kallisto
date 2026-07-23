@@ -1,10 +1,12 @@
 import { BookOpen, HelpCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { routes } from "../../routes/routeConfig";
 import { UnavailableState } from "../../components/common/PageState";
 
 export function ApplicantHelpPage() {
+  const { t } = useTranslation("common");
   const navigate = useNavigate();
 
   return (
@@ -13,16 +15,16 @@ export function ApplicantHelpPage() {
         <div className="brand-logo-mark mx-auto flex h-16 w-16 items-center justify-center rounded-full">
           <HelpCircle className="h-8 w-8 text-white" />
         </div>
-        <h1 className="text-3xl font-semibold sm:text-4xl">Support unavailable</h1>
+        <h1 className="text-3xl font-semibold sm:text-4xl">{t("applicantFlow.help.title")}</h1>
         <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
-          Live chat, email support, and the documentation center are not launched yet.
+          {t("applicantFlow.help.subtitle")}
         </p>
       </section>
 
       <UnavailableState
-        title="Help center is not active yet"
-        description="This route remains mounted for navigation parity, but there is no working support inbox, documentation portal, or live chat integration in this release."
-        actionLabel="Open account settings"
+        title={t("applicantFlow.help.unavailableTitle")}
+        description={t("applicantFlow.help.unavailableDescription")}
+        actionLabel={t("applicantFlow.help.openSettings")}
         onAction={() => navigate(routes.applicant.settings)}
       />
 
@@ -31,13 +33,13 @@ export function ApplicantHelpPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
-              Available self-service actions
+              {t("applicantFlow.help.selfService")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Use Find Universities to start or update applications.</p>
-            <p>Open Settings to manage your profile and test scores.</p>
-            <p>Use My Applications to review draft and submitted records.</p>
+            <p>{t("applicantFlow.help.selfServiceFind")}</p>
+            <p>{t("applicantFlow.help.selfServiceSettings")}</p>
+            <p>{t("applicantFlow.help.selfServiceApplications")}</p>
           </CardContent>
         </Card>
 
@@ -45,7 +47,7 @@ export function ApplicantHelpPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-primary" />
-              Related routes
+              {t("applicantFlow.help.relatedRoutes")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
@@ -54,14 +56,14 @@ export function ApplicantHelpPage() {
               className="block text-left text-primary transition-colors hover:text-brand-primary-hover"
               onClick={() => navigate(routes.applicant.settings)}
             >
-              Account settings
+              {t("applicantFlow.help.accountSettings")}
             </button>
             <button
               type="button"
               className="block text-left text-primary transition-colors hover:text-brand-primary-hover"
               onClick={() => navigate(routes.applicant.billing)}
             >
-              Billing availability
+              {t("applicantFlow.help.billingAvailability")}
             </button>
           </CardContent>
         </Card>

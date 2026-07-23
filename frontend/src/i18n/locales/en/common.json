@@ -14,7 +14,7 @@
     "help": "Help",
     "university": "University",
     "universityProfile": "University Profile",
-    "applicationStructure": "Application Structure",
+    "applicationBuilder": "Application Builder",
     "submissions": "Submissions",
     "staffWorkspace": "Staff Workspace",
     "students": "Students",
@@ -38,10 +38,20 @@
     "applicantNavigation": "Applicant Navigation",
     "applicantNavigationDescription": "Access applicant dashboard navigation links.",
     "portalNavigation": "Navigation Menu",
-    "portalNavigationDescription": "Access partner and staff console features"
+    "portalNavigationDescription": "Access partner and staff console features",
+    "billingAndCredits": "Billing and Credits"
   },
   "actions": {
     "view": "View",
+    "add": "Add",
+    "added": "Added",
+    "remove": "Remove",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "retry": "Retry",
+    "open": "Open",
+    "back": "Back",
+    "clear": "Clear",
     "openSubmissions": "Open submissions",
     "copyEmails": "Copy emails",
     "copying": "Copying",
@@ -50,8 +60,54 @@
     "signOut": "Sign out",
     "logOut": "Log out",
     "save": "Save",
+    "saving": "Saving...",
     "uploading": "Uploading...",
     "uploadPhoto": "Upload photo"
+  },
+  "auth": {
+    "signIn": {
+      "title": "Sign In",
+      "subtitle": "Access your Kallisto workspace",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign In",
+      "submitting": "Signing in...",
+      "needAccount": "Need an applicant account?",
+      "createOne": "Create one",
+      "errors": {
+        "failed": "Sign in failed",
+        "session": "Failed to resolve session after sign in"
+      },
+      "reasons": {
+        "expired": "Your session expired. Please sign in again.",
+        "revoked": "Your session was ended on the server. Please sign in again.",
+        "passwordChanged": "Your password changed. Please sign in again with the new password.",
+        "accountUpdated": "Your account access changed. Please sign in again."
+      }
+    },
+    "signUp": {
+      "title": "Create Applicant Account",
+      "subtitle": "Applicant registration only",
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "password": "Password",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "errors": {
+        "failed": "Sign up failed"
+      }
+    },
+    "passwordReset": {
+      "title": "Password reset unavailable",
+      "subtitle": "Password reset is currently unavailable.",
+      "description": "Password reset has been disabled until secure delivery is implemented. Contact support or an administrator if you need account access restored.",
+      "resetLinkDescription": "Reset links are not active right now. Return to sign in and contact support or an administrator if you need help accessing your account.",
+      "backTo": "Back to",
+      "signInLink": "sign in",
+      "remembered": "Remembered your password?",
+      "backToSignIn": "Back to sign in"
+    }
   },
   "labels": {
     "applicantAccount": "Applicant account",
@@ -64,7 +120,305 @@
     "unknown": "Unknown",
     "planned": "planned",
     "regionOfResidence": "Region of residence",
-    "selectRegion": "Select a region"
+    "selectRegion": "Select a region",
+    "applicant": "Applicant",
+    "workspaceUser": "Workspace User"
+  },
+  "applicantFlow": {
+    "profileGate": {
+      "loading": "Checking applicant profile...",
+      "loadFailed": "Failed to load applicant profile"
+    },
+    "dashboard": {
+      "loading": "Loading applicant dashboard...",
+      "noProfileTitle": "No profile found",
+      "noProfileDescription": "Sign in again to load your applicant profile.",
+      "title": "Dashboard",
+      "subtitle": "Welcome back! Here's your application overview",
+      "shortlisted": "Universities Shortlisted",
+      "drafts": "Applications In Progress",
+      "submitted": "Applications Submitted",
+      "creditsAvailable": "Application credits available",
+      "buyCredits": "Buy credits and manage Premium",
+      "readinessTitle": "Profile Readiness",
+      "readinessDescription": "Complete your profile for better matches",
+      "complete": "Complete",
+      "pending": "Pending",
+      "profileComplete": "Profile complete",
+      "basicInformation": "Basic Information",
+      "applicationProfile": "Application Profile",
+      "documentReadiness": "Document Readiness",
+      "documentReadinessHelp": "Mark documents that are ready for applications",
+      "testScores": "Test Scores",
+      "testScoresHelp": "Optional: add IELTS, TOEFL, SAT, ACT, HSK, or CSCA scores",
+      "update": "Update",
+      "manage": "Manage",
+      "add": "Add",
+      "quickActions": "Quick Actions",
+      "findMore": "Find More Universities",
+      "compareOptions": "Compare Options",
+      "viewApplications": "View Applications",
+      "recentApplications": "Recent Applications",
+      "noApplicationsTitle": "No applications yet",
+      "noApplicationsDescription": "Start by choosing a university and creating your first draft.",
+      "cycle": "Cycle {{cycle}}",
+      "openDraft": "Open draft"
+    },
+    "basket": {
+      "loading": "Loading basket...",
+      "loadFailed": "Failed to load basket",
+      "removeFailed": "Failed to remove item",
+      "clearFailed": "Failed to clear basket",
+      "emptyTitle": "Your basket is empty",
+      "emptyDescription": "Add universities from detail pages to keep your shortlist in one place.",
+      "back": "Back to universities",
+      "title": "Application Basket",
+      "description": "Keep universities you are considering in one clean shortlist.",
+      "clear": "Clear Basket",
+      "listTitle": "Universities in Basket",
+      "listDescription": "Review your saved universities and remove anything you no longer need.",
+      "locationUnavailable": "Location unavailable",
+      "applicationFee": "Application fee",
+      "tuition": "Tuition"
+    },
+    "help": {
+      "title": "Support unavailable",
+      "subtitle": "Live chat, email support, and the documentation center are not launched yet.",
+      "unavailableTitle": "Help center is not active yet",
+      "unavailableDescription": "This route remains mounted for navigation parity, but there is no working support inbox, documentation portal, or live chat integration in this release.",
+      "openSettings": "Open account settings",
+      "selfService": "Available self-service actions",
+      "selfServiceFind": "Use Find Universities to start or update applications.",
+      "selfServiceSettings": "Open Settings to manage your profile and test scores.",
+      "selfServiceApplications": "Use My Applications to review draft and submitted records.",
+      "relatedRoutes": "Related routes",
+      "accountSettings": "Account settings",
+      "billingAvailability": "Billing availability"
+    },
+    "applications": {
+      "loading": "Loading applications...",
+      "loadFailed": "Failed to load applications",
+      "emptyTitle": "No applications yet",
+      "emptyDescription": "Use university search to create your first application draft.",
+      "cycle": "Cycle {{cycle}}",
+      "created": "Created {{date}}",
+      "createdFallback": "N/A",
+      "openDraft": "Open draft",
+      "open": "Open",
+      "deleteDraft": "Delete draft",
+      "deleteTitle": "Delete this draft?",
+      "deleteDescription": "This will permanently delete the draft application for {{university}}. Submitted applications are not affected.",
+      "deleteFallback": "this university",
+      "deleting": "Deleting...",
+      "deleteFailed": "Failed to delete draft"
+    },
+    "settings": {
+      "loading": "Loading settings...",
+      "loadFailed": "Failed to load settings",
+      "profileUnavailableTitle": "Profile unavailable",
+      "profileUnavailableDescription": "No settings data found.",
+      "title": "Settings",
+      "description": "Manage your account settings and preferences",
+      "onboardingTitle": "Complete your applicant profile",
+      "onboardingDescription": "Fill every required field before choosing universities, comparing options, or applying.",
+      "missing": "Missing: {{items}}.",
+      "chooseUniversities": "Choose universities",
+      "profileRequired": "Profile required",
+      "tabs": {
+        "profile": "Profile",
+        "matchProfile": "Match Profile",
+        "security": "Security",
+        "notifications": "Notifications",
+        "privacy": "Privacy"
+      },
+      "testScores": {
+        "title": "Test Scores",
+        "description": "Add standardized tests here. You can import these into applications.",
+        "addNew": "Add new",
+        "loading": "Loading test scores...",
+        "empty": "No test scores yet. Click Add new to add your first score.",
+        "type": "Test type",
+        "selectType": "Select test type",
+        "otherName": "Other test name",
+        "otherPlaceholder": "e.g. Duolingo English Test",
+        "score": "Score",
+        "scorePlaceholder": "Enter score",
+        "outOf": "Out of",
+        "outOfPlaceholder": "Max score",
+        "takenOn": "Taken on (optional)",
+        "removing": "Removing...",
+        "remove": "Remove",
+        "saving": "Saving...",
+        "save": "Save score",
+        "add": "Add score",
+        "removed": "Test score removed.",
+        "created": "Test score saved.",
+        "failedLoad": "Failed to load test scores",
+        "failedSave": "Failed to save test score",
+        "failedDelete": "Failed to delete test score",
+        "outOfInvalid": "Out of must be a valid number greater than 0.",
+        "updated": "Test score updated."
+      },
+      "security": {
+        "title": "Password and Sessions",
+        "description": "Update your password securely using your current credentials.",
+        "current": "Current password",
+        "new": "New password",
+        "confirm": "Confirm new password",
+        "update": "Update password",
+        "updating": "Updating...",
+        "success": "Password updated successfully."
+      },
+      "notifications": {
+        "title": "Notification Preferences",
+        "description": "Control your notification channels.",
+        "email": "Email notifications",
+        "emailHelp": "Application updates and reminders.",
+        "push": "Push notifications",
+        "pushHelp": "Alerts on supported devices.",
+        "note": "Changes are saved to your account profile.",
+        "save": "Save preferences",
+        "success": "Notification preferences saved."
+      },
+      "privacy": {
+        "title": "Privacy Settings",
+        "description": "Control who can view your profile in partner workflows.",
+        "visibility": "Profile visibility",
+        "select": "Select visibility",
+        "partners": "Visible to partner institutions",
+        "private": "Private",
+        "controls": "Data controls",
+        "controlsDescription": "Data export and account deletion are still handled by support.",
+        "save": "Save privacy settings",
+        "success": "Privacy settings saved."
+      }
+    },
+    "search": {
+      "title": "Find Universities",
+      "showing": "Showing {{shown}} of {{total}} universities",
+      "aiMatch": "AI Match",
+      "searchPlaceholder": "Search universities, programs...",
+      "loading": "Loading universities...",
+      "tryDifferentWithFilters": "Try a different query or clear your filters.",
+      "tryDifferent": "Try a different search query.",
+      "locationUnavailable": "Location unavailable",
+      "fee": "Fee",
+      "programs": "Programs",
+      "programsAvailable": "Programs available",
+      "applicationOpen": "Application open",
+      "addToCompare": "Add to Compare",
+      "added": "Added",
+      "viewDetails": "View Details",
+      "compareTableFull": "Compare table full",
+      "compareUpdateFailed": "Compare update failed",
+      "updateCompareFailed": "Failed to update compare list.",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {{page}} of {{totalPages}}"
+    },
+    "matchProfile": {
+      "title": "Match Profile",
+      "description": "These fields feed Kallisto Match Score on university and program pages.",
+      "nationality": "Nationality",
+      "nationalityPlaceholder": "e.g. Uzbekistan",
+      "educationLevel": "Education level",
+      "selectLevel": "Select level",
+      "gpa": "GPA",
+      "gpaScale": "GPA scale",
+      "intendedMajor": "Intended major",
+      "intendedMajorPlaceholder": "e.g. Computer Science",
+      "budgetPerYear": "Budget per year",
+      "preferredLanguage": "Preferred language",
+      "preferredCity": "Preferred city",
+      "preferredCityPlaceholder": "e.g. Tashkent",
+      "achievements": "Achievements (optional)",
+      "achievementsPlaceholder": "One achievement per line",
+      "reset": "Reset",
+      "save": "Save match profile",
+      "saving": "Saving...",
+      "documentReadiness": "Document Readiness",
+      "documentHelp": "Mark at least one ready document before continuing to university selection.",
+      "readiness": "Readiness",
+      "readyPercent": "{{percent}}% ready for document-based scoring.",
+      "educationLevels": {
+        "high_school": "High school",
+        "foundation": "Foundation",
+        "bachelor": "Bachelor",
+        "master": "Master",
+        "phd": "PhD"
+      },
+      "languages": {
+        "English": "English",
+        "Chinese": "Chinese",
+        "Russian": "Russian",
+        "Any": "Any"
+      },
+      "documents": {
+        "Passport": "Passport",
+        "Academic transcript": "Academic transcript",
+        "Diploma or enrollment certificate": "Diploma or enrollment certificate",
+        "Language certificate": "Language certificate",
+        "Personal statement": "Personal statement",
+        "Recommendation letter": "Recommendation letter",
+        "CV or resume": "CV or resume"
+      },
+      "validation": {
+        "budgetRequired": "Budget per year is required.",
+        "budgetInvalid": "Budget per year must be a valid number greater than or equal to 0.",
+        "languageRequired": "Preferred language is required.",
+        "cityRequired": "Preferred city is required."
+      }
+    },
+    "universityDetail": {
+      "back": "Back to results",
+      "openApplication": "Open Application",
+      "resumeDraft": "Resume Draft",
+      "applyNow": "Apply Now",
+      "locationUnavailable": "Location unavailable",
+      "universityProfile": "University profile",
+      "noDescription": "No description is available for this university yet.",
+      "addToBasket": "Add to Basket",
+      "addedToBasket": "Added to Basket",
+      "addToCompare": "Add to Compare",
+      "addedToCompare": "Added to Compare",
+      "compareTableFull": "Compare table full",
+      "compareUpdateFailed": "Compare update failed",
+      "basketUpdateFailed": "Basket update failed",
+      "basketUpdateMessage": "Unable to update your basket right now. Please try again.",
+      "tuitionFee": "Tuition / Fee",
+      "country": "Country",
+      "admissions": "Admissions",
+      "open": "Open",
+      "overview": "Overview",
+      "programs": "Programs",
+      "programsOffered": "Programs Offered",
+      "applicationFee": "Application Fee",
+      "applicationFeeLine": "Application fee",
+      "tuition": "Tuition"
+    },
+    "applicationCreate": {
+      "selectedUniversity": "Selected University",
+      "noProfileScores": "No profile test scores available to import.",
+      "selectOneScore": "Select at least one test score to import.",
+      "importedScores": "Imported {{count}} test score(s) into this draft.",
+      "importFailed": "Failed to import test scores",
+      "backToSearch": "Back to search",
+      "back": "Back",
+      "continue": "Continue",
+      "applicationForm": "Application Form",
+      "applicationCycle": "Application cycle",
+      "importTitle": "Import Test Scores",
+      "importDescription": "Pull saved profile test scores into this application draft.",
+      "importing": "Importing...",
+      "importSelected": "Import selected",
+      "loadingProfileScores": "Loading profile test scores...",
+      "noSavedScores": "No saved test scores yet. Add them in Settings / Profile / Test Scores.",
+      "selectAll": "Select all",
+      "submitting": "Submitting...",
+      "submit": "Submit Application",
+      "requirements": "Requirements",
+      "review": "Review"
+    }
   },
   "regions": {
     "tashkent_city": "Tashkent City",
@@ -84,6 +438,152 @@
   },
   "validation": {
     "invalidRegion": "Invalid Uzbekistan region."
+  },
+  "universityFilters": {
+    "title": "Filter",
+    "contractPrice": "Contract price",
+    "currency": "Uzbek so'm",
+    "region": "Region",
+    "all": "All",
+    "studyFormat": "Study format",
+    "language": "Language of instruction",
+    "clear": "Clear filters",
+    "noResults": "No results found",
+    "loading": "Loading filters...",
+    "mobileDescription": "Choose price, region, study format, and language filters.",
+    "noOptions": "No verified options available yet.",
+    "noPriceData": "No verified contract price data is available yet.",
+    "regionOptions": {
+      "tashkent": "Tashkent",
+      "samarkand": "Samarkand",
+      "bukhara": "Bukhara",
+      "andijan": "Andijan",
+      "fergana": "Fergana",
+      "namangan": "Namangan",
+      "nukus": "Nukus",
+      "qarshi": "Qarshi",
+      "urganch": "Urganch"
+    },
+    "studyFormatOptions": {
+      "full-time": "Full-time",
+      "part-time": "Part-time",
+      "evening": "Evening",
+      "distance": "Distance"
+    },
+    "languageOptions": {
+      "uzbek": "Uzbek",
+      "russian": "Russian",
+      "english": "English",
+      "karakalpak": "Karakalpak"
+    }
+  },
+  "comparePage": {
+    "title": "Compare Universities",
+    "subtitle": "Institution-level comparison of {{count}} Uzbek universities",
+    "tableTitle": "University comparison",
+    "criteria": "Criteria",
+    "loading": "Loading compare list...",
+    "emptyTitle": "Choose at least two universities",
+    "emptyDescription": "Add 2 to 4 Uzbek universities from search or university detail pages to compare them.",
+    "rows": {
+      "location": "Region / city",
+      "averageContract": "Average contract amount",
+      "universityType": "University type",
+      "languages": "Languages of instruction",
+      "studyFormats": "Available study formats",
+      "financialSupport": "Scholarships and grants",
+      "dormitory": "Dormitory availability",
+      "accreditation": "Accreditation and licence",
+      "partnerships": "International partnerships",
+      "mobility": "Exchange and mobility",
+      "career": "Employment and career support",
+      "deadline": "Application deadline",
+      "applicationFee": "Application fee",
+      "apply": "Application availability through Kallisto"
+    },
+    "actions": {
+      "addMore": "Add universities",
+      "clear": "Clear comparison",
+      "remove": "Remove",
+      "apply": "Apply through Kallisto",
+      "differencesOnly": "Show differences only"
+    },
+    "values": {
+      "notProvided": "Not provided",
+      "free": "Free",
+      "region": "Region",
+      "city": "City",
+      "scholarships": "University scholarships",
+      "governmentGrants": "Government grants",
+      "tuitionDiscounts": "Tuition discounts",
+      "otherSupport": "Other support",
+      "licence": "Operating licence",
+      "nationalAccreditation": "National accreditation",
+      "internationalAccreditation": "International accreditation",
+      "verifiedPartnerships": "{{count}} verified partnerships",
+      "exchange": "Student exchange",
+      "academicMobility": "Academic mobility",
+      "doubleDegree": "Double degree",
+      "semesterAbroad": "Semester abroad",
+      "careerCentre": "Career centre",
+      "internshipSupport": "Internship support",
+      "employerPartnerships": "Employer partnerships",
+      "jobFairs": "Job fairs",
+      "entrepreneurshipSupport": "Entrepreneurship support",
+      "employmentData": "Employment statistics",
+      "universityApplicationFee": "University application fee",
+      "kallistoApplicationFee": "Kallisto service fee"
+    },
+    "statuses": {
+      "available": "Available",
+      "not_available": "Not available",
+      "limited": "Limited",
+      "varies": "Varies",
+      "not_provided": "Not provided",
+      "verified": "Verified",
+      "active": "Active",
+      "pending_verification": "Pending verification",
+      "provided": "Provided",
+      "free": "Free",
+      "open": "Applications open",
+      "closed": "Applications closed"
+    },
+    "deadlineStatuses": {
+      "exact": "Exact date",
+      "open": "Applications open",
+      "closed": "Applications closed",
+      "varies_by_program": "Varies by program",
+      "not_provided": "Not provided"
+    },
+    "applicationStatuses": {
+      "open": "Apply now",
+      "opening_soon": "Applications opening soon",
+      "closed": "Applications closed",
+      "not_available": "Not currently available"
+    },
+    "universityTypes": {
+      "public": "Public",
+      "private": "Private",
+      "international_university": "International university",
+      "foreign_university_branch": "Foreign university branch"
+    },
+    "languages": {
+      "uzbek": "Uzbek",
+      "russian": "Russian",
+      "english": "English",
+      "karakalpak": "Karakalpak"
+    },
+    "studyFormats": {
+      "full_time": "Full-time",
+      "evening": "Evening",
+      "part_time": "Part-time",
+      "online": "Online"
+    },
+    "errors": {
+      "title": "Compare update failed",
+      "removeFailed": "Unable to remove this university right now.",
+      "clearFailed": "Unable to clear comparison right now."
+    }
   },
   "staffSections": {
     "status": "Workspace ready",
@@ -137,6 +637,77 @@
       "nextStep": "The route is now accessible. Role management UI will be added after role-specific permissions are finalized."
     }
   },
+  "billing": {
+    "badge": "Billing",
+    "title": "Billing",
+    "subtitle": "Buy application credits for submissions and Premium for Compare and Match Score. Premium does not include free application submissions.",
+    "loading": "Loading billing...",
+    "emptyTitle": "Billing data unavailable",
+    "emptyDescription": "We could not load billing products for your account.",
+    "errors": {
+      "loadFailed": "Failed to load billing summary"
+    },
+    "metrics": {
+      "availableCredits": "Available credits",
+      "availableCreditsHelp": "Each submission uses 1 credit",
+      "purchased": "Credits purchased",
+      "purchasedHelp": "Successful credit purchases",
+      "used": "Credits used",
+      "usedHelp": "Submitted applications",
+      "applications": "Drafts / submitted",
+      "applicationsHelp": "Applications in your account"
+    },
+    "rules": {
+      "title": "Application credits and Premium are separate",
+      "description": "Application credits pay for submitting applications. Premium unlocks Compare and Match Score."
+    },
+    "credits": {
+      "title": "Application credits",
+      "description": "Drafts are free. A credit is consumed only when an application is submitted successfully.",
+      "creditUnit": "credits",
+      "perApplication": "per application",
+      "save": "Save {{amount}}"
+    },
+    "premium": {
+      "title": "Kallisto Premium",
+      "perMonth": "per month",
+      "compare": "University Compare",
+      "matchScore": "Match Score",
+      "noCredits": "Premium does not include application credits.",
+      "unavailable": "Premium plan is not available."
+    },
+    "subscription": {
+      "none": "No active Premium",
+      "status": "Subscription status",
+      "expires": "Expires on"
+    },
+    "actions": {
+      "buyCredits": "Buy credits",
+      "upgradePremium": "Upgrade to Premium",
+      "renewPremium": "Renew Premium",
+      "processing": "Processing...",
+      "confirmDevPayment": "Confirm development payment"
+    },
+    "payment": {
+      "orderCreated": "Order created",
+      "orderFailed": "Failed to create order",
+      "pendingTitle": "Pending development checkout",
+      "success": "Payment successful",
+      "failed": "Payment failed"
+    },
+    "history": {
+      "credits": "Credit history",
+      "payments": "Payment history",
+      "noCredits": "No credit history yet.",
+      "noPayments": "No payment history yet.",
+      "balance": "balance"
+    },
+    "premiumRequired": {
+      "title": "Premium required",
+      "description": "Compare and Match Score are Premium features. Upgrade to continue.",
+      "action": "Open billing"
+    }
+  },
   "applicationStatuses": {
     "draft": "Draft",
     "submitted": "Submitted",
@@ -154,5 +725,61 @@
     "decision_pending": "Decision pending",
     "final_decision": "Final decision",
     "unknown": "Unknown"
+  },
+  "profileForm": {
+    "title": "Enter personal information",
+    "description": "Keep your applicant identity and contact details up to date.",
+    "uploadPhoto": "Upload photo",
+    "photoHelp": "PNG, JPEG, or WEBP. Max size 2MB.",
+    "lastName": "Last name",
+    "firstName": "First name",
+    "middleName": "Patronymic / middle name",
+    "gender": "Gender",
+    "genderOptions": {
+      "male": "Male",
+      "female": "Female",
+      "prefer_not_to_say": "Prefer not to say"
+    },
+    "dateOfBirth": "Date of birth",
+    "region": "Region",
+    "district": "District / city",
+    "select": "Select",
+    "selectRegionFirst": "Select a region first",
+    "email": "Email",
+    "additionalPhone": "Additional phone number",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "success": "Profile updated successfully.",
+    "errors": {
+      "lastName": "Last name is required and must contain valid name characters.",
+      "firstName": "First name is required and must contain valid name characters.",
+      "middleName": "Patronymic / middle name contains unsupported characters.",
+      "gender": "Select a gender option before saving your profile.",
+      "dateOfBirth": "Date of birth must not be in the future.",
+      "region": "Select a region.",
+      "district": "Select a district or city that belongs to the selected region.",
+      "phone": "Enter a valid Uzbekistan phone number, for example +998901234567."
+    }
+  },
+  "matchScore": {
+    "title": "Match Score",
+    "premiumRequired": "Premium required to view your match score",
+    "upgrade": "Upgrade to Premium",
+    "unavailable": "Score unavailable",
+    "fullTitle": "Kallisto Match Score",
+    "deterministic": "Deterministic estimate based on available profile and program data.",
+    "why": "Why this score",
+    "improve": "Improve My Score",
+    "fallbackRecommendation": "Complete your applicant profile to improve score quality.",
+    "disclaimer": "Fit Score is an estimate based on available profile and program data. It does not guarantee admission or scholarship results.",
+    "breakdown": {
+      "academicScore": "Academic Fit",
+      "languageScore": "Language Fit",
+      "majorScore": "Major Fit",
+      "budgetScore": "Budget Fit",
+      "documentScore": "Document Readiness",
+      "deadlineScore": "Deadline Risk"
+    }
   }
 }

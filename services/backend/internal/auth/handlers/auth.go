@@ -60,6 +60,7 @@ type resolvedUser struct {
 	LastName         string
 	Role             string
 	UniversityLinked *string
+	IsActive         bool
 }
 
 func NewAuthHandler(db *pgxpool.Pool) *AuthHandler {
@@ -393,7 +394,7 @@ func findUserByEmail(ctx context.Context, db middlewares.DB, email string) (*res
 
 	row := db.QueryRow(
 		ctx,
-		`SELECT id, email, password, COALESCE(first_name, ''), COALESCE(last_name, ''), role, university_linked
+		`SELECT id, email, password, COALESCE(first_name, ''), COALESCE(last_name, ''), role, university_linked, is_active
 		 FROM users
 		 WHERE email = $1`,
 		email,
@@ -408,11 +409,15 @@ func findUserByEmail(ctx context.Context, db middlewares.DB, email string) (*res
 		&user.LastName,
 		&user.Role,
 		&user.UniversityLinked,
+		&user.IsActive,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, false, nil
 		}
 		return nil, false, fmt.Errorf("failed to query user: %s", err.Error())
+	}
+	if !user.IsActive {
+		return nil, false, nil
 	}
 
 	return &user, true, nil

@@ -114,6 +114,62 @@ func TestNormalizeApplicationSchemaMapsLegacyTextFieldsToEssayOrLongText(t *test
 	}
 }
 
+func TestNormalizeApplicationSchemaMapsBuilderSchemaToApplicantSections(t *testing.T) {
+	t.Parallel()
+
+	raw := json.RawMessage(`{
+		"schemaType": "application_builder_v1",
+		"overview": {
+			"instructions": "Complete every required item.",
+			"deadline": "2026-08-01"
+		},
+		"programs": {
+			"allowNoProgram": false
+		},
+		"profileRequirements": [
+			{ "key": "phone", "label": "Phone", "state": "required" },
+			{ "key": "postal_code", "label": "Postal code", "state": "not_requested" }
+		],
+		"educationRequirements": [
+			{ "key": "hsk", "label": "HSK", "state": "optional" },
+			{ "key": "csca", "label": "CSCA", "state": "required" }
+		],
+		"documents": [
+			{
+				"id": "passport",
+				"name": "Passport",
+				"required": true,
+				"formats": [".pdf"],
+				"maxFileSizeMb": 5,
+				"maxFiles": 1
+			}
+		],
+		"questions": [
+			{ "id": "scholarship", "type": "yes_no", "text": "Are you applying for a scholarship?", "required": false }
+		],
+		"rules": {
+			"declaration": "I confirm the information is accurate."
+		}
+	}`)
+
+	normalized := decodeNormalizedSchema(t, NormalizeApplicationSchema(raw))
+	sections := normalized["sections"].([]any)
+	if len(sections) != 7 {
+		t.Fatalf("unexpected builder section count: got %d want 7", len(sections))
+	}
+
+	requireField(t, sections, "applicant-information", "profile_phone", "Phone", "phone", true)
+	requireField(t, sections, "education", "education_hsk", "HSK", "short-text", false)
+	requireField(t, sections, "education", "education_csca", "CSCA", "short-text", true)
+	requireField(t, sections, "documents", "document_passport", "Passport", "document", true)
+
+	question := requireField(t, sections, "additional-questions", "question_scholarship", "Are you applying for a scholarship?", "radio", false)
+	options := question["options"].([]any)
+	if len(options) != 2 || options[0] != "Yes" || options[1] != "No" {
+		t.Fatalf("unexpected yes/no options: %#v", options)
+	}
+}
+
 func decodeNormalizedSchema(t *testing.T, raw json.RawMessage) map[string]any {
 	t.Helper()
 
@@ -142,4 +198,35 @@ func assertNormalizedLegacyField(t *testing.T, field map[string]any, id, label, 
 	if field["order"] != float64(order) {
 		t.Fatalf("unexpected field order: got %#v want %d", field["order"], order)
 	}
+}
+
+func requireField(t *testing.T, sections []any, sectionID, fieldID, label, fieldType string, required bool) map[string]any {
+	t.Helper()
+
+	for _, rawSection := range sections {
+		section := rawSection.(map[string]any)
+		if section["id"] != sectionID {
+			continue
+		}
+		for _, rawField := range section["fields"].([]any) {
+			field := rawField.(map[string]any)
+			if field["id"] != fieldID {
+				continue
+			}
+			if field["label"] != label {
+				t.Fatalf("unexpected label for %s: got %#v want %q", fieldID, field["label"], label)
+			}
+			if field["type"] != fieldType {
+				t.Fatalf("unexpected type for %s: got %#v want %q", fieldID, field["type"], fieldType)
+			}
+			if field["required"] != required {
+				t.Fatalf("unexpected required for %s: got %#v want %v", fieldID, field["required"], required)
+			}
+			return field
+		}
+		t.Fatalf("field %s not found in section %s", fieldID, sectionID)
+	}
+
+	t.Fatalf("section %s not found", sectionID)
+	return nil
 }

@@ -135,6 +135,7 @@ func main() {
 func registerApplicantRoutes(router *mux.Router) {
 	router.HandleFunc("/universities", applicantHandlers.GetUniversitiesHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities/search", applicantHandlers.SearchUniversitiesHandler).Methods(http.MethodGet)
+	router.HandleFunc("/universities/filter-options", applicantHandlers.GetUniversityFilterOptionsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities/{id}", applicantHandlers.GetUniversityHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities/{id}/favorite", applicantHandlers.IsFavoriteHandler).Methods(http.MethodGet)
 	router.HandleFunc("/universities/{id}/favorite", applicantHandlers.AddFavoriteHandler).Methods(http.MethodPost)
@@ -157,12 +158,19 @@ func registerApplicantRoutes(router *mux.Router) {
 
 	router.HandleFunc("/fit-score/calculate", applicantHandlers.CalculateFitScoreHandler).Methods(http.MethodPost)
 
+	router.HandleFunc("/billing/products", applicantHandlers.GetBillingProductsHandler).Methods(http.MethodGet)
+	router.HandleFunc("/billing/summary", applicantHandlers.GetBillingSummaryHandler).Methods(http.MethodGet)
+	router.HandleFunc("/billing/orders", applicantHandlers.CreateBillingOrderHandler).Methods(http.MethodPost)
+	router.HandleFunc("/billing/orders/{id}/dev-complete", applicantHandlers.CompleteDevelopmentPaymentHandler).Methods(http.MethodPost)
+	router.HandleFunc("/billing/subscription", applicantHandlers.GetCurrentSubscriptionHandler).Methods(http.MethodGet)
+
 	router.HandleFunc("/applications", applicantHandlers.GetApplicationsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/applications", applicantHandlers.CreateApplicationHandler).Methods(http.MethodPost)
 	router.HandleFunc("/applications/{universityId}/{cycle}", applicantHandlers.GetApplicationHandler).Methods(http.MethodGet)
 	router.HandleFunc("/applications/{universityId}/{cycle}", applicantHandlers.UpdateApplicationHandler).Methods(http.MethodPut)
 	router.HandleFunc("/applications/{universityId}/{cycle}/import-test-scores", applicantHandlers.ImportApplicationTestScoresHandler).Methods(http.MethodPost)
 	router.HandleFunc("/applications/{universityId}/{cycle}/submit", applicantHandlers.SubmitApplicationHandler).Methods(http.MethodPost)
+	router.HandleFunc("/applications/{universityId}/{cycle}/tasks/{taskId}/respond", applicantHandlers.RespondApplicationTaskHandler).Methods(http.MethodPost)
 	router.HandleFunc("/applications/{universityId}/{cycle}", applicantHandlers.DeleteApplicationHandler).Methods(http.MethodDelete)
 
 	router.HandleFunc("/application-files/upload", applicantHandlers.UploadApplicationFilesHandler).Methods(http.MethodPost)

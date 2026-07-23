@@ -7,7 +7,7 @@ export type PortalContext =
 export type PortalPageView =
   | "partner-dashboard"
   | "partner-university-profile"
-  | "partner-application-structure"
+  | "partner-application-builder"
   | "partner-applications"
   | "staff-dashboard"
   | "staff-students"

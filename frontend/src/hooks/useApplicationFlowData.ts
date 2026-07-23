@@ -19,6 +19,9 @@ function normalizeApplicationFlowError(error: unknown, cycle: string): string {
   if (message.includes("application already submitted")) {
     return "This application has already been submitted.";
   }
+  if (message.includes("application_credit_required")) {
+    return "You need one application credit to submit this application. Your draft is saved; buy credits from Billing and submit again.";
+  }
   return fallback;
 }
 

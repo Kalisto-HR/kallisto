@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { Pagination, UniversityListItem } from "../types/domain";
 import {
+  fetchUniversityFilterOptions,
   fetchUniversities,
   searchUniversities,
+  type UniversityFilterOptions,
   type UniversitySearchParams,
 } from "../services/applicant/universitiesService";
 
@@ -11,6 +13,9 @@ interface UseUniversitySearchDataState {
   result: Pagination<UniversityListItem>;
   loading: boolean;
   error: string | null;
+  filterOptions: UniversityFilterOptions;
+  filterOptionsLoading: boolean;
+  filterOptionsError: string | null;
 }
 
 type UniversityAdvancedFilters = Omit<UniversitySearchParams, "q" | "page" | "limit">;
@@ -19,20 +24,11 @@ const DEFAULT_LIMIT = 10;
 
 function createEmptyFilters(): UniversityAdvancedFilters {
   return {
-    province: undefined,
-    city: undefined,
-    country: undefined,
-    minRanking: undefined,
-    maxRanking: undefined,
-    maxFee: undefined,
-    maxTuition: undefined,
-    minAcceptanceRate: undefined,
-    maxAcceptanceRate: undefined,
-    minIelts: undefined,
-    minToefl: undefined,
-    scholarshipAvailable: undefined,
-    cityType: undefined,
-    campusVibe: undefined,
+    minPrice: undefined,
+    maxPrice: undefined,
+    region: undefined,
+    studyFormats: [],
+    languages: [],
   };
 }
 
@@ -48,29 +44,20 @@ function normalizeNumber(value: number | undefined): number | undefined {
   return value;
 }
 
-function normalizeInteger(value: number | undefined): number | undefined {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return undefined;
+function normalizeStringList(value: string[] | undefined): string[] {
+  if (!Array.isArray(value)) {
+    return [];
   }
-  return Math.trunc(value);
+  return Array.from(new Set(value.map((item) => item.trim()).filter(Boolean))).sort();
 }
 
 function normalizeFilters(filters: UniversityAdvancedFilters): UniversityAdvancedFilters {
   return {
-    province: normalizeString(filters.province),
-    city: normalizeString(filters.city),
-    country: normalizeString(filters.country),
-    minRanking: normalizeInteger(filters.minRanking),
-    maxRanking: normalizeInteger(filters.maxRanking),
-    maxFee: normalizeNumber(filters.maxFee),
-    maxTuition: normalizeNumber(filters.maxTuition),
-    minAcceptanceRate: normalizeNumber(filters.minAcceptanceRate),
-    maxAcceptanceRate: normalizeNumber(filters.maxAcceptanceRate),
-    minIelts: normalizeNumber(filters.minIelts),
-    minToefl: normalizeInteger(filters.minToefl),
-    scholarshipAvailable: filters.scholarshipAvailable,
-    cityType: normalizeString(filters.cityType),
-    campusVibe: normalizeString(filters.campusVibe),
+    minPrice: normalizeNumber(filters.minPrice),
+    maxPrice: normalizeNumber(filters.maxPrice),
+    region: normalizeString(filters.region),
+    studyFormats: normalizeStringList(filters.studyFormats),
+    languages: normalizeStringList(filters.languages),
   };
 }
 
@@ -80,13 +67,13 @@ function areFiltersEqual(left: UniversityAdvancedFilters, right: UniversityAdvan
 
 function countActiveFilters(filters: UniversityAdvancedFilters): number {
   return Object.values(normalizeFilters(filters)).reduce<number>((count, value) => {
-    if (typeof value === "boolean") {
-      return count + 1;
-    }
     if (typeof value === "number") {
       return count + 1;
     }
     if (typeof value === "string" && value.length > 0) {
+      return count + 1;
+    }
+    if (Array.isArray(value) && value.length > 0) {
       return count + 1;
     }
     return count;
@@ -115,34 +102,20 @@ function parseFloatParam(value: string | null): number | undefined {
   return parsed;
 }
 
-function parseBoolParam(value: string | null): boolean | undefined {
-  if (value === null) {
-    return undefined;
+function parseListParam(value: string | null): string[] {
+  if (!value) {
+    return [];
   }
-  if (value === "true") {
-    return true;
-  }
-  if (value === "false") {
-    return false;
-  }
-  return undefined;
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
 function validateFilters(filters: UniversityAdvancedFilters): string | null {
   if (
-    typeof filters.minRanking === "number" &&
-    typeof filters.maxRanking === "number" &&
-    filters.minRanking > filters.maxRanking
+    typeof filters.minPrice === "number" &&
+    typeof filters.maxPrice === "number" &&
+    filters.minPrice > filters.maxPrice
   ) {
-    return "Minimum ranking cannot be greater than maximum ranking.";
-  }
-
-  if (
-    typeof filters.minAcceptanceRate === "number" &&
-    typeof filters.maxAcceptanceRate === "number" &&
-    filters.minAcceptanceRate > filters.maxAcceptanceRate
-  ) {
-    return "Minimum acceptance rate cannot be greater than maximum acceptance rate.";
+    return "Minimum price cannot be greater than maximum price.";
   }
 
   return null;
@@ -159,20 +132,11 @@ function parseSearchState(searchParams: URLSearchParams): ParsedSearchState {
   const page = parsedPage && parsedPage > 0 ? parsedPage : 1;
 
   const filters = normalizeFilters({
-    province: searchParams.get("province") ?? undefined,
-    city: searchParams.get("city") ?? undefined,
-    country: searchParams.get("country") ?? undefined,
-    minRanking: parseIntParam(searchParams.get("min_ranking")),
-    maxRanking: parseIntParam(searchParams.get("max_ranking")),
-    maxFee: parseFloatParam(searchParams.get("max_fee")),
-    maxTuition: parseFloatParam(searchParams.get("max_tuition")),
-    minAcceptanceRate: parseFloatParam(searchParams.get("min_acceptance_rate")),
-    maxAcceptanceRate: parseFloatParam(searchParams.get("max_acceptance_rate")),
-    minIelts: parseFloatParam(searchParams.get("min_ielts")),
-    minToefl: parseIntParam(searchParams.get("min_toefl")),
-    scholarshipAvailable: parseBoolParam(searchParams.get("scholarship_available")),
-    cityType: searchParams.get("city_type") ?? undefined,
-    campusVibe: searchParams.get("campus_vibe") ?? undefined,
+    minPrice: parseFloatParam(searchParams.get("minPrice")),
+    maxPrice: parseFloatParam(searchParams.get("maxPrice")),
+    region: searchParams.get("region") ?? undefined,
+    studyFormats: parseListParam(searchParams.get("studyFormats")),
+    languages: parseListParam(searchParams.get("languages")),
   });
 
   return {
@@ -194,22 +158,11 @@ function toSearchParams(query: string, page: number, filters: UniversityAdvanced
   params.set("page", String(Math.max(1, page)));
   params.set("limit", String(DEFAULT_LIMIT));
 
-  if (normalizedFilters.province) params.set("province", normalizedFilters.province);
-  if (normalizedFilters.city) params.set("city", normalizedFilters.city);
-  if (normalizedFilters.country) params.set("country", normalizedFilters.country);
-  if (typeof normalizedFilters.minRanking === "number") params.set("min_ranking", String(normalizedFilters.minRanking));
-  if (typeof normalizedFilters.maxRanking === "number") params.set("max_ranking", String(normalizedFilters.maxRanking));
-  if (typeof normalizedFilters.maxFee === "number") params.set("max_fee", String(normalizedFilters.maxFee));
-  if (typeof normalizedFilters.maxTuition === "number") params.set("max_tuition", String(normalizedFilters.maxTuition));
-  if (typeof normalizedFilters.minAcceptanceRate === "number") params.set("min_acceptance_rate", String(normalizedFilters.minAcceptanceRate));
-  if (typeof normalizedFilters.maxAcceptanceRate === "number") params.set("max_acceptance_rate", String(normalizedFilters.maxAcceptanceRate));
-  if (typeof normalizedFilters.minIelts === "number") params.set("min_ielts", String(normalizedFilters.minIelts));
-  if (typeof normalizedFilters.minToefl === "number") params.set("min_toefl", String(normalizedFilters.minToefl));
-  if (typeof normalizedFilters.scholarshipAvailable === "boolean") {
-    params.set("scholarship_available", String(normalizedFilters.scholarshipAvailable));
-  }
-  if (normalizedFilters.cityType) params.set("city_type", normalizedFilters.cityType);
-  if (normalizedFilters.campusVibe) params.set("campus_vibe", normalizedFilters.campusVibe);
+  if (typeof normalizedFilters.minPrice === "number") params.set("minPrice", String(normalizedFilters.minPrice));
+  if (typeof normalizedFilters.maxPrice === "number") params.set("maxPrice", String(normalizedFilters.maxPrice));
+  if (normalizedFilters.region) params.set("region", normalizedFilters.region);
+  if (normalizedFilters.studyFormats?.length) params.set("studyFormats", normalizedFilters.studyFormats.join(","));
+  if (normalizedFilters.languages?.length) params.set("languages", normalizedFilters.languages.join(","));
 
   return params;
 }
@@ -226,6 +179,14 @@ export function useUniversitySearchData() {
     result: { items: [], total: 0, page: 1, limit: DEFAULT_LIMIT, totalPages: 1 },
     loading: true,
     error: null,
+    filterOptions: {
+      priceRange: { min: null, max: null },
+      regions: [],
+      studyFormats: [],
+      languages: [],
+    },
+    filterOptionsLoading: true,
+    filterOptionsError: null,
   });
 
   const updateSearch = useCallback(
@@ -249,7 +210,7 @@ export function useUniversitySearchData() {
           limit: DEFAULT_LIMIT,
         })
         : await fetchUniversities(nextPage, DEFAULT_LIMIT);
-      setState({ result, loading: false, error: null });
+      setState((prev) => ({ ...prev, result, loading: false, error: null }));
     } catch (error) {
       setState((prev) => ({
         ...prev,
@@ -275,6 +236,31 @@ export function useUniversitySearchData() {
     return () => window.clearTimeout(timer);
   }, [load, page, query, appliedFilters]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadFilterOptions = async () => {
+      setState((prev) => ({ ...prev, filterOptionsLoading: true, filterOptionsError: null }));
+      try {
+        const filterOptions = await fetchUniversityFilterOptions();
+        if (!cancelled) {
+          setState((prev) => ({ ...prev, filterOptions, filterOptionsLoading: false }));
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setState((prev) => ({
+            ...prev,
+            filterOptionsLoading: false,
+            filterOptionsError: error instanceof Error ? error.message : "Failed to load university filters",
+          }));
+        }
+      }
+    };
+    void loadFilterOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const setQuery = useCallback(
     (nextQuery: string) => {
       setQueryState(nextQuery);
@@ -299,6 +285,40 @@ export function useUniversitySearchData() {
       setFilterValidationError(null);
     },
     [],
+  );
+
+  const setFilter = useCallback(
+    <K extends keyof UniversityAdvancedFilters>(key: K, value: UniversityAdvancedFilters[K]) => {
+      const nextFilters = normalizeFilters({ ...appliedFilters, [key]: value });
+      const validationError = validateFilters(nextFilters);
+      if (validationError) {
+        setFilterValidationError(validationError);
+        return;
+      }
+      setFilterValidationError(null);
+      setDraftFilters(nextFilters);
+      setAppliedFilters(nextFilters);
+      setPageState(1);
+      updateSearch(query, 1, nextFilters);
+    },
+    [appliedFilters, query, updateSearch],
+  );
+
+  const setFilters = useCallback(
+    (nextPartialFilters: Partial<UniversityAdvancedFilters>) => {
+      const nextFilters = normalizeFilters({ ...appliedFilters, ...nextPartialFilters });
+      const validationError = validateFilters(nextFilters);
+      if (validationError) {
+        setFilterValidationError(validationError);
+        return;
+      }
+      setFilterValidationError(null);
+      setDraftFilters(nextFilters);
+      setAppliedFilters(nextFilters);
+      setPageState(1);
+      updateSearch(query, 1, nextFilters);
+    },
+    [appliedFilters, query, updateSearch],
   );
 
   const applyFilters = useCallback(() => {
@@ -344,6 +364,8 @@ export function useUniversitySearchData() {
     draftFilters,
     appliedFilters,
     setDraftFilter,
+    setFilter,
+    setFilters,
     applyFilters,
     clearFilters,
     activeFilterCount,

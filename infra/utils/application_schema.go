@@ -12,6 +12,7 @@ const defaultApplicationSchemaSectionTitle = "Application Form"
 
 var schemaAcronyms = map[string]string{
 	"act":   "ACT",
+	"csca":  "CSCA",
 	"dob":   "DOB",
 	"gpa":   "GPA",
 	"gre":   "GRE",
@@ -33,6 +34,11 @@ func NormalizeApplicationSchema(raw json.RawMessage) json.RawMessage {
 	var doc map[string]any
 	if err := json.Unmarshal(trimmed, &doc); err != nil || doc == nil {
 		return mustMarshalJSON(defaultSchema)
+	}
+
+	if asString(doc["schemaType"]) == "application_builder_v1" {
+		doc["sections"] = normalizeBuilderSchemaSections(doc)
+		return mustMarshalJSON(doc)
 	}
 
 	if sections, ok := doc["sections"].([]any); ok {
@@ -59,6 +65,293 @@ func NormalizeApplicationSchema(raw json.RawMessage) json.RawMessage {
 	doc["sections"] = []any{}
 	delete(doc, "fields")
 	return mustMarshalJSON(doc)
+}
+
+func normalizeBuilderSchemaSections(doc map[string]any) []any {
+	sections := []any{}
+	order := 1
+
+	if overview, ok := doc["overview"].(map[string]any); ok {
+		fields := []any{}
+		if instructions := asString(overview["instructions"]); instructions != "" {
+			fields = append(fields, schemaInfoField("application_instructions", "Application instructions", instructions, len(fields)+1))
+		}
+		if deadline := asString(overview["deadline"]); deadline != "" {
+			fields = append(fields, schemaInfoField("application_deadline", "Application deadline", deadline, len(fields)+1))
+		}
+		if len(fields) > 0 {
+			sections = append(sections, schemaSection("application-overview", "Application Overview", "Published instructions from the university.", order, fields))
+			order++
+		}
+	}
+
+	if programs, ok := doc["programs"].(map[string]any); ok {
+		fields := []any{}
+		if asBool(programs["allowNoProgram"], false) {
+			fields = append(fields, schemaInfoField("program_choice_notice", "Program choice", "This application can be submitted without selecting a specific program.", 1))
+		} else {
+			fields = append(fields, map[string]any{
+				"id":         "program_choice",
+				"dataKey":    "program_choice",
+				"type":       "short-text",
+				"label":      "Program choice",
+				"required":   true,
+				"order":      1,
+				"helperText": "Enter the program you are applying for.",
+				"visibility": defaultSchemaVisibility(),
+			})
+		}
+		sections = append(sections, schemaSection("program-choice", "Program Choice", "Program selection rules for this application.", order, fields))
+		order++
+	}
+
+	if profileRequirements, ok := doc["profileRequirements"].([]any); ok {
+		fields := builderRequirementFields(profileRequirements, "profile", 1)
+		if len(fields) > 0 {
+			sections = append(sections, schemaSection("applicant-information", "Applicant Information", "Information required by the university.", order, fields))
+			order++
+		}
+	}
+
+	if educationRequirements, ok := doc["educationRequirements"].([]any); ok {
+		fields := builderRequirementFields(educationRequirements, "education", 1)
+		if len(fields) > 0 {
+			sections = append(sections, schemaSection("education", "Education", "Academic information required by the university.", order, fields))
+			order++
+		}
+	}
+
+	if documents, ok := doc["documents"].([]any); ok {
+		fields := builderDocumentFields(documents)
+		if len(fields) > 0 {
+			sections = append(sections, schemaSection("documents", "Documents", "Upload the documents requested by the university.", order, fields))
+			order++
+		}
+	}
+
+	if questions, ok := doc["questions"].([]any); ok {
+		fields := builderQuestionFields(questions)
+		if len(fields) > 0 {
+			sections = append(sections, schemaSection("additional-questions", "Additional Questions", "University-specific questions.", order, fields))
+			order++
+		}
+	}
+
+	if rules, ok := doc["rules"].(map[string]any); ok {
+		fields := []any{}
+		if declaration := asString(rules["declaration"]); declaration != "" {
+			fields = append(fields, schemaAgreementField("declaration", "Declaration", declaration, len(fields)+1))
+		}
+		if consent := asString(rules["consent"]); consent != "" {
+			fields = append(fields, schemaAgreementField("consent", "Consent", consent, len(fields)+1))
+		}
+		if len(fields) > 0 {
+			sections = append(sections, schemaSection("declarations", "Declarations", "Confirm the required statements before submitting.", order, fields))
+		}
+	}
+
+	return normalizeCanonicalSchemaSections(sections)
+}
+
+func builderRequirementFields(rawItems []any, prefix string, startOrder int) []any {
+	fields := []any{}
+	for _, rawItem := range rawItems {
+		item, ok := rawItem.(map[string]any)
+		if !ok {
+			continue
+		}
+		state := strings.ToLower(asString(item["state"]))
+		if state == "" || state == "not_requested" {
+			continue
+		}
+		label := firstNonEmptyString(asString(item["label"]), humanizeSchemaIdentifier(asString(item["key"])))
+		fieldID := slugifySchemaIdentifier(firstNonEmptyString(asString(item["key"]), label))
+		if fieldID == "" {
+			fieldID = prefix + "-" + intString(len(fields)+1)
+		}
+		fields = append(fields, map[string]any{
+			"id":         prefix + "_" + fieldID,
+			"dataKey":    prefix + "_" + fieldID,
+			"type":       builderRequirementFieldType(label),
+			"label":      label,
+			"required":   state == "required",
+			"order":      startOrder + len(fields),
+			"helperText": asString(item["condition"]),
+			"visibility": defaultSchemaVisibility(),
+		})
+	}
+	return fields
+}
+
+func builderRequirementFieldType(label string) string {
+	normalized := strings.ToLower(label)
+	switch {
+	case strings.Contains(normalized, "email"):
+		return "email"
+	case strings.Contains(normalized, "phone"):
+		return "phone"
+	case strings.Contains(normalized, "birth") || strings.Contains(normalized, "date"):
+		return "date"
+	case strings.Contains(normalized, "gpa") || strings.Contains(normalized, "year"):
+		return "number"
+	case strings.Contains(normalized, "country"):
+		return "country"
+	default:
+		return "short-text"
+	}
+}
+
+func builderDocumentFields(rawDocuments []any) []any {
+	fields := []any{}
+	for _, rawDocument := range rawDocuments {
+		document, ok := rawDocument.(map[string]any)
+		if !ok {
+			continue
+		}
+		name := asString(document["name"])
+		if name == "" {
+			continue
+		}
+		fieldID := slugifySchemaIdentifier(firstNonEmptyString(asString(document["id"]), name))
+		validation := map[string]any{}
+		if formats, ok := document["formats"].([]any); ok {
+			fileTypes := []any{}
+			for _, format := range formats {
+				if value := asString(format); value != "" {
+					fileTypes = append(fileTypes, value)
+				}
+			}
+			if len(fileTypes) > 0 {
+				validation["fileTypes"] = fileTypes
+			}
+		}
+		if maxFileSizeMb := asInt(document["maxFileSizeMb"], 0); maxFileSizeMb > 0 {
+			validation["maxFileSize"] = maxFileSizeMb * 1024 * 1024
+		}
+		if maxFiles := asInt(document["maxFiles"], 0); maxFiles > 0 {
+			validation["maxFiles"] = maxFiles
+		}
+		fields = append(fields, map[string]any{
+			"id":         "document_" + fieldID,
+			"dataKey":    "document_" + fieldID,
+			"type":       "document",
+			"label":      name,
+			"required":   asBool(document["required"], false),
+			"order":      len(fields) + 1,
+			"helperText": firstNonEmptyString(asString(document["instructions"]), asString(document["description"])),
+			"validation": validation,
+			"visibility": defaultSchemaVisibility(),
+		})
+	}
+	return fields
+}
+
+func builderQuestionFields(rawQuestions []any) []any {
+	fields := []any{}
+	for _, rawQuestion := range rawQuestions {
+		question, ok := rawQuestion.(map[string]any)
+		if !ok {
+			continue
+		}
+		text := asString(question["text"])
+		if text == "" {
+			continue
+		}
+		fieldID := slugifySchemaIdentifier(firstNonEmptyString(asString(question["id"]), text))
+		field := map[string]any{
+			"id":         "question_" + fieldID,
+			"dataKey":    "question_" + fieldID,
+			"type":       builderQuestionFieldType(asString(question["type"])),
+			"label":      text,
+			"required":   asBool(question["required"], false),
+			"order":      len(fields) + 1,
+			"helperText": asString(question["helperText"]),
+			"visibility": defaultSchemaVisibility(),
+		}
+		if options, ok := question["options"].([]any); ok {
+			outOptions := []any{}
+			for _, option := range options {
+				if value := asString(option); value != "" {
+					outOptions = append(outOptions, value)
+				}
+			}
+			if len(outOptions) > 0 {
+				field["options"] = outOptions
+			}
+		}
+		if field["type"] == "radio" {
+			if _, hasOptions := field["options"]; !hasOptions && strings.EqualFold(asString(question["type"]), "yes_no") {
+				field["options"] = []any{"Yes", "No"}
+			}
+		}
+		fields = append(fields, field)
+	}
+	return fields
+}
+
+func builderQuestionFieldType(rawType string) string {
+	switch strings.ToLower(strings.TrimSpace(rawType)) {
+	case "long_text":
+		return "long-text"
+	case "single_choice":
+		return "radio"
+	case "multiple_choice":
+		return "checkbox"
+	case "yes_no":
+		return "radio"
+	case "file_upload":
+		return "file-upload"
+	case "date", "number", "dropdown":
+		return rawType
+	default:
+		return "short-text"
+	}
+}
+
+func schemaSection(id, title, description string, order int, fields []any) map[string]any {
+	return map[string]any{
+		"id":          id,
+		"name":        title,
+		"title":       title,
+		"description": description,
+		"order":       order,
+		"visible":     true,
+		"fields":      fields,
+	}
+}
+
+func schemaInfoField(id, label, helperText string, order int) map[string]any {
+	return map[string]any{
+		"id":         id,
+		"dataKey":    id,
+		"type":       "long-text",
+		"label":      label,
+		"required":   false,
+		"order":      order,
+		"helperText": helperText,
+		"visibility": defaultSchemaVisibility(),
+	}
+}
+
+func schemaAgreementField(id, label, helperText string, order int) map[string]any {
+	return map[string]any{
+		"id":         id,
+		"dataKey":    id,
+		"type":       "agreement",
+		"label":      label,
+		"required":   true,
+		"order":      order,
+		"helperText": helperText,
+		"visibility": defaultSchemaVisibility(),
+	}
+}
+
+func defaultSchemaVisibility() map[string]any {
+	return map[string]any{
+		"applicant": true,
+		"partner":   true,
+		"staff":     true,
+	}
 }
 
 func normalizeCanonicalSchemaSections(rawSections []any) []any {

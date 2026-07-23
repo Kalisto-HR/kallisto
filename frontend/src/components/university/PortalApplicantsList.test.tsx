@@ -30,6 +30,9 @@ describe("PortalApplicantsList", () => {
       statusStage: "application_received" as const,
       isFinal: false,
       isSuccessfulOutcome: false,
+      history: [],
+      tasks: [],
+      decision: null,
     },
   ];
 
@@ -42,7 +45,7 @@ describe("PortalApplicantsList", () => {
     });
   });
 
-  it("disables the header download action until a submission is selected", () => {
+  it("disables export until an application is selected", () => {
     render(
       <MemoryRouter initialEntries={["/partner/applications"]}>
         <Routes>
@@ -51,7 +54,9 @@ describe("PortalApplicantsList", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: /download application/i })).toBeDisabled();
+    expect(screen.getByText("Admissions CRM")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /export selected/i })).toBeDisabled();
+    expect(screen.getByText("Application Queue")).toBeInTheDocument();
   });
 
   it("downloads the selected application as a JSON snapshot", async () => {
@@ -86,7 +91,7 @@ describe("PortalApplicantsList", () => {
       </MemoryRouter>,
     );
 
-    const button = screen.getByRole("button", { name: /download application/i, hidden: true });
+    const button = screen.getByRole("button", { name: /export selected/i, hidden: true });
     expect(button).toBeEnabled();
 
     fireEvent.click(button);

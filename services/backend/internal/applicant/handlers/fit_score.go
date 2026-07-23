@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
 	"kallisto/infra/validation"
 	"kallisto/services/backend/internal/applicant/models"
@@ -15,6 +16,21 @@ import (
 )
 
 func CalculateFitScoreHandler(w http.ResponseWriter, r *http.Request) {
+	claims, claimsErr := middlewares.GetClaimsFromContext(r.Context())
+	if claimsErr == nil {
+		if err := usecases_impl.RequirePremium(r.Context(), claims.UID); err != nil {
+			status := http.StatusInternalServerError
+			if handleFuncErr, ok := err.(utils.HandlerFuncErr); ok {
+				status = handleFuncErr.Status()
+			}
+			utils.WriteApiResponse(w, utils.NewApiResponse(false, map[string]any{
+				"matchScore":       nil,
+				"matchScoreLocked": true,
+			}, err.Error()), status)
+			return
+		}
+	}
+
 	var req models.FitScoreRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteJSONResponseWithMsg(w, "malformed json request body", http.StatusBadRequest)
@@ -55,13 +71,13 @@ func validateFitScoreRequest(req models.FitScoreRequest) []*validation.Validatio
 	errors = appendNumberRange(errors, "studentProfile.toefl", student.TOEFL, 0, 120)
 	errors = appendNumberRange(errors, "studentProfile.hsk", student.HSK, 0, 6)
 	errors = appendNumberRange(errors, "studentProfile.sat", student.SAT, 0, 1600)
-	errors = appendNumberRange(errors, "studentProfile.budgetPerYear", student.BudgetPerYear, 0, 1000000)
+	errors = appendNumberRange(errors, "studentProfile.budgetPerYear", student.BudgetPerYear, 0, 1000000000)
 
 	errors = appendNumberRange(errors, "program.minGpa", program.MinGPA, 0, 100)
 	errors = appendNumberRange(errors, "program.minIelts", program.MinIELTS, 0, 9)
 	errors = appendNumberRange(errors, "program.minToefl", program.MinTOEFL, 0, 120)
 	errors = appendNumberRange(errors, "program.minHsk", program.MinHSK, 0, 6)
-	errors = appendNumberRange(errors, "program.tuition", program.Tuition, 0, 1000000)
+	errors = appendNumberRange(errors, "program.tuition", program.Tuition, 0, 1000000000)
 
 	if student.GPA != nil && student.GPAScale != nil && *student.GPAScale < *student.GPA {
 		errors = append(errors, &validation.ValidationError{

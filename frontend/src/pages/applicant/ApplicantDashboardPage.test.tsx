@@ -8,7 +8,7 @@ vi.mock("../../hooks/useApplicantDashboardData", () => ({
 }));
 
 describe("ApplicantDashboardPage", () => {
-  it("shows billing as unavailable instead of implying live credits", () => {
+  it("links to live billing for credits and premium", () => {
     vi.mocked(useApplicantDashboardData).mockReturnValue({
       profile: {
         id: "student-1",
@@ -21,6 +21,18 @@ describe("ApplicantDashboardPage", () => {
       applications: [],
       favoritesCount: 2,
       testScoresCount: 0,
+      billingSummary: {
+        creditBalance: 4,
+        creditsPurchased: 5,
+        creditsUsed: 1,
+        draftApplications: 0,
+        submittedApplications: 0,
+        products: [],
+        orders: [],
+        creditHistory: [],
+        subscription: null,
+        hasActivePremium: false,
+      },
       loading: false,
       error: null,
       reload: vi.fn(),
@@ -32,9 +44,11 @@ describe("ApplicantDashboardPage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Billing")).toBeInTheDocument();
-    expect(screen.getByText("Unavailable")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /billing unavailable/i })).toBeInTheDocument();
-    expect(screen.queryByText(/get more credits/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Billing").length).toBeGreaterThan(0);
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("Application credits available")).toBeInTheDocument();
+    expect(screen.getByText("Buy credits and manage Premium")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^billing$/i })).toBeInTheDocument();
+    expect(screen.queryByText("Unavailable")).not.toBeInTheDocument();
   });
 });

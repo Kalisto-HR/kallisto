@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type InputHTMLAttributes } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   ArrowLeft,
@@ -59,10 +60,10 @@ interface RecommenderEntry {
 }
 
 const steps = [
-  { number: 1, label: "Overview" },
-  { number: 2, label: "Requirements" },
-  { number: 3, label: "Application Form" },
-  { number: 4, label: "Review" },
+  { number: 1, labelKey: "applicantFlow.universityDetail.overview" },
+  { number: 2, labelKey: "applicantFlow.applicationCreate.requirements" },
+  { number: 3, labelKey: "applicantFlow.applicationCreate.applicationForm" },
+  { number: 4, labelKey: "applicantFlow.applicationCreate.review" },
 ] as const;
 
 function fieldKey(field: SchemaField): string {
@@ -308,38 +309,10 @@ function formatFileSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const APPLICATIONS_DISABLED = true;
-
-export function ApplicantApplicationCreatePage() {
+function ApplicantApplicationCreateContent() {
+  const { t } = useTranslation("common");
   const { universityId = "" } = useParams();
   const [searchParams] = useSearchParams();
-
-  if (APPLICATIONS_DISABLED) {
-    return (
-      <div className="mx-auto max-w-2xl space-y-6 py-12">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-muted-foreground" />
-              Currently Not Available
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Applications are temporarily disabled. Please check back later.
-            </p>
-            <Link to={routes.applicant.universities}>
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Universities
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const flow = useApplicationFlowData(universityId);
   const { loading: flowLoading, markDraftLoaded, saveDraft, setCycle, setFormData } = flow;
   const draftCycle = (searchParams.get("cycle") ?? "").trim();
@@ -353,7 +326,7 @@ export function ApplicantApplicationCreatePage() {
   const [applicationStructurePublished, setApplicationStructurePublished] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
-  const [universityName, setUniversityName] = useState("Selected University");
+  const [universityName, setUniversityName] = useState(t("applicantFlow.applicationCreate.selectedUniversity"));
   const [universityMeta, setUniversityMeta] = useState("");
   const [profileTestScores, setProfileTestScores] = useState<ApplicantTestScore[]>([]);
   const [selectedTestScoreIds, setSelectedTestScoreIds] = useState<string[]>([]);
@@ -583,8 +556,8 @@ export function ApplicantApplicationCreatePage() {
     ? routes.applicant.applicationDetail(duplicateApplication.universityId, duplicateApplication.applicationCycle)
     : null;
   const schemaSourceMessage = applicationStructurePublished
-    ? "This is the published structure applicants will use."
-    : "This university has not published a structure yet, so applicants use the baseline fallback form below.";
+    ? "These are the published application requirements applicants will use."
+    : "This university has not published application requirements yet, so applicants use the baseline fallback form below.";
 
   useEffect(() => {
     if (!draftHydrated || !hasFormContent || flowLoading || duplicateApplication) {
@@ -1043,11 +1016,11 @@ export function ApplicantApplicationCreatePage() {
       return;
     }
     if (profileTestScores.length === 0) {
-      setImportFeedback("No profile test scores available to import.");
+      setImportFeedback(t("applicantFlow.applicationCreate.noProfileScores"));
       return;
     }
     if (selectedTestScoreIds.length === 0) {
-      setImportFeedback("Select at least one test score to import.");
+      setImportFeedback(t("applicantFlow.applicationCreate.selectOneScore"));
       return;
     }
 
@@ -1103,9 +1076,9 @@ export function ApplicantApplicationCreatePage() {
         return next;
       });
 
-      setImportFeedback(`Imported ${result.importedCount} test score(s) into this draft.`);
+      setImportFeedback(t("applicantFlow.applicationCreate.importedScores", { count: result.importedCount }));
     } catch (err) {
-      setImportFeedback(err instanceof Error ? err.message : "Failed to import test scores");
+      setImportFeedback(err instanceof Error ? err.message : t("applicantFlow.applicationCreate.importFailed"));
     } finally {
       setImportingScores(false);
     }
@@ -1539,7 +1512,7 @@ export function ApplicantApplicationCreatePage() {
                 >
                   {currentStep > step.number ? <CheckCircle2 className="h-5 w-5" /> : step.number}
                 </div>
-                <div className="text-xs font-medium leading-tight">{step.label}</div>
+                <div className="text-xs font-medium leading-tight">{t(step.labelKey)}</div>
               </div>
             ))}
           </div>
@@ -1565,11 +1538,11 @@ export function ApplicantApplicationCreatePage() {
               <Link to={routes.applicant.universities} className="flex-1">
                 <Button variant="outline" className="w-full">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to search
+                  {t("applicantFlow.applicationCreate.backToSearch")}
                 </Button>
               </Link>
               <Button className="flex-1" disabled={Boolean(duplicateApplication)} onClick={() => setCurrentStep(2)}>
-                Continue
+                {t("applicantFlow.applicationCreate.continue")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -1673,10 +1646,10 @@ export function ApplicantApplicationCreatePage() {
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(1)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {t("applicantFlow.applicationCreate.back")}
               </Button>
               <Button className="flex-1" disabled={Boolean(duplicateApplication)} onClick={() => setCurrentStep(3)}>
-                Continue
+                {t("applicantFlow.applicationCreate.continue")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -1687,20 +1660,20 @@ export function ApplicantApplicationCreatePage() {
       {currentStep === 3 ? (
         <Card>
           <CardHeader>
-            <CardTitle>Application Form</CardTitle>
+            <CardTitle>{t("applicantFlow.applicationCreate.applicationForm")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="cycle">Application cycle</Label>
+              <Label htmlFor="cycle">{t("applicantFlow.applicationCreate.applicationCycle")}</Label>
               <Input id="cycle" value={flow.cycle} onChange={(event) => flow.setCycle(event.target.value)} />
             </div>
 
             <div className="space-y-3 rounded-lg border p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-medium">Import Test Scores</h3>
+                  <h3 className="font-medium">{t("applicantFlow.applicationCreate.importTitle")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Pull saved profile test scores into this application draft.
+                    {t("applicantFlow.applicationCreate.importDescription")}
                   </p>
                 </div>
                 <Button
@@ -1710,18 +1683,18 @@ export function ApplicantApplicationCreatePage() {
                   onClick={() => void importSelectedTestScores()}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  {importingScores ? "Importing..." : "Import selected"}
+                  {importingScores ? t("applicantFlow.applicationCreate.importing") : t("applicantFlow.applicationCreate.importSelected")}
                 </Button>
               </div>
 
-              {testScoresLoading ? <p className="text-sm text-muted-foreground">Loading profile test scores...</p> : null}
+              {testScoresLoading ? <p className="text-sm text-muted-foreground">{t("applicantFlow.applicationCreate.loadingProfileScores")}</p> : null}
               {testScoresError ? <p className="text-sm text-red-600">{testScoresError}</p> : null}
               {importFeedback ? <p className="text-sm text-primary">{importFeedback}</p> : null}
               {uploadError ? <p className="text-sm text-red-600">{uploadError}</p> : null}
 
               {!testScoresLoading && !testScoresError && profileTestScores.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No saved test scores yet. Add them in Settings / Profile / Test Scores.
+                  {t("applicantFlow.applicationCreate.noSavedScores")}
                 </p>
               ) : null}
 
@@ -1732,7 +1705,7 @@ export function ApplicantApplicationCreatePage() {
                       checked={selectedTestScoreIds.length > 0 && selectedTestScoreIds.length === profileTestScores.length}
                       onCheckedChange={(checked) => toggleSelectAllTestScores(checked === true)}
                     />
-                    Select all
+                    {t("applicantFlow.applicationCreate.selectAll")}
                   </label>
                   {profileTestScores.map((item) => (
                     <label key={item.id} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1762,7 +1735,7 @@ export function ApplicantApplicationCreatePage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(2)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {t("applicantFlow.applicationCreate.back")}
               </Button>
               <Button className="flex-1" disabled={Boolean(duplicateApplication)} onClick={() => setCurrentStep(4)}>
                 Review
@@ -1819,7 +1792,7 @@ export function ApplicantApplicationCreatePage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(3)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                {t("applicantFlow.applicationCreate.back")}
               </Button>
               <Button
                 className="flex-1"
@@ -1838,7 +1811,7 @@ export function ApplicantApplicationCreatePage() {
                 }
               >
                 <Send className="mr-2 h-4 w-4" />
-                {flow.loading ? "Submitting..." : "Submit Application"}
+                {flow.loading ? t("applicantFlow.applicationCreate.submitting") : t("applicantFlow.applicationCreate.submit")}
               </Button>
             </div>
           </CardContent>
@@ -1846,4 +1819,8 @@ export function ApplicantApplicationCreatePage() {
       ) : null}
     </div>
   );
+}
+
+export function ApplicantApplicationCreatePage() {
+  return <ApplicantApplicationCreateContent />;
 }

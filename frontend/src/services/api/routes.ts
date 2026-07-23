@@ -45,6 +45,7 @@ export const apiRoutes = {
         withQuery(`${API_PREFIX}/applicant/universities`, { page, limit }),
       search: (params: QueryParams) =>
         withQuery(`${API_PREFIX}/applicant/universities/search`, params),
+      filterOptions: () => `${API_PREFIX}/applicant/universities/filter-options`,
       detail: (id: string) => `${API_PREFIX}/applicant/universities/${segment(id)}`,
       favorite: (id: string) => `${API_PREFIX}/applicant/universities/${segment(id)}/favorite`,
     },
@@ -56,6 +57,8 @@ export const apiRoutes = {
         `${API_PREFIX}/applicant/applications/${segment(universityId)}/${segment(cycle)}/submit`,
       importTestScores: (universityId: string, cycle: string) =>
         `${API_PREFIX}/applicant/applications/${segment(universityId)}/${segment(cycle)}/import-test-scores`,
+      respondTask: (universityId: string, cycle: string, taskId: string) =>
+        `${API_PREFIX}/applicant/applications/${segment(universityId)}/${segment(cycle)}/tasks/${segment(taskId)}/respond`,
       uploadFiles: (params: QueryParams) =>
         withQuery(`${API_PREFIX}/applicant/application-files/upload`, params),
     },
@@ -75,6 +78,14 @@ export const apiRoutes = {
     },
     fitScore: {
       calculate: () => `${API_PREFIX}/applicant/fit-score/calculate`,
+    },
+    billing: {
+      products: () => `${API_PREFIX}/applicant/billing/products`,
+      summary: () => `${API_PREFIX}/applicant/billing/summary`,
+      orders: () => `${API_PREFIX}/applicant/billing/orders`,
+      completeDevelopmentPayment: (id: string) =>
+        `${API_PREFIX}/applicant/billing/orders/${segment(id)}/dev-complete`,
+      subscription: () => `${API_PREFIX}/applicant/billing/subscription`,
     },
     profile: {
       base: () => `${API_PREFIX}/applicant/profile`,

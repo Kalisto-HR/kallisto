@@ -92,6 +92,7 @@ services:
       - .env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-admin_db}?sslmode=disable
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required and must be at least 32 characters}
     depends_on:
       postgres:
         condition: service_healthy

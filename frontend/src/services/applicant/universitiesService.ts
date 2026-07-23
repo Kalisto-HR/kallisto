@@ -10,22 +10,28 @@ import type { Pagination, University, UniversityListItem } from "../../types/dom
 
 export interface UniversitySearchParams {
   q?: string;
-  province?: string;
-  city?: string;
-  country?: string;
-  minRanking?: number;
-  maxRanking?: number;
-  maxFee?: number;
-  maxTuition?: number;
-  minAcceptanceRate?: number;
-  maxAcceptanceRate?: number;
-  minIelts?: number;
-  minToefl?: number;
-  scholarshipAvailable?: boolean;
-  cityType?: string;
-  campusVibe?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  region?: string;
+  studyFormats?: string[];
+  languages?: string[];
   page?: number;
   limit?: number;
+}
+
+export interface UniversityFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface UniversityFilterOptions {
+  priceRange: {
+    min: number | null;
+    max: number | null;
+  };
+  regions: UniversityFilterOption[];
+  studyFormats: UniversityFilterOption[];
+  languages: UniversityFilterOption[];
 }
 
 export async function fetchUniversities(page = 1, limit = 10): Promise<Pagination<UniversityListItem>> {
@@ -49,20 +55,11 @@ export async function fetchUniversities(page = 1, limit = 10): Promise<Paginatio
 export async function searchUniversities(params: UniversitySearchParams): Promise<Pagination<UniversityListItem>> {
   const result = await api.get<unknown>(apiRoutes.applicant.universities.search({
     q: params.q,
-    province: params.province,
-    city: params.city,
-    country: params.country,
-    min_ranking: params.minRanking,
-    max_ranking: params.maxRanking,
-    max_fee: params.maxFee,
-    max_tuition: params.maxTuition,
-    min_acceptance_rate: params.minAcceptanceRate,
-    max_acceptance_rate: params.maxAcceptanceRate,
-    min_ielts: params.minIelts,
-    min_toefl: params.minToefl,
-    scholarship_available: params.scholarshipAvailable,
-    city_type: params.cityType,
-    campus_vibe: params.campusVibe,
+    minPrice: params.minPrice,
+    maxPrice: params.maxPrice,
+    region: params.region,
+    studyFormats: params.studyFormats?.join(","),
+    languages: params.languages?.join(","),
     page: params.page ?? 1,
     limit: params.limit ?? 10,
   }));
@@ -79,6 +76,44 @@ export async function searchUniversities(params: UniversitySearchParams): Promis
   return {
     ...pageData,
     items: pageData.items.map(normalizeUniversityListItem),
+  };
+}
+
+export async function fetchUniversityFilterOptions(): Promise<UniversityFilterOptions> {
+  const result = await api.get<unknown>(apiRoutes.applicant.universities.filterOptions());
+  if (!result.ok || !result.data) {
+    throw new Error(result.error ?? "Failed to load university filters");
+  }
+
+  const envelope = normalizeEnvelope<Record<string, unknown>>(result.data);
+  if (!envelope.success) {
+    throw new Error(envelope.message || "Failed to load university filters");
+  }
+
+  const data = envelope.data ?? {};
+  const priceRange = data.price_range && typeof data.price_range === "object"
+    ? data.price_range as Record<string, unknown>
+    : {};
+  const normalizeOption = (item: unknown): UniversityFilterOption | null => {
+    if (!item || typeof item !== "object") {
+      return null;
+    }
+    const row = item as Record<string, unknown>;
+    const value = typeof row.value === "string" ? row.value : "";
+    const label = typeof row.label === "string" ? row.label : value;
+    return value ? { value, label } : null;
+  };
+  const normalizeOptions = (value: unknown): UniversityFilterOption[] =>
+    Array.isArray(value) ? value.map(normalizeOption).filter((item): item is UniversityFilterOption => item !== null) : [];
+
+  return {
+    priceRange: {
+      min: typeof priceRange.min === "number" ? priceRange.min : null,
+      max: typeof priceRange.max === "number" ? priceRange.max : null,
+    },
+    regions: normalizeOptions(data.regions),
+    studyFormats: normalizeOptions(data.study_formats),
+    languages: normalizeOptions(data.languages),
   };
 }
 

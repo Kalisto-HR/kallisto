@@ -4,6 +4,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"kallisto/infra/utils"
 	"kallisto/infra/validation"
@@ -99,12 +100,49 @@ func SearchUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 	if country := query.Get("country"); country != "" {
 		params.Country = &country
 	}
-	if minRanking, err := strconv.Atoi(query.Get("min_ranking")); err == nil {
-		params.MinRanking = &minRanking
+	if minPrice, err := strconv.ParseFloat(query.Get("minPrice"), 64); err == nil {
+		if minPrice < 0 {
+			utils.WriteApiResponse(w, utils.NewApiResponse[any](false, nil, "minPrice must be non-negative"), http.StatusBadRequest)
+			return
+		}
+		params.MinPrice = &minPrice
 	}
-	if maxRanking, err := strconv.Atoi(query.Get("max_ranking")); err == nil {
-		params.MaxRanking = &maxRanking
+	if maxPrice, err := strconv.ParseFloat(query.Get("maxPrice"), 64); err == nil {
+		if maxPrice < 0 {
+			utils.WriteApiResponse(w, utils.NewApiResponse[any](false, nil, "maxPrice must be non-negative"), http.StatusBadRequest)
+			return
+		}
+		params.MaxPrice = &maxPrice
 	}
+	if params.MinPrice != nil && params.MaxPrice != nil && *params.MinPrice > *params.MaxPrice {
+		utils.WriteApiResponse(w, utils.NewApiResponse[any](false, nil, "minPrice cannot be greater than maxPrice"), http.StatusBadRequest)
+		return
+	}
+	if region := strings.TrimSpace(query.Get("region")); region != "" {
+		params.Region = &region
+	}
+	studyFormats, ok := parseAllowedCSVQuery(query.Get("studyFormats"), map[string]bool{
+		"full-time": true,
+		"part-time": true,
+		"evening":   true,
+		"distance":  true,
+	})
+	if !ok {
+		utils.WriteApiResponse(w, utils.NewApiResponse[any](false, nil, "invalid studyFormats value"), http.StatusBadRequest)
+		return
+	}
+	languages, ok := parseAllowedCSVQuery(query.Get("languages"), map[string]bool{
+		"uzbek":      true,
+		"russian":    true,
+		"english":    true,
+		"karakalpak": true,
+	})
+	if !ok {
+		utils.WriteApiResponse(w, utils.NewApiResponse[any](false, nil, "invalid languages value"), http.StatusBadRequest)
+		return
+	}
+	params.StudyFormats = studyFormats
+	params.Languages = languages
 	if maxFee, err := strconv.ParseFloat(query.Get("max_fee"), 64); err == nil {
 		params.MaxFee = &maxFee
 	}
@@ -146,6 +184,21 @@ func SearchUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 	utils.WriteApiResponse(w, resp, http.StatusOK)
 }
 
+func GetUniversityFilterOptionsHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	options, err := usecases_impl.GetUniversityFilterOptions(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, err.Error())
+		utils.WriteApiResponse(w, resp, http.StatusInternalServerError)
+		return
+	}
+
+	resp := utils.NewApiResponse(true, options, "ok")
+	utils.WriteApiResponse(w, resp, http.StatusOK)
+}
+
 func parseBoolQuery(value string) (bool, bool) {
 	if value == "" {
 		return false, false
@@ -155,4 +208,23 @@ func parseBoolQuery(value string) (bool, bool) {
 		return false, false
 	}
 	return v, true
+}
+
+func parseAllowedCSVQuery(value string, allowed map[string]bool) ([]string, bool) {
+	if strings.TrimSpace(value) == "" {
+		return nil, true
+	}
+	parts := strings.Split(value, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		if !allowed[trimmed] {
+			return nil, false
+		}
+		values = append(values, trimmed)
+	}
+	return values, true
 }

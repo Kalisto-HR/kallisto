@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ApplicantApplicationCreatePage } from "./ApplicantApplicationCreatePage";
 
 describe("ApplicantApplicationCreatePage", () => {
-  it("renders the disabled applications notice", () => {
+  it("renders the enabled application wizard", () => {
     render(
       <MemoryRouter initialEntries={["/applicant/applications/new/wiut-id"]}>
         <Routes>
@@ -12,8 +12,9 @@ describe("ApplicantApplicationCreatePage", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Currently Not Available")).toBeInTheDocument();
-    expect(screen.getByText("Applications are temporarily disabled. Please check back later.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /back to universities/i })).toHaveAttribute("href", "/applicant/universities");
+    expect(screen.getByRole("heading", { name: /application process/i })).toBeInTheDocument();
+    expect(screen.getByText("Overview")).toBeInTheDocument();
+    expect(screen.getByText("Requirements")).toBeInTheDocument();
+    expect(screen.queryByText("Currently Not Available")).not.toBeInTheDocument();
   });
 });

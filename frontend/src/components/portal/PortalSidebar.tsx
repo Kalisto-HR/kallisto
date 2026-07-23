@@ -65,7 +65,7 @@ export function PortalSidebar({
       items: [
         { id: 'partner-dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
         { id: 'partner-university-profile', icon: Building2, labelKey: 'nav.universityProfile' },
-        { id: 'partner-application-structure', icon: FileText, labelKey: 'nav.applicationStructure' },
+        { id: 'partner-application-builder', icon: FileText, labelKey: 'nav.applicationBuilder' },
         { id: 'partner-applications', icon: Users, labelKey: 'nav.submissions' },
       ],
     },
@@ -108,13 +108,13 @@ export function PortalSidebar({
           <BrandLogo className="h-8 w-8" />
           {collapsed ? null : (
             <div>
-              <h1 className="font-semibold text-sm">Portal Console</h1>
+              <h1 className="font-semibold text-sm">{t("nav.portalConsole")}</h1>
             </div>
           )}
           <button
             type="button"
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+            aria-label={collapsed ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
             onClick={() => onCollapsedChange?.(!collapsed)}
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground',
@@ -126,7 +126,7 @@ export function PortalSidebar({
         </div>
         {collapsed ? null : (
           <p className="text-xs text-muted-foreground mt-1">
-            {isStaff ? 'Staff access' : 'Partner access'}
+            {isStaff ? t("nav.staffAccess") : t("nav.partnerAccess")}
           </p>
         )}
       </div>

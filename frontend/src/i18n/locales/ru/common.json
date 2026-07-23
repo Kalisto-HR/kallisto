@@ -14,7 +14,7 @@
     "help": "Помощь",
     "university": "Университет",
     "universityProfile": "Профиль университета",
-    "applicationStructure": "Структура заявки",
+    "applicationBuilder": "Конструктор заявок",
     "submissions": "Заявки",
     "staffWorkspace": "Рабочая область staff",
     "students": "Студенты",
@@ -38,7 +38,8 @@
     "applicantNavigation": "Навигация абитуриента",
     "applicantNavigationDescription": "Ссылки навигации личного кабинета абитуриента.",
     "portalNavigation": "Меню навигации",
-    "portalNavigationDescription": "Доступ к функциям портала партнеров и staff"
+    "portalNavigationDescription": "Доступ к функциям портала партнеров и staff",
+    "billingAndCredits": "Оплата и кредиты"
   },
   "actions": {
     "view": "Открыть",
@@ -51,7 +52,17 @@
     "logOut": "Выйти",
     "save": "Сохранить",
     "uploading": "Загрузка...",
-    "uploadPhoto": "Загрузить фото"
+    "uploadPhoto": "Загрузить фото",
+    "add": "Добавить",
+    "added": "Добавлено",
+    "remove": "Удалить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "retry": "Повторить",
+    "open": "Открыть",
+    "back": "Назад",
+    "clear": "Очистить",
+    "saving": "Сохранение..."
   },
   "labels": {
     "applicantAccount": "Аккаунт абитуриента",
@@ -68,7 +79,9 @@
     "unknown": "Неизвестно",
     "planned": "запланировано",
     "regionOfResidence": "Регион проживания",
-    "selectRegion": "Выберите регион"
+    "selectRegion": "Выберите регион",
+    "applicant": "Абитуриент",
+    "workspaceUser": "Пользователь портала"
   },
   "regions": {
     "tashkent_city": "Город Ташкент",
@@ -88,6 +101,152 @@
   },
   "validation": {
     "invalidRegion": "Указан недопустимый регион Узбекистана."
+  },
+  "universityFilters": {
+    "title": "Фильтр",
+    "contractPrice": "Стоимость контракта",
+    "currency": "узбекский сум",
+    "region": "Регион",
+    "all": "Все",
+    "studyFormat": "Форма обучения",
+    "language": "Язык обучения",
+    "clear": "Очистить фильтры",
+    "noResults": "Ничего не найдено",
+    "loading": "Загрузка фильтров...",
+    "mobileDescription": "Выберите цену, регион, форму и язык обучения.",
+    "noOptions": "Пока нет подтвержденных вариантов.",
+    "noPriceData": "Пока нет подтвержденных данных о стоимости контракта.",
+    "regionOptions": {
+      "tashkent": "Ташкент",
+      "samarkand": "Самарканд",
+      "bukhara": "Бухара",
+      "andijan": "Андижан",
+      "fergana": "Фергана",
+      "namangan": "Наманган",
+      "nukus": "Нукус",
+      "qarshi": "Карши",
+      "urganch": "Ургенч"
+    },
+    "studyFormatOptions": {
+      "full-time": "Очная",
+      "part-time": "Заочная",
+      "evening": "Вечерняя",
+      "distance": "Дистанционная"
+    },
+    "languageOptions": {
+      "uzbek": "Узбекский",
+      "russian": "Русский",
+      "english": "Английский",
+      "karakalpak": "Каракалпакский"
+    }
+  },
+  "comparePage": {
+    "title": "Сравнение университетов",
+    "subtitle": "Сравнение {{count}} университетов Узбекистана на уровне учреждения",
+    "tableTitle": "Сравнение университетов",
+    "criteria": "Критерий",
+    "loading": "Загрузка сравнения...",
+    "emptyTitle": "Выберите минимум два университета",
+    "emptyDescription": "Добавьте от 2 до 4 университетов Узбекистана из поиска или страницы университета.",
+    "rows": {
+      "location": "Регион / город",
+      "averageContract": "Средняя стоимость контракта",
+      "universityType": "Тип университета",
+      "languages": "Языки обучения",
+      "studyFormats": "Формы обучения",
+      "financialSupport": "Стипендии и гранты",
+      "dormitory": "Наличие общежития",
+      "accreditation": "Аккредитация и лицензия",
+      "partnerships": "Международные партнёрства",
+      "mobility": "Обмен и мобильность",
+      "career": "Трудоустройство и карьера",
+      "deadline": "Дедлайн подачи",
+      "applicationFee": "Сбор за подачу",
+      "apply": "Подача через Kallisto"
+    },
+    "actions": {
+      "addMore": "Добавить университеты",
+      "clear": "Очистить сравнение",
+      "remove": "Убрать",
+      "apply": "Подать через Kallisto",
+      "differencesOnly": "Показать только различия"
+    },
+    "values": {
+      "notProvided": "Не указано",
+      "free": "Бесплатно",
+      "region": "Регион",
+      "city": "Город",
+      "scholarships": "Стипендии университета",
+      "governmentGrants": "Государственные гранты",
+      "tuitionDiscounts": "Скидки на контракт",
+      "otherSupport": "Другая поддержка",
+      "licence": "Операционная лицензия",
+      "nationalAccreditation": "Национальная аккредитация",
+      "internationalAccreditation": "Международная аккредитация",
+      "verifiedPartnerships": "{{count}} подтвержденных партнёрств",
+      "exchange": "Студенческий обмен",
+      "academicMobility": "Академическая мобильность",
+      "doubleDegree": "Двойной диплом",
+      "semesterAbroad": "Семестр за рубежом",
+      "careerCentre": "Карьерный центр",
+      "internshipSupport": "Поддержка стажировок",
+      "employerPartnerships": "Партнёрства с работодателями",
+      "jobFairs": "Ярмарки вакансий",
+      "entrepreneurshipSupport": "Поддержка предпринимательства",
+      "employmentData": "Статистика трудоустройства",
+      "universityApplicationFee": "Сбор университета",
+      "kallistoApplicationFee": "Сервисный сбор Kallisto"
+    },
+    "statuses": {
+      "available": "Доступно",
+      "not_available": "Недоступно",
+      "limited": "Ограниченно",
+      "varies": "Различается",
+      "not_provided": "Не указано",
+      "verified": "Подтверждено",
+      "active": "Активно",
+      "pending_verification": "Ожидает проверки",
+      "provided": "Указано",
+      "free": "Бесплатно",
+      "open": "Приём открыт",
+      "closed": "Приём закрыт"
+    },
+    "deadlineStatuses": {
+      "exact": "Точная дата",
+      "open": "Приём открыт",
+      "closed": "Приём закрыт",
+      "varies_by_program": "Зависит от программы",
+      "not_provided": "Не указано"
+    },
+    "applicationStatuses": {
+      "open": "Подать заявку",
+      "opening_soon": "Приём скоро откроется",
+      "closed": "Приём закрыт",
+      "not_available": "Пока недоступно"
+    },
+    "universityTypes": {
+      "public": "Государственный",
+      "private": "Частный",
+      "international_university": "Международный университет",
+      "foreign_university_branch": "Филиал зарубежного университета"
+    },
+    "languages": {
+      "uzbek": "Узбекский",
+      "russian": "Русский",
+      "english": "Английский",
+      "karakalpak": "Каракалпакский"
+    },
+    "studyFormats": {
+      "full_time": "Очная",
+      "evening": "Вечерняя",
+      "part_time": "Заочная",
+      "online": "Онлайн"
+    },
+    "errors": {
+      "title": "Не удалось обновить сравнение",
+      "removeFailed": "Не удалось убрать университет.",
+      "clearFailed": "Не удалось очистить сравнение."
+    }
   },
   "staffSections": {
     "status": "Раздел доступен",
@@ -141,6 +300,77 @@
       "nextStep": "Маршрут теперь доступен. UI управления ролями будет добавлен после финализации role-specific permissions."
     }
   },
+  "billing": {
+    "badge": "Оплата",
+    "title": "Оплата",
+    "subtitle": "Покупайте кредиты для подачи заявок и Premium для сравнения университетов и Match Score. Premium не включает бесплатные подачи заявок.",
+    "loading": "Загрузка оплаты...",
+    "emptyTitle": "Данные оплаты недоступны",
+    "emptyDescription": "Не удалось загрузить продукты оплаты для вашего аккаунта.",
+    "errors": {
+      "loadFailed": "Не удалось загрузить сводку оплаты"
+    },
+    "metrics": {
+      "availableCredits": "Доступные кредиты",
+      "availableCreditsHelp": "Каждая подача использует 1 кредит",
+      "purchased": "Кредиты куплены",
+      "purchasedHelp": "Успешные покупки кредитов",
+      "used": "Кредиты использованы",
+      "usedHelp": "Поданные заявки",
+      "applications": "Черновики / подано",
+      "applicationsHelp": "Заявки в вашем аккаунте"
+    },
+    "rules": {
+      "title": "Кредиты заявок и Premium разделены",
+      "description": "Кредиты оплачивают подачу заявок. Premium открывает Compare и Match Score."
+    },
+    "credits": {
+      "title": "Кредиты на подачу заявок",
+      "description": "Черновики бесплатны. Кредит списывается только после успешной подачи заявки.",
+      "creditUnit": "кредитов",
+      "perApplication": "за заявку",
+      "save": "Экономия {{amount}}"
+    },
+    "premium": {
+      "title": "Kallisto Premium",
+      "perMonth": "в месяц",
+      "compare": "Сравнение университетов",
+      "matchScore": "Match Score",
+      "noCredits": "Premium не включает кредиты на подачу заявок.",
+      "unavailable": "Premium-тариф недоступен."
+    },
+    "subscription": {
+      "none": "Нет активного Premium",
+      "status": "Статус подписки",
+      "expires": "Действует до"
+    },
+    "actions": {
+      "buyCredits": "Купить кредиты",
+      "upgradePremium": "Перейти на Premium",
+      "renewPremium": "Продлить Premium",
+      "processing": "Обработка...",
+      "confirmDevPayment": "Подтвердить dev-платеж"
+    },
+    "payment": {
+      "orderCreated": "Заказ создан",
+      "orderFailed": "Не удалось создать заказ",
+      "pendingTitle": "Ожидает dev-оплаты",
+      "success": "Платеж успешно выполнен",
+      "failed": "Ошибка платежа"
+    },
+    "history": {
+      "credits": "История кредитов",
+      "payments": "История платежей",
+      "noCredits": "Истории кредитов пока нет.",
+      "noPayments": "Истории платежей пока нет.",
+      "balance": "баланс"
+    },
+    "premiumRequired": {
+      "title": "Требуется Premium",
+      "description": "Compare и Match Score доступны только с Premium. Перейдите на Premium, чтобы продолжить.",
+      "action": "Открыть оплату"
+    }
+  },
   "applicationStatuses": {
     "draft": "Черновик",
     "submitted": "Подано",
@@ -158,5 +388,402 @@
     "decision_pending": "Ожидается решение",
     "final_decision": "Финальное решение",
     "unknown": "Неизвестно"
+  },
+  "profileForm": {
+    "title": "Введите личные данные",
+    "description": "Обновите данные абитуриента и контактную информацию.",
+    "uploadPhoto": "Загрузить фото",
+    "photoHelp": "PNG, JPEG или WEBP. Максимум 2 МБ.",
+    "lastName": "Фамилия",
+    "firstName": "Имя",
+    "middleName": "Отчество",
+    "gender": "Пол",
+    "genderOptions": {
+      "male": "Мужской",
+      "female": "Женский",
+      "prefer_not_to_say": "Предпочитаю не указывать"
+    },
+    "dateOfBirth": "Дата рождения",
+    "region": "Регион",
+    "district": "Район / город",
+    "select": "Выберите",
+    "selectRegionFirst": "Сначала выберите регион",
+    "email": "Email",
+    "additionalPhone": "Дополнительный номер телефона",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saving": "Сохранение...",
+    "success": "Профиль успешно обновлён.",
+    "errors": {
+      "lastName": "Фамилия обязательна и должна содержать только допустимые символы имени.",
+      "firstName": "Имя обязательно и должно содержать только допустимые символы имени.",
+      "middleName": "Отчество содержит недопустимые символы.",
+      "gender": "Выберите пол перед сохранением профиля.",
+      "dateOfBirth": "Дата рождения не может быть в будущем.",
+      "region": "Выберите регион.",
+      "district": "Выберите район или город, который относится к выбранному региону.",
+      "phone": "Введите корректный номер Узбекистана, например +998901234567."
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Вход",
+      "subtitle": "Войдите в рабочее пространство Kallisto",
+      "email": "Email",
+      "password": "Пароль",
+      "submit": "Войти",
+      "submitting": "Вход...",
+      "needAccount": "Нужен аккаунт абитуриента?",
+      "createOne": "Создать",
+      "errors": {
+        "failed": "Войти не удалось",
+        "session": "Не удалось получить сессию после входа"
+      },
+      "reasons": {
+        "expired": "Сессия истекла. Войдите снова.",
+        "revoked": "Сессия завершена на сервере. Войдите снова.",
+        "passwordChanged": "Пароль изменён. Войдите с новым паролем.",
+        "accountUpdated": "Доступ к аккаунту изменён. Войдите снова."
+      }
+    },
+    "signUp": {
+      "title": "Создать аккаунт абитуриента",
+      "subtitle": "Только регистрация абитуриента",
+      "email": "Email",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "password": "Пароль",
+      "submit": "Создать аккаунт",
+      "submitting": "Создание...",
+      "errors": {
+        "failed": "Не удалось зарегистрироваться"
+      }
+    },
+    "passwordReset": {
+      "title": "Сброс пароля недоступен",
+      "subtitle": "Сброс пароля сейчас недоступен.",
+      "description": "Сброс пароля отключён до внедрения безопасной доставки. Обратитесь в поддержку или к администратору.",
+      "remembered": "Вспомнили пароль?",
+      "backToSignIn": "Назад ко входу",
+      "resetLinkDescription": "Ссылки для сброса сейчас неактивны. Вернитесь ко входу и обратитесь в поддержку или к администратору, если нужна помощь с доступом.",
+      "backTo": "Назад к",
+      "signInLink": "входу"
+    }
+  },
+  "applicantFlow": {
+    "profileGate": {
+      "loading": "Проверяем профиль абитуриента...",
+      "loadFailed": "Не удалось загрузить профиль абитуриента"
+    },
+    "dashboard": {
+      "loading": "Загружаем панель абитуриента...",
+      "noProfileTitle": "Профиль не найден",
+      "noProfileDescription": "Войдите снова, чтобы загрузить профиль.",
+      "title": "Панель",
+      "subtitle": "С возвращением! Вот ваш обзор заявок",
+      "shortlisted": "Университеты в списке",
+      "drafts": "Заявки в работе",
+      "submitted": "Поданные заявки",
+      "creditsAvailable": "Доступные кредиты для заявок",
+      "buyCredits": "Купить кредиты и управлять Premium",
+      "readinessTitle": "Готовность профиля",
+      "readinessDescription": "Заполните профиль для более точных совпадений",
+      "complete": "Готово",
+      "pending": "Ожидает",
+      "profileComplete": "Профиль заполнен",
+      "basicInformation": "Основная информация",
+      "applicationProfile": "Профиль для заявок",
+      "documentReadiness": "Готовность документов",
+      "documentReadinessHelp": "Отметьте документы, готовые для заявок",
+      "testScores": "Результаты тестов",
+      "testScoresHelp": "Необязательно: добавьте IELTS, TOEFL, SAT, ACT, HSK или CSCA",
+      "update": "Обновить",
+      "manage": "Управлять",
+      "add": "Добавить",
+      "quickActions": "Быстрые действия",
+      "findMore": "Найти ещё университеты",
+      "compareOptions": "Сравнить варианты",
+      "viewApplications": "Мои заявки",
+      "recentApplications": "Недавние заявки",
+      "noApplicationsTitle": "Заявок пока нет",
+      "noApplicationsDescription": "Начните с выбора университета и создания первого черновика.",
+      "cycle": "Цикл {{cycle}}",
+      "openDraft": "Открыть черновик"
+    },
+    "basket": {
+      "loading": "Загружаем корзину...",
+      "loadFailed": "Не удалось загрузить корзину",
+      "removeFailed": "Не удалось удалить элемент",
+      "clearFailed": "Не удалось очистить корзину",
+      "emptyTitle": "Ваша корзина пуста",
+      "emptyDescription": "Добавьте университеты со страниц деталей, чтобы хранить выбранное в одном месте.",
+      "back": "Назад к университетам",
+      "title": "Корзина заявок",
+      "description": "Храните университеты, которые вы рассматриваете, в одном списке.",
+      "clear": "Очистить корзину",
+      "listTitle": "Университеты в корзине",
+      "listDescription": "Просмотрите сохранённые университеты и удалите лишнее.",
+      "locationUnavailable": "Локация не указана",
+      "applicationFee": "Сбор за заявку",
+      "tuition": "Стоимость обучения"
+    },
+    "help": {
+      "title": "Поддержка недоступна",
+      "subtitle": "Чат, email-поддержка и центр документации ещё не запущены.",
+      "unavailableTitle": "Центр помощи пока неактивен",
+      "unavailableDescription": "Этот раздел остаётся в меню, но в этом релизе ещё нет рабочего inbox поддержки, портала документации или live chat.",
+      "openSettings": "Открыть настройки аккаунта",
+      "selfService": "Доступные самостоятельные действия",
+      "selfServiceFind": "Используйте поиск университетов, чтобы начать или обновить заявки.",
+      "selfServiceSettings": "Откройте настройки, чтобы управлять профилем и результатами тестов.",
+      "selfServiceApplications": "Используйте мои заявки, чтобы просмотреть черновики и поданные заявки.",
+      "relatedRoutes": "Связанные разделы",
+      "accountSettings": "Настройки аккаунта",
+      "billingAvailability": "Оплата и доступ"
+    },
+    "applications": {
+      "loading": "Загружаем заявки...",
+      "loadFailed": "Не удалось загрузить заявки",
+      "emptyTitle": "Заявок пока нет",
+      "emptyDescription": "Используйте поиск университетов, чтобы создать первый черновик заявки.",
+      "cycle": "Цикл {{cycle}}",
+      "created": "Создано {{date}}",
+      "createdFallback": "Н/Д",
+      "openDraft": "Открыть черновик",
+      "open": "Открыть",
+      "deleteDraft": "Удалить черновик",
+      "deleteTitle": "Удалить этот черновик?",
+      "deleteDescription": "Черновик заявки в {{university}} будет удалён навсегда. Поданные заявки не изменятся.",
+      "deleteFallback": "этот университет",
+      "deleting": "Удаляем...",
+      "deleteFailed": "Не удалось удалить черновик"
+    },
+    "settings": {
+      "loading": "Загружаем настройки...",
+      "loadFailed": "Не удалось загрузить настройки",
+      "profileUnavailableTitle": "Профиль недоступен",
+      "profileUnavailableDescription": "Данные настроек не найдены.",
+      "title": "Настройки",
+      "description": "Управляйте аккаунтом и предпочтениями",
+      "onboardingTitle": "Заполните профиль абитуриента",
+      "onboardingDescription": "Заполните все обязательные поля перед выбором университетов, сравнением и подачей заявок.",
+      "missing": "Не заполнено: {{items}}.",
+      "chooseUniversities": "Выбрать университеты",
+      "profileRequired": "Профиль обязателен",
+      "tabs": {
+        "profile": "Профиль",
+        "matchProfile": "Профиль совпадения",
+        "security": "Безопасность",
+        "notifications": "Уведомления",
+        "privacy": "Приватность"
+      },
+      "testScores": {
+        "title": "Результаты тестов",
+        "description": "Добавьте стандартные тесты. Их можно импортировать в заявки.",
+        "addNew": "Добавить",
+        "loading": "Загружаем результаты...",
+        "empty": "Результатов пока нет. Нажмите «Добавить», чтобы внести первый балл.",
+        "type": "Тип теста",
+        "selectType": "Выберите тип теста",
+        "otherName": "Название другого теста",
+        "otherPlaceholder": "напр. Duolingo English Test",
+        "score": "Балл",
+        "scorePlaceholder": "Введите балл",
+        "outOf": "из",
+        "outOfPlaceholder": "Макс. балл",
+        "takenOn": "Дата сдачи (необязательно)",
+        "removing": "Удаляем...",
+        "remove": "Удалить",
+        "saving": "Сохраняем...",
+        "save": "Сохранить балл",
+        "add": "Добавить балл",
+        "removed": "Результат теста удалён.",
+        "created": "Результат теста сохранён.",
+        "failedLoad": "Не удалось загрузить результаты",
+        "failedSave": "Не удалось сохранить балл",
+        "failedDelete": "Не удалось удалить балл",
+        "outOfInvalid": "Максимальный балл должен быть числом больше 0.",
+        "updated": "Результат теста обновлён."
+      },
+      "security": {
+        "title": "Пароль и сессии",
+        "description": "Безопасно обновите пароль, указав текущие данные.",
+        "current": "Текущий пароль",
+        "new": "Новый пароль",
+        "confirm": "Подтвердите новый пароль",
+        "update": "Обновить пароль",
+        "updating": "Обновляем...",
+        "success": "Пароль успешно обновлён."
+      },
+      "notifications": {
+        "title": "Настройки уведомлений",
+        "description": "Управляйте каналами уведомлений.",
+        "email": "Email-уведомления",
+        "emailHelp": "Обновления по заявкам и напоминания.",
+        "push": "Push-уведомления",
+        "pushHelp": "Оповещения на поддерживаемых устройствах.",
+        "note": "Изменения сохраняются в вашем профиле.",
+        "save": "Сохранить предпочтения",
+        "success": "Настройки уведомлений сохранены."
+      },
+      "privacy": {
+        "title": "Настройки приватности",
+        "description": "Управляйте тем, кто видит ваш профиль в партнёрских процессах.",
+        "visibility": "Видимость профиля",
+        "select": "Выберите видимость",
+        "partners": "Виден партнёрским университетам",
+        "private": "Приватный",
+        "controls": "Управление данными",
+        "controlsDescription": "Экспорт данных и удаление аккаунта пока обрабатываются через поддержку.",
+        "save": "Сохранить приватность",
+        "success": "Настройки приватности сохранены."
+      }
+    },
+    "search": {
+      "title": "Найти университеты",
+      "showing": "Показано {{shown}} из {{total}} университетов",
+      "aiMatch": "AI-подбор",
+      "searchPlaceholder": "Поиск университетов, программ...",
+      "loading": "Загружаем университеты...",
+      "tryDifferentWithFilters": "Попробуйте другой запрос или сбросьте фильтры.",
+      "tryDifferent": "Попробуйте другой поисковый запрос.",
+      "locationUnavailable": "Локация не указана",
+      "fee": "Стоимость",
+      "programs": "Программы",
+      "programsAvailable": "Есть программы",
+      "applicationOpen": "Приём открыт",
+      "addToCompare": "Добавить в сравнение",
+      "added": "Добавлено",
+      "viewDetails": "Подробнее",
+      "compareTableFull": "Таблица сравнения заполнена",
+      "compareUpdateFailed": "Не удалось обновить сравнение",
+      "updateCompareFailed": "Не удалось обновить список сравнения.",
+      "previous": "Назад",
+      "next": "Далее",
+      "pageOf": "Страница {{page}} из {{totalPages}}"
+    },
+    "matchProfile": {
+      "title": "Профиль совпадения",
+      "description": "Эти поля используются для Kallisto Match Score на страницах университетов и программ.",
+      "nationality": "Гражданство",
+      "nationalityPlaceholder": "напр. Узбекистан",
+      "educationLevel": "Уровень образования",
+      "selectLevel": "Выберите уровень",
+      "gpa": "GPA",
+      "gpaScale": "Шкала GPA",
+      "intendedMajor": "Желаемая специальность",
+      "intendedMajorPlaceholder": "напр. Computer Science",
+      "budgetPerYear": "Бюджет в год",
+      "preferredLanguage": "Предпочитаемый язык",
+      "preferredCity": "Предпочитаемый город",
+      "preferredCityPlaceholder": "напр. Ташкент",
+      "achievements": "Достижения (необязательно)",
+      "achievementsPlaceholder": "Одно достижение на строку",
+      "reset": "Сбросить",
+      "save": "Сохранить профиль",
+      "saving": "Сохраняем...",
+      "documentReadiness": "Готовность документов",
+      "documentHelp": "Отметьте хотя бы один готовый документ перед выбором университетов.",
+      "readiness": "Готовность",
+      "readyPercent": "{{percent}}% готово для оценки по документам.",
+      "educationLevels": {
+        "high_school": "Средняя школа",
+        "foundation": "Foundation",
+        "bachelor": "Бакалавриат",
+        "master": "Магистратура",
+        "phd": "PhD"
+      },
+      "languages": {
+        "English": "Английский",
+        "Chinese": "Китайский",
+        "Russian": "Русский",
+        "Any": "Любой"
+      },
+      "documents": {
+        "Passport": "Паспорт",
+        "Academic transcript": "Академическая справка",
+        "Diploma or enrollment certificate": "Диплом или справка об обучении",
+        "Language certificate": "Языковой сертификат",
+        "Personal statement": "Мотивационное письмо",
+        "Recommendation letter": "Рекомендательное письмо",
+        "CV or resume": "CV или резюме"
+      },
+      "validation": {
+        "budgetRequired": "Годовой бюджет обязателен.",
+        "budgetInvalid": "Годовой бюджет должен быть числом больше или равным 0.",
+        "languageRequired": "Предпочитаемый язык обязателен.",
+        "cityRequired": "Предпочитаемый город обязателен."
+      }
+    },
+    "universityDetail": {
+      "back": "Назад к результатам",
+      "openApplication": "Открыть заявку",
+      "resumeDraft": "Продолжить черновик",
+      "applyNow": "Подать заявку",
+      "locationUnavailable": "Локация не указана",
+      "universityProfile": "Профиль университета",
+      "noDescription": "Для этого университета пока нет описания.",
+      "addToBasket": "Добавить в корзину",
+      "addedToBasket": "Добавлено в корзину",
+      "addToCompare": "Добавить в сравнение",
+      "addedToCompare": "Добавлено в сравнение",
+      "compareTableFull": "Таблица сравнения заполнена",
+      "compareUpdateFailed": "Не удалось обновить сравнение",
+      "basketUpdateFailed": "Не удалось обновить корзину",
+      "basketUpdateMessage": "Не удалось обновить корзину. Попробуйте ещё раз.",
+      "tuitionFee": "Обучение / сбор",
+      "country": "Страна",
+      "admissions": "Приём",
+      "open": "Открыто",
+      "overview": "Обзор",
+      "programs": "Программы",
+      "programsOffered": "Доступные программы",
+      "applicationFee": "Сбор за заявку",
+      "applicationFeeLine": "Сбор за заявку",
+      "tuition": "Стоимость обучения"
+    },
+    "applicationCreate": {
+      "selectedUniversity": "Выбранный университет",
+      "noProfileScores": "В профиле нет результатов тестов для импорта.",
+      "selectOneScore": "Выберите хотя бы один результат теста для импорта.",
+      "importedScores": "Импортировано результатов: {{count}}.",
+      "importFailed": "Не удалось импортировать результаты тестов",
+      "backToSearch": "Назад к поиску",
+      "back": "Назад",
+      "continue": "Далее",
+      "applicationForm": "Форма заявки",
+      "applicationCycle": "Цикл подачи",
+      "importTitle": "Импорт результатов тестов",
+      "importDescription": "Перенесите сохранённые в профиле результаты тестов в черновик заявки.",
+      "importing": "Импорт...",
+      "importSelected": "Импортировать выбранное",
+      "loadingProfileScores": "Загружаем результаты из профиля...",
+      "noSavedScores": "Сохранённых результатов тестов пока нет. Добавьте их в Настройки / Профиль / Результаты тестов.",
+      "selectAll": "Выбрать все",
+      "submitting": "Отправляем...",
+      "submit": "Подать заявку",
+      "requirements": "Требования",
+      "review": "Проверка"
+    }
+  },
+  "matchScore": {
+    "title": "Match Score",
+    "premiumRequired": "Для просмотра Match Score нужен Premium",
+    "upgrade": "Перейти на Premium",
+    "unavailable": "Оценка недоступна",
+    "fullTitle": "Kallisto Match Score",
+    "deterministic": "Оценка на основе данных профиля и программы.",
+    "why": "Почему такой балл",
+    "improve": "Улучшить Match Score",
+    "fallbackRecommendation": "Заполните профиль, чтобы повысить точность оценки.",
+    "disclaimer": "Fit Score ? это оценка на основе доступных данных профиля и программы. Он не гарантирует зачисление или стипендию.",
+    "breakdown": {
+      "academicScore": "Академическое соответствие",
+      "languageScore": "Языковое соответствие",
+      "majorScore": "Соответствие специальности",
+      "budgetScore": "Финансовое соответствие",
+      "documentScore": "Готовность документов",
+      "deadlineScore": "Риск дедлайна"
+    }
   }
 }

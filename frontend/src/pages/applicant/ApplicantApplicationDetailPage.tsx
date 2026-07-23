@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Calendar, CheckCircle2, CircleAlert, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, CheckCircle2, CircleAlert, Clock, ListChecks, MessageSquareText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { fetchApplicantApplication } from "../../services/applicant/applicationsService";
 import { fetchUniversityById } from "../../services/applicant/universitiesService";
@@ -109,6 +109,82 @@ export function ApplicantApplicationDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {application.tasks.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ListChecks className="h-4 w-4" />
+              {t("applications:tracking.tasksTitle", { defaultValue: "Requested tasks" })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {application.tasks.map((task) => (
+              <div key={task.id} className="rounded-lg border p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-medium">{task.title}</p>
+                    {task.description ? <p className="mt-1 text-sm text-muted-foreground">{task.description}</p> : null}
+                  </div>
+                  <Badge variant={task.status === "rejected" ? "destructive" : task.status === "completed" ? "default" : "secondary"}>
+                    {t(`applications:tasks.status.${task.status}`, { defaultValue: task.status.replaceAll("_", " ") })}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span>{t(`applications:tasks.category.${task.category}`, { defaultValue: task.category.replaceAll("_", " ") })}</span>
+                  <span>{task.required ? t("applications:tasks.required", { defaultValue: "Required" }) : t("applications:tasks.optional", { defaultValue: "Optional" })}</span>
+                  {task.dueAt ? <span>{t("applications:tasks.due", { defaultValue: "Due" })}: {formatDateTime(task.dueAt)}</span> : null}
+                </div>
+                {task.universityFeedback ? (
+                  <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm">{task.universityFeedback}</p>
+                ) : null}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {application.decision ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("applications:tracking.decisionTitle", { defaultValue: "Decision" })}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <Badge variant={getApplicationStatusBadgeVariant(application.decision.decisionStatus)}>
+              {getApplicationStatusLabel(t, application.decision.decisionStatus)}
+            </Badge>
+            <p className="text-foreground">{application.decision.publicMessage}</p>
+            {application.decision.studentVisibleReason ? (
+              <p className="text-muted-foreground">{application.decision.studentVisibleReason}</p>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              {t("applications:tracking.decisionDate", { defaultValue: "Decision date" })}: {formatDateTime(application.decision.decisionDate)}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {application.history.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageSquareText className="h-4 w-4" />
+              {t("applications:tracking.timelineTitle", { defaultValue: "Timeline" })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {application.history.map((event) => (
+              <div key={event.id} className="border-l-2 border-muted pl-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="font-medium">{getApplicationStatusLabel(t, event.toStatus)}</p>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(event.changedAt)}</span>
+                </div>
+                {event.publicComment ? <p className="mt-1 text-sm text-muted-foreground">{event.publicComment}</p> : null}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

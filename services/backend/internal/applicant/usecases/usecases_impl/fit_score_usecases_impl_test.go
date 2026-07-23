@@ -105,7 +105,7 @@ func strongStudent() models.FitScoreStudentProfile {
 		IntendedMajor:     "Computer Science",
 		BudgetPerYear:     &budget,
 		PreferredLanguage: "English",
-		PreferredCity:     "Shanghai",
+		PreferredCity:     "Tashkent",
 		DocumentsReady:    []string{"Passport", "Transcript", "Recommendation Letter"},
 		Achievements:      []string{"Olympiad finalist"},
 	}

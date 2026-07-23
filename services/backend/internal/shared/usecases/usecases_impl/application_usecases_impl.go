@@ -28,7 +28,7 @@ const (
 	            WHEN 'decision_pending' THEN 80
 	            WHEN 'waitlisted' THEN 90
 	            WHEN 'accepted' THEN 100
-	            WHEN 'rejected' THEN 100
+	            WHEN 'rejected' THEN 80
 	            ELSE 0
 	        END AS status_progress,
 	        CASE status
@@ -219,7 +219,162 @@ func GetSubmittedApplicationById(ctx context.Context, id string) (*models.Submit
 		return nil, fmt.Errorf("failed to scan application: %s", err.Error())
 	}
 
+	if err := hydrateSubmittedApplicationDetails(ctx, &application, true); err != nil {
+		return nil, err
+	}
+
 	return &application, nil
+}
+
+func hydrateSubmittedApplicationDetails(ctx context.Context, application *models.SubmittedApplication, includeInternal bool) error {
+	history, err := ListApplicationStatusEvents(ctx, application.Id, includeInternal)
+	if err != nil {
+		return err
+	}
+	tasks, err := ListApplicationTasks(ctx, application.Id)
+	if err != nil {
+		return err
+	}
+	decision, err := GetApplicationDecision(ctx, application.Id, includeInternal)
+	if err != nil {
+		return err
+	}
+	application.History = history
+	application.Tasks = tasks
+	application.Decision = decision
+	return nil
+}
+
+func ListApplicationStatusEvents(ctx context.Context, applicationId string, includeInternal bool) ([]models.ApplicationStatusEvent, error) {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return nil, errors.New("could not establish connection with the database")
+	}
+
+	internalColumn := "NULL::text AS internal_note"
+	if includeInternal {
+		internalColumn = "internal_note"
+	}
+
+	rows, err := conn.Query(ctx, fmt.Sprintf(`
+		SELECT id, application_id, from_status, to_status, public_comment, %s, changed_by, changed_by_role, changed_at, notification_created
+		FROM application_status_events
+		WHERE application_id = $1
+		ORDER BY changed_at ASC`, internalColumn), applicationId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query application status history: %s", err.Error())
+	}
+	defer rows.Close()
+
+	items := make([]models.ApplicationStatusEvent, 0)
+	for rows.Next() {
+		var item models.ApplicationStatusEvent
+		if err := rows.Scan(
+			&item.Id,
+			&item.ApplicationId,
+			&item.FromStatus,
+			&item.ToStatus,
+			&item.PublicComment,
+			&item.InternalNote,
+			&item.ChangedBy,
+			&item.ChangedByRole,
+			&item.ChangedAt,
+			&item.NotificationMade,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan application status history: %s", err.Error())
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func ListApplicationTasks(ctx context.Context, applicationId string) ([]models.ApplicationTask, error) {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return nil, errors.New("could not establish connection with the database")
+	}
+
+	rows, err := conn.Query(ctx, `
+		SELECT id, application_id, title, description, category, status, assigned_role, required, due_at,
+		       completed_at, verified_at, created_by, related_document_id, student_response, university_feedback,
+		       sort_order, created_at, updated_at
+		FROM application_tasks
+		WHERE application_id = $1
+		ORDER BY sort_order ASC, created_at ASC`, applicationId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query application tasks: %s", err.Error())
+	}
+	defer rows.Close()
+
+	items := make([]models.ApplicationTask, 0)
+	for rows.Next() {
+		var item models.ApplicationTask
+		if err := rows.Scan(
+			&item.Id,
+			&item.ApplicationId,
+			&item.Title,
+			&item.Description,
+			&item.Category,
+			&item.Status,
+			&item.AssignedRole,
+			&item.Required,
+			&item.DueAt,
+			&item.CompletedAt,
+			&item.VerifiedAt,
+			&item.CreatedBy,
+			&item.RelatedDocumentId,
+			&item.StudentResponse,
+			&item.UniversityFeedback,
+			&item.SortOrder,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan application task: %s", err.Error())
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func GetApplicationDecision(ctx context.Context, applicationId string, includeInternal bool) (*models.ApplicationDecision, error) {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return nil, errors.New("could not establish connection with the database")
+	}
+
+	internalColumn := "NULL::text AS internal_reason"
+	if includeInternal {
+		internalColumn = "internal_reason"
+	}
+
+	row := conn.QueryRow(ctx, fmt.Sprintf(`
+		SELECT application_id, decision_status, decision_date, public_message, %s,
+		       student_visible_reason, response_deadline, waitlist_position, decision_document_id,
+		       issued_by, created_at, updated_at
+		FROM application_decisions
+		WHERE application_id = $1`, internalColumn), applicationId)
+
+	var decision models.ApplicationDecision
+	if err := row.Scan(
+		&decision.ApplicationId,
+		&decision.DecisionStatus,
+		&decision.DecisionDate,
+		&decision.PublicMessage,
+		&decision.InternalReason,
+		&decision.StudentVisibleReason,
+		&decision.ResponseDeadline,
+		&decision.WaitlistPosition,
+		&decision.DecisionDocumentId,
+		&decision.IssuedBy,
+		&decision.CreatedAt,
+		&decision.UpdatedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to query application decision: %s", err.Error())
+	}
+	return &decision, nil
 }
 
 func GetSubmittedApplicationFileById(ctx context.Context, applicationId, fileId string) (*models.SubmittedApplicationFile, error) {
@@ -323,6 +478,9 @@ func TransitionApplicationStatus(ctx context.Context, applicationId, actorId, ac
 			return nil, utils.NewHandlerFuncErr(http.StatusBadRequest, "at least one required task is needed when additional information is requested")
 		}
 	}
+	if applicationstatus.IsFinal(targetStatus) && (req.PublicComment == nil || strings.TrimSpace(*req.PublicComment) == "") {
+		return nil, utils.NewHandlerFuncErr(http.StatusBadRequest, "public decision message is required for final decisions")
+	}
 
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -363,8 +521,8 @@ func TransitionApplicationStatus(ctx context.Context, applicationId, actorId, ac
 
 	_, err = tx.Exec(ctx, `
 		INSERT INTO application_status_events (
-			application_id, from_status, to_status, public_comment, internal_note, internal_explanation, changed_by
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			application_id, from_status, to_status, public_comment, internal_note, internal_explanation, changed_by, changed_by_role, notification_created
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)`,
 		applicationId,
 		currentStatus,
 		targetStatus,
@@ -372,6 +530,7 @@ func TransitionApplicationStatus(ctx context.Context, applicationId, actorId, ac
 		trimOptionalString(req.InternalNote),
 		trimOptionalString(req.InternalExplanation),
 		actorId,
+		actorRole,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to record application status event: %s", err.Error())
@@ -383,11 +542,12 @@ func TransitionApplicationStatus(ctx context.Context, applicationId, actorId, ac
 			continue
 		}
 		_, err = tx.Exec(ctx, `
-			INSERT INTO application_tasks (application_id, title, description, required, due_at, created_by)
-			VALUES ($1, $2, $3, $4, NULLIF($5, '')::timestamptz, $6)`,
+			INSERT INTO application_tasks (application_id, title, description, category, status, assigned_role, required, due_at, created_by)
+			VALUES ($1, $2, $3, COALESCE(NULLIF($4, ''), 'university_request'), 'pending', 'student', $5, NULLIF($6, '')::timestamptz, $7)`,
 			applicationId,
 			title,
 			trimOptionalString(task.Description),
+			optionalStringValue(task.Category),
 			task.Required,
 			optionalStringValue(task.DueAt),
 			actorId,
@@ -397,11 +557,70 @@ func TransitionApplicationStatus(ctx context.Context, applicationId, actorId, ac
 		}
 	}
 
+	if applicationstatus.IsFinal(targetStatus) {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO application_decisions (
+				application_id, decision_status, decision_date, public_message, internal_reason, student_visible_reason, issued_by
+			) VALUES ($1, $2, NOW(), $3, $4, $5, $6)
+			ON CONFLICT (application_id) DO UPDATE SET
+				decision_status = EXCLUDED.decision_status,
+				decision_date = EXCLUDED.decision_date,
+				public_message = EXCLUDED.public_message,
+				internal_reason = EXCLUDED.internal_reason,
+				student_visible_reason = EXCLUDED.student_visible_reason,
+				issued_by = EXCLUDED.issued_by,
+				updated_at = NOW()`,
+			applicationId,
+			targetStatus,
+			strings.TrimSpace(*req.PublicComment),
+			trimOptionalString(req.InternalNote),
+			trimOptionalString(req.PublicComment),
+			actorId,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to record application decision: %s", err.Error())
+		}
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO application_notifications (user_id, application_id, university_id, event_type, title, description, action_url)
+		SELECT user_id, id, university_id, $1, $2, $3, '/applicant/applications/' || university_id::text || '/' || application_cycle
+		FROM applications
+		WHERE id = $4
+		ON CONFLICT (application_id, event_type) DO NOTHING`,
+		"application_status_"+targetStatus,
+		"Application status updated",
+		statusNotificationDescription(targetStatus),
+		applicationId,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create application notification: %s", err.Error())
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("failed to commit application status transition: %s", err.Error())
 	}
 
 	return GetSubmittedApplicationById(ctx, applicationId)
+}
+
+func statusNotificationDescription(status string) string {
+	switch status {
+	case applicationstatus.StatusUnderReview:
+		return "The university has started reviewing your application."
+	case applicationstatus.StatusAdditionalInformationRequired:
+		return "The university requested additional information for your application."
+	case applicationstatus.StatusDecisionPending:
+		return "The university is preparing your final decision."
+	case applicationstatus.StatusAccepted:
+		return "You have received an admission decision: accepted."
+	case applicationstatus.StatusWaitlisted:
+		return "You have received an admission decision: waitlisted."
+	case applicationstatus.StatusRejected:
+		return "You have received an admission decision: rejected."
+	default:
+		return "Your application status has changed."
+	}
 }
 
 func trimOptionalString(value *string) *string {

@@ -4,43 +4,26 @@ import { ApplicantBasketPage } from "./ApplicantBasketPage";
 import { routes } from "../../routes/routeConfig";
 import {
   clearBasket,
-  fetchBasketPlans,
   fetchBasketState,
   removeBasketItem,
 } from "../../services/applicant/basketService";
 
 vi.mock("../../services/applicant/basketService", () => ({
   clearBasket: vi.fn(),
-  fetchBasketPlans: vi.fn(),
   fetchBasketState: vi.fn(),
   removeBasketItem: vi.fn(),
 }));
 
 describe("ApplicantBasketPage", () => {
   beforeEach(() => {
-    vi.mocked(fetchBasketPlans).mockResolvedValue([
-      {
-        id: "plan-1",
-        name: "Priority Bundle",
-        capacity: 6,
-        price: 299,
-        perApp: 49.83,
-        savings: 50,
-        featured: true,
-        description: "Priority plan",
-        priceCaption: "Best value",
-      },
-    ]);
-
     vi.mocked(fetchBasketState).mockResolvedValue({
       items: [
         {
           id: "uni-1",
-          name: "Peking University",
+          name: "New Uzbekistan University",
           province: null,
-          city: "Beijing",
-          country: "China",
-          ranking: 14,
+          city: "Tashkent",
+          country: "Uzbekistan",
           applicationFee: 800,
           acceptanceRate: 0.2,
           tuitionFee: 40000,
@@ -62,7 +45,7 @@ describe("ApplicantBasketPage", () => {
     vi.mocked(removeBasketItem).mockResolvedValue(undefined);
   });
 
-  it("shows checkout as unavailable instead of a live purchase action", async () => {
+  it("renders a clean university shortlist without legacy checkout blocks", async () => {
     render(
       <MemoryRouter initialEntries={[routes.applicant.basket]}>
         <Routes>
@@ -71,9 +54,12 @@ describe("ApplicantBasketPage", () => {
       </MemoryRouter>,
     );
 
-    const button = await screen.findByRole("button", { name: /checkout unavailable/i });
-    expect(button).toBeDisabled();
-    expect(screen.getByText(/checkout is not available yet/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /continue to checkout/i })).not.toBeInTheDocument();
+    expect(await screen.findByText("New Uzbekistan University")).toBeInTheDocument();
+    expect(screen.getByText(/keep universities you are considering/i)).toBeInTheDocument();
+    expect(screen.queryByText(/choose plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/checkout summary/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /checkout unavailable/i })).not.toBeInTheDocument();
   });
 });
+
+

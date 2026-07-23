@@ -37,6 +37,7 @@ describe("applicant applications service", () => {
           success: true,
           data: [
             {
+              id: "app-1",
               university_id: "uni-1",
               university_name: "Example University",
               application_cycle: "2026",
@@ -54,6 +55,7 @@ describe("applicant applications service", () => {
         data: {
           success: true,
           data: {
+            id: "app-1",
             user_id: "user-1",
             university_id: "uni-1",
             application_cycle: "2026",
@@ -67,6 +69,7 @@ describe("applicant applications service", () => {
 
     await expect(fetchApplicantApplications()).resolves.toEqual([
       {
+        id: "app-1",
         universityId: "uni-1",
         universityName: "Example University",
         applicationCycle: "2026",
@@ -81,6 +84,7 @@ describe("applicant applications service", () => {
     ]);
     await expect(fetchApplicantApplication("uni-1", "2026")).resolves.toEqual({
       userId: "user-1",
+      id: "app-1",
       universityId: "uni-1",
       applicationCycle: "2026",
       status: "submitted",
@@ -91,6 +95,9 @@ describe("applicant applications service", () => {
       statusStage: "application_received",
       isFinal: false,
       isSuccessfulOutcome: false,
+      history: [],
+      tasks: [],
+      decision: null,
     });
 
     expect(vi.mocked(api.get)).toHaveBeenNthCalledWith(1, "/v1.0/applicant/applications");

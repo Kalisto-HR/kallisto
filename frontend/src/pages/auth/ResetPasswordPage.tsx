@@ -1,16 +1,16 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { routes } from "../../routes/routeConfig";
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation("common");
   return (
-    <AuthShell title="Password reset unavailable" subtitle="Password reset is currently unavailable.">
+    <AuthShell title={t("auth.passwordReset.title")} subtitle={t("auth.passwordReset.subtitle")}>
       <div className="space-y-4 text-sm text-muted-foreground">
-        <p>
-        Reset links are not active right now. Return to sign in and contact support or an administrator if you need help accessing your account.
-        </p>
+        <p>{t("auth.passwordReset.resetLinkDescription")}</p>
         <div className="text-sm text-muted-foreground">
-          Back to <Link to={routes.auth.signIn} className="text-primary underline">sign in</Link>
+          {t("auth.passwordReset.backTo")} <Link to={routes.auth.signIn} className="text-primary underline">{t("auth.passwordReset.signInLink")}</Link>
         </div>
       </div>
     </AuthShell>

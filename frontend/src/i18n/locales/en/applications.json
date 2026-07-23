@@ -16,6 +16,34 @@
     "progressTitle": "Application Status",
     "additionalInfo": "The university needs additional information. Check your requested tasks and documents.",
     "finalDecision": "The university has recorded a final decision for this application.",
-    "inProgress": "Your application is moving through the university review process."
+    "inProgress": "Your application is moving through the university review process.",
+    "tasksTitle": "Requested tasks",
+    "timelineTitle": "Timeline",
+    "decisionTitle": "Decision",
+    "decisionDate": "Decision date"
+  },
+  "tasks": {
+    "required": "Required",
+    "optional": "Optional",
+    "due": "Due",
+    "status": {
+      "pending": "Pending",
+      "in_progress": "In progress",
+      "submitted": "Submitted",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "not_applicable": "Not applicable"
+    },
+    "category": {
+      "document": "Document",
+      "personal_information": "Personal information",
+      "payment": "Payment",
+      "interview": "Interview",
+      "exam": "Exam",
+      "correction": "Correction",
+      "university_request": "University request",
+      "decision": "Decision",
+      "other": "Other"
+    }
   }
 }

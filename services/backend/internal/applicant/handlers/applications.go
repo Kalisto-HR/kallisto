@@ -326,3 +326,52 @@ func ImportApplicationTestScoresHandler(w http.ResponseWriter, r *http.Request) 
 	resp := utils.NewApiResponse(true, result, "application test scores imported successfully")
 	utils.WriteApiResponse(w, resp, http.StatusOK)
 }
+
+func RespondApplicationTaskHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	claims, err := middlewares.GetClaimsFromContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, "unauthorized")
+		utils.WriteApiResponse(w, resp, http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+	universityId := vars["universityId"]
+	cycle := vars["cycle"]
+	taskId := vars["taskId"]
+	errors := validation.Validate(
+		validation.ValidateUUID(universityId, "universityId"),
+		validation.ValidateRequired(cycle, "cycle"),
+		validation.ValidateUUID(taskId, "taskId"),
+	)
+	if len(errors) > 0 {
+		validation.WriteValidationErrors(w, errors)
+		return
+	}
+
+	var req models.ApplicationTaskResponseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		resp := utils.NewApiResponse[any](false, nil, "malformed json request body")
+		utils.WriteApiResponse(w, resp, http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	if err := usecases_impl.RespondToApplicationTask(r.Context(), claims.UID, universityId, cycle, taskId, req.Response); err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		resp := utils.NewApiResponse[any](false, nil, err.Error())
+		utils.WriteApiResponse(w, resp, status)
+		return
+	}
+
+	resp := utils.NewApiResponse[any](true, nil, "application task response submitted successfully")
+	utils.WriteApiResponse(w, resp, http.StatusOK)
+}

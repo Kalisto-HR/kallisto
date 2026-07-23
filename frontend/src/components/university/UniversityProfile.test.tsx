@@ -10,7 +10,6 @@ const university: University = {
   province: null,
   city: "Tashkent",
   country: "Uzbekistan",
-  ranking: 12,
   applicationFee: 100,
   acceptanceRate: 45,
   tuitionFee: 12000,
@@ -57,3 +56,5 @@ describe("UniversityProfile", () => {
     expect(screen.queryByRole("button", { name: /^save changes$/i })).not.toBeInTheDocument();
   });
 });
+
+

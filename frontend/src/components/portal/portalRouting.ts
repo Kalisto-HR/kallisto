@@ -33,7 +33,8 @@ export function routePathToPortalPage(pathname: string): PortalPageView {
 
   if (pathname.endsWith("/dashboard")) return "partner-dashboard";
   if (pathname.endsWith("/profile")) return "partner-university-profile";
-  if (pathname.endsWith("/application-structure")) return "partner-application-structure";
+  if (pathname.endsWith("/application-builder")) return "partner-application-builder";
+  if (pathname.endsWith("/application-structure")) return "partner-application-builder";
   if (pathname.endsWith("/applications")) return "partner-applications";
 
   return "staff-dashboard";
@@ -53,7 +54,7 @@ export function portalPageToRoutePath(
     const universityPageMap: Record<string, string> = {
       "partner-dashboard": routes.partner.dashboard(universityId),
       "partner-university-profile": routes.partner.profile(universityId),
-      "partner-application-structure": routes.partner.applicationStructure(universityId),
+      "partner-application-builder": routes.partner.applicationBuilder(universityId),
       "partner-applications": routes.partner.applications(universityId),
     };
     if (universityPageMap[page]) {

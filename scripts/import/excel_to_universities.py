@@ -68,20 +68,6 @@ UNIVERSITY_PROVINCES = {
     "Wuhan University": "Hubei",
 }
 
-# Approximate QS World Rankings 2026
-UNIVERSITY_RANKINGS = {
-    "Tsinghua University": 25,
-    "Peking University": 17,
-    "Fudan University": 50,
-    "Shanghai Jiao Tong University": 45,
-    "Zhejiang University": 47,
-    "University of Science and Technology of China": 137,
-    "Xi'an Jiaotong University": 344,
-    "Sun Yat-sen University": 261,
-    "Nanjing University": 133,
-    "Wuhan University": 199,
-}
-
 
 def parse_sheet_name(sheet_name: str) -> tuple[Optional[str], Optional[str]]:
     """Parse sheet name to extract university name and data type."""
@@ -774,7 +760,6 @@ def process_university(uni_name: str, sheets_data: dict[str, list[dict]]) -> dic
                 {"name": "recommendation_letters", "type": "file-upload", "required": True},
             ]
         },
-        "ranking": UNIVERSITY_RANKINGS.get(uni_name),
         "metadata": {
             "programs": [],
             "contact": {},
@@ -951,8 +936,7 @@ def main():
             safe_print(f"  Tuition: {university.get('tuitionFee')}")
             safe_print(f"  IELTS: {university.get('ieltsMin')}")
 
-    # Sort by ranking
-    universities.sort(key=lambda u: u.get("ranking") or 9999)
+    universities.sort(key=lambda u: u.get("name", ""))
 
     # Write output
     output_path = Path(args.output)
@@ -968,10 +952,11 @@ def main():
     print("\nSummary:")
     for uni in universities:
         programs = len(uni["metadata"].get("programs", []))
-        safe_print(f"  - {uni['name']}: {programs} programs, Ranking #{uni.get('ranking', 'N/A')}")
+        safe_print(f"  - {uni['name']}: {programs} programs")
 
     return 0
 
 
 if __name__ == "__main__":
     exit(main())
+

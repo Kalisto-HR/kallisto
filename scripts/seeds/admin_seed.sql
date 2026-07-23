@@ -108,15 +108,109 @@ VALUES
   ('5b8e0da4-3e43-4e69-bf5b-78fad953b904', 'staff.user@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', 'Bob', 'Staff', 'staff', NULL, '2026-03-30 09:44:52.856714'),
   ('905dba79-70d6-4a00-8751-c5565b3a19e2', 'rs721@gmail.com', '$2a$10$6bh3UccxdQd7hWvxd25LJOd9QXk1NZf9Xs8p5X8NpCGFUAcs2n/.a', 'Rustam', 'Safaev', 'applicant', NULL, '2026-03-30 22:43:08.832032'),
   ('0e07b273-721c-46c8-9bdf-01006da787a0', 'abdulkhayevbilol@gmail.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', 'Bilol', 'Abdilxayev', 'applicant', NULL, '2026-03-30 09:38:21.089857'),
-  ('1fe4a36b-09cd-4c6d-b59c-ac236d8add41', 'jiang.long@duke.edu', '$2a$10$jf2hGcl3oV56NtuDQvS7euIyxMSXGfgmUDO0ibF2N2zduT/O9tYL6', 'Jiang', 'Long', 'applicant', NULL, '2026-04-05 08:23:53.49618'),
-  ('8d0342b3-ebc2-4c5a-9195-128ee4641844', 'tsinghua.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', '8f3ca3c2-8e66-5244-9b99-6f9fa6c29c7f', '2026-05-11 07:24:22.524004'),
-  ('49bf9fcc-f7cd-4a3a-8151-9f9727feaa54', 'peking.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', '33f03549-1561-583f-9024-2ae642209f67', '2026-05-11 07:24:22.524004'),
-  ('9777bef9-0ebb-45c5-ae57-da59cc208c3f', 'fudan.partner@example.com', '$2a$10$izwy57AAb.X.R4K09No64.QqDJt2LJx6Qe/InDHzriICaDjs8urtq', NULL, NULL, 'partner', '3c1b7456-0119-5206-9683-288291c6436c', '2026-05-11 07:24:22.524004'),
-  ('da23b6d8-e850-4985-b3e9-21a51a714f05', 'sjtu.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', '252e0f4f-8ca3-5844-bcb9-51b371bec54f', '2026-05-11 07:24:22.524004'),
-  ('23984484-8094-4742-88fd-b4d0b59dfc13', 'zhejiang.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', '36b875ac-a3b7-5dbc-8a4f-ff863f477484', '2026-05-11 07:24:22.524004'),
-  ('41ae67d5-3782-4133-9d34-e6f6062395bb', 'nanjing.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', '921b765f-9792-572e-89ec-32331fac953a', '2026-05-11 07:24:22.524004'),
-  ('aed3639f-3af2-4ad7-91df-0cb635bd962f', 'ustc.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', 'b6394d4d-581b-5255-8915-aecef7c5773a', '2026-05-11 07:24:22.524004'),
-  ('be172844-21cd-4255-9b8f-7ac432740350', 'wuhan.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', 'e53fe41d-77e6-5c66-86f6-0f1d79a96ffc', '2026-05-11 07:24:22.524004'),
-  ('f3577b6b-4405-4c77-bcf0-6b11e999da87', 'sysu.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', '0903e09d-36e8-592e-9362-4dc1e4e7c3f2', '2026-05-11 07:24:22.524004'),
-  ('c91a1d45-c9f1-46f4-9c17-6275eb2fd57a', 'xjtu.partner@example.com', '$2a$10$bxe.sRLQHSR3MaWLAsMGe.f4J2W2I8EhOcX4Pdqh8bK3D4fQhe/nm', NULL, NULL, 'partner', 'fa366464-bb1c-5100-b439-0aa4caa364cd', '2026-05-11 07:24:22.524004')
+  ('1fe4a36b-09cd-4c6d-b59c-ac236d8add41', 'jiang.long@duke.edu', '$2a$10$jf2hGcl3oV56NtuDQvS7euIyxMSXGfgmUDO0ibF2N2zduT/O9tYL6', 'Jiang', 'Long', 'applicant', NULL, '2026-04-05 08:23:53.49618')
 ON CONFLICT (email) DO NOTHING;
+
+-- Uzbekistan demo partner accounts.
+-- WARNING: local/demo only. Initial password is stored only as a bcrypt hash and must be replaced before production.
+WITH partner_seed(email, first_name, university_slug) AS (
+    VALUES
+        ('new-uzbekistan-university.partner@example.com', 'New Uzbekistan University', 'new-uzbekistan-university'),
+        ('tafu.partner@example.com', 'TAFU', 'tashkent-university-of-applied-sciences'),
+        ('webster.partner@example.com', 'Webster', 'webster-university-tashkent'),
+        ('turin.partner@example.com', 'Turin', 'turin-polytechnic-university-tashkent'),
+        ('mdis.partner@example.com', 'MDIS Tashkent', 'mdis-tashkent'),
+        ('millat-umidi.partner@example.com', 'Millat Umidi', 'millat-umidi-university'),
+        ('pharmaceutical-technical-university.partner@example.com', 'Pharmaceutical Technical University', 'pharmaceutical-technical-university'),
+        ('inha.partner@example.com', 'Inha', 'inha-university-tashkent'),
+        ('wiut.partner@example.com', 'WIUT', 'westminster-international-university-tashkent'),
+        ('team.partner@example.com', 'TEAM', 'team-university'),
+        ('amity.partner@example.com', 'Amity', 'amity-university-tashkent'),
+        ('bmu.partner@example.com', 'BMU', 'british-management-university-tashkent'),
+        ('cau.partner@example.com', 'CAU', 'central-asian-university'),
+        ('kimyo.partner@example.com', 'Kimyo', 'kimyo-international-university-tashkent'),
+        ('akfa.partner@example.com', 'AKFA', 'akfa-university'),
+        ('tiue.partner@example.com', 'TIUE', 'tashkent-international-university-of-education'),
+        ('udea.partner@example.com', 'UDEA', 'university-of-digital-economics-and-agrotechnologies'),
+        ('tsue.partner@example.com', 'TSUE', 'tashkent-state-university-of-economics'),
+        ('tuit.partner@example.com', 'TUIT', 'tashkent-university-of-information-technologies'),
+        ('samarkand-state-university.partner@example.com', 'Samarkand State University', 'samarkand-state-university')
+),
+resolved_partner_seed AS (
+    SELECT
+        uuid_generate_v5(uuid_ns_url(), 'kallisto-partner:' || ps.email) AS id,
+        ps.email,
+        ps.first_name,
+        u.id AS university_id
+    FROM partner_seed ps
+    JOIN universities u ON u.slug = ps.university_slug
+    WHERE u.country_code = 'UZ' AND u.is_active = TRUE
+)
+INSERT INTO users (
+    id, email, password, first_name, last_name, role, university_linked,
+    is_active, must_change_password, disabled_reason, created_at
+)
+SELECT
+    rps.id,
+    rps.email,
+    '$2a$10$AInckyTkkT/Fa1dYtPKlgO.TS49iGakbnL4zK095kkI8ypZmbXXWm',
+    rps.first_name,
+    'Partner',
+    'partner',
+    rps.university_id,
+    TRUE,
+    TRUE,
+    NULL,
+    NOW()
+FROM resolved_partner_seed rps
+ON CONFLICT (email) DO UPDATE
+SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    role = 'partner',
+    university_linked = EXCLUDED.university_linked,
+    is_active = TRUE,
+    must_change_password = TRUE,
+    disabled_reason = NULL;
+
+UPDATE universities u
+SET manager_id = p.id,
+    management_accounts_count = 1
+FROM users p
+WHERE p.role = 'partner'
+  AND p.is_active = TRUE
+  AND p.university_linked = u.id
+  AND u.country_code = 'UZ'
+  AND u.is_active = TRUE;
+
+UPDATE users p
+SET is_active = FALSE,
+    disabled_reason = COALESCE(disabled_reason, 'University archived during Uzbekistan migration')
+WHERE p.role = 'partner'
+  AND p.university_linked IN (
+      SELECT id FROM universities WHERE country_code = 'CN' OR country = 'China' OR is_active = FALSE
+  )
+  AND p.email NOT IN (
+      SELECT email FROM (VALUES
+        ('new-uzbekistan-university.partner@example.com'),
+        ('tafu.partner@example.com'),
+        ('webster.partner@example.com'),
+        ('turin.partner@example.com'),
+        ('mdis.partner@example.com'),
+        ('millat-umidi.partner@example.com'),
+        ('pharmaceutical-technical-university.partner@example.com'),
+        ('inha.partner@example.com'),
+        ('wiut.partner@example.com'),
+        ('team.partner@example.com'),
+        ('amity.partner@example.com'),
+        ('bmu.partner@example.com'),
+        ('cau.partner@example.com'),
+        ('kimyo.partner@example.com'),
+        ('akfa.partner@example.com'),
+        ('tiue.partner@example.com'),
+        ('udea.partner@example.com'),
+        ('tsue.partner@example.com'),
+        ('tuit.partner@example.com'),
+        ('samarkand-state-university.partner@example.com')
+      ) AS active_partner_emails(email)
+  );

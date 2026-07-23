@@ -37,9 +37,9 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, city_type,
 		        campus_vibe, application_schema, university_profile,
-		        ranking, created_at, metadata, application_fee
+		        created_at, metadata, application_fee
 		 FROM universities
-		 ORDER BY ranking ASC NULLS LAST, name ASC
+		 ORDER BY name ASC
 		 LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
@@ -72,7 +72,7 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, city_type,
 		        campus_vibe, application_schema, university_profile,
-		        ranking, created_at, metadata, application_fee
+		        created_at, metadata, application_fee
 		 FROM universities WHERE id = $1`,
 		id,
 	)
@@ -113,10 +113,10 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 				name, description, province, city, country, acceptance_rate, tuition_fee, application_deadline,
 			        ielts_min, toefl_min, scholarship_available, city_type,
 			        campus_vibe,
-				application_schema, university_profile, ranking, metadata, application_fee
+				application_schema, university_profile, metadata, application_fee
 			)
 			VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 			)
 			 RETURNING id`,
 			req.Name,
@@ -134,7 +134,6 @@ func CreateUniversity(ctx context.Context, req *models.CreateUniversityRequest) 
 			req.CampusVibe,
 			req.ApplicationSchema,
 			req.UniversityProfile,
-			req.Ranking,
 			req.Metadata,
 			req.ApplicationFee,
 		).Scan(&universityId); err != nil {
@@ -267,12 +266,6 @@ func UpdateUniversity(ctx context.Context, id string, req *models.UpdateUniversi
 		args = append(args, req.UniversityProfile)
 		changedFields = append(changedFields, "university_profile")
 	}
-	if req.Ranking != nil {
-		argCount++
-		updates = append(updates, fmt.Sprintf("ranking = $%d", argCount))
-		args = append(args, *req.Ranking)
-		changedFields = append(changedFields, "ranking")
-	}
 	if req.Metadata != nil {
 		argCount++
 		updates = append(updates, fmt.Sprintf("metadata = $%d", argCount))
@@ -397,10 +390,10 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 						id, name, description, province, city, country, acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, city_type,
 		        campus_vibe,
-						application_schema, university_profile, ranking, metadata, application_fee
+						application_schema, university_profile, metadata, application_fee
 					)
 					VALUES (
-						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 					)
 					ON CONFLICT (id) DO UPDATE SET
 						name = EXCLUDED.name,
@@ -418,7 +411,6 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 						campus_vibe = EXCLUDED.campus_vibe,
 						application_schema = EXCLUDED.application_schema,
 						university_profile = EXCLUDED.university_profile,
-						ranking = EXCLUDED.ranking,
 						metadata = EXCLUDED.metadata,
 						application_fee = EXCLUDED.application_fee
 				`,
@@ -438,7 +430,6 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 					req.CampusVibe,
 					req.ApplicationSchema,
 					req.UniversityProfile,
-					req.Ranking,
 					req.Metadata,
 					req.ApplicationFee,
 				)
@@ -452,10 +443,10 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 						name, description, province, city, country, acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available, city_type,
 		        campus_vibe,
-						application_schema, university_profile, ranking, metadata, application_fee
+						application_schema, university_profile, metadata, application_fee
 					)
 					VALUES (
-						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+						$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 					)
 					RETURNING id
 				`,
@@ -474,7 +465,6 @@ func ImportUniversities(ctx context.Context, reqs []models.ImportUniversityReque
 					req.CampusVibe,
 					req.ApplicationSchema,
 					req.UniversityProfile,
-					req.Ranking,
 					req.Metadata,
 					req.ApplicationFee,
 				).Scan(&universityId); err != nil {

@@ -99,7 +99,7 @@ func AddUniversityToBasket(ctx context.Context, userId, universityId string) err
 	}
 
 	var exists bool
-	if err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM universities WHERE id=$1)", universityId).Scan(&exists); err != nil {
+	if err := conn.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM universities WHERE id=$1 AND is_active = TRUE)", universityId).Scan(&exists); err != nil {
 		return fmt.Errorf("failed to check university existence: %s", err.Error())
 	}
 	if !exists {
@@ -334,11 +334,12 @@ func getUniversitiesByIds(ctx context.Context, conn *pgxpool.Pool, universityIds
 
 	rows, err := conn.Query(ctx, `
 		SELECT
-			id, name, province, city, country, ranking, application_fee,
+			id, name, description, province, city, country, application_fee,
 			acceptance_rate, tuition_fee, application_deadline,
-			ielts_min, toefl_min, scholarship_available, city_type, campus_vibe
+			ielts_min, toefl_min, scholarship_available, city_type, campus_vibe,
+			NULL::text AS program_groups
 		FROM universities
-		WHERE id::text = ANY($1::text[])
+		WHERE id::text = ANY($1::text[]) AND is_active = TRUE
 		ORDER BY array_position($1::text[], id::text)
 	`, universityIds)
 	if err != nil {

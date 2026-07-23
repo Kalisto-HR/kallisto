@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthShell } from "../../components/layout/AuthShell";
 import { ErrorState } from "../../components/common/PageState";
 import { Button } from "../../components/ui/button";
@@ -16,6 +17,7 @@ import {
 } from "../../services/sessionEvents";
 
 export function SignInPage() {
+  const { t } = useTranslation("common");
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,13 +43,13 @@ export function SignInPage() {
     try {
       const result = await signIn(email, password);
       if (!result.ok) {
-        setError(result.error ?? "Sign in failed");
+        setError(result.error ?? t("auth.signIn.errors.failed"));
         return;
       }
 
       const sessionUser = await getSessionUser();
       if (!sessionUser) {
-        setError("Failed to resolve session after sign in");
+        setError(t("auth.signIn.errors.session"));
         return;
       }
 
@@ -58,38 +60,38 @@ export function SignInPage() {
   };
 
   return (
-    <AuthShell title="Sign In" subtitle="Access your Kallisto workspace">
+    <AuthShell title={t("auth.signIn.title")} subtitle={t("auth.signIn.subtitle")}>
       <form className="space-y-4" onSubmit={onSubmit}>
         {reason === SESSION_EXPIRED_REASON ? (
-          <div className="brand-info-banner">Your session expired. Please sign in again.</div>
+          <div className="brand-info-banner">{t("auth.signIn.reasons.expired")}</div>
         ) : null}
         {reason === SESSION_REVOKED_REASON ? (
-          <div className="brand-info-banner">Your session was ended on the server. Please sign in again.</div>
+          <div className="brand-info-banner">{t("auth.signIn.reasons.revoked")}</div>
         ) : null}
         {reason === PASSWORD_CHANGED_REASON ? (
-          <div className="brand-info-banner">Your password changed. Please sign in again with the new password.</div>
+          <div className="brand-info-banner">{t("auth.signIn.reasons.passwordChanged")}</div>
         ) : null}
         {reason === ACCOUNT_UPDATED_REASON ? (
-          <div className="brand-info-banner">Your account access changed. Please sign in again.</div>
+          <div className="brand-info-banner">{t("auth.signIn.reasons.accountUpdated")}</div>
         ) : null}
 
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("auth.signIn.email")}</Label>
           <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("auth.signIn.password")}</Label>
           <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
         </div>
 
         {error ? <ErrorState message={error} /> : null}
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? t("auth.signIn.submitting") : t("auth.signIn.submit")}
         </Button>
 
         <div className="text-sm text-muted-foreground">
-          Need an applicant account? <Link to={routes.auth.signUp} className="text-primary underline underline-offset-4">Create one</Link>
+          {t("auth.signIn.needAccount")} <Link to={routes.auth.signUp} className="text-primary underline underline-offset-4">{t("auth.signIn.createOne")}</Link>
         </div>
       </form>
     </AuthShell>

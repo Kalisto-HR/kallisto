@@ -4,6 +4,7 @@ package models
 import (
 	"encoding/json"
 	"kallisto/services/backend/internal/shared/applicationstatus"
+	sharedmodels "kallisto/services/backend/internal/shared/models"
 	"time"
 )
 
@@ -19,20 +20,25 @@ const (
 )
 
 type Application struct {
-	UserId              string          `json:"user_id" db:"user_id"`
-	UniversityId        string          `json:"university_id" db:"university_id"`
-	ApplicationCycle    string          `json:"application_cycle" db:"application_cycle"`
-	Status              string          `json:"status" db:"status"`
-	Data                json.RawMessage `json:"data,omitempty" db:"data"`
-	SubmittedAt         *time.Time      `json:"submitted_at,omitempty" db:"submitted_at"`
-	CreatedAt           time.Time       `json:"created_at" db:"created_at"`
-	StatusProgress      int             `json:"status_progress" db:"status_progress"`
-	StatusStage         string          `json:"status_stage" db:"status_stage"`
-	IsFinal             bool            `json:"is_final" db:"is_final"`
-	IsSuccessfulOutcome bool            `json:"is_successful_outcome" db:"is_successful_outcome"`
+	Id                  string                                `json:"id" db:"id"`
+	UserId              string                                `json:"user_id" db:"user_id"`
+	UniversityId        string                                `json:"university_id" db:"university_id"`
+	ApplicationCycle    string                                `json:"application_cycle" db:"application_cycle"`
+	Status              string                                `json:"status" db:"status"`
+	Data                json.RawMessage                       `json:"data,omitempty" db:"data"`
+	SubmittedAt         *time.Time                            `json:"submitted_at,omitempty" db:"submitted_at"`
+	CreatedAt           time.Time                             `json:"created_at" db:"created_at"`
+	StatusProgress      int                                   `json:"status_progress" db:"status_progress"`
+	StatusStage         string                                `json:"status_stage" db:"status_stage"`
+	IsFinal             bool                                  `json:"is_final" db:"is_final"`
+	IsSuccessfulOutcome bool                                  `json:"is_successful_outcome" db:"is_successful_outcome"`
+	History             []sharedmodels.ApplicationStatusEvent `json:"history,omitempty" db:"-"`
+	Tasks               []sharedmodels.ApplicationTask        `json:"tasks,omitempty" db:"-"`
+	Decision            *sharedmodels.ApplicationDecision     `json:"decision,omitempty" db:"-"`
 }
 
 type ApplicationListItem struct {
+	Id                  string     `json:"id" db:"id"`
 	UniversityId        string     `json:"university_id" db:"university_id"`
 	UniversityName      string     `json:"university_name" db:"university_name"`
 	ApplicationCycle    string     `json:"application_cycle" db:"application_cycle"`
@@ -58,6 +64,10 @@ type ApplicationUpdateRequest struct {
 
 type ApplicationImportTestScoresRequest struct {
 	TestScoreIDs []string `json:"test_score_ids,omitempty"`
+}
+
+type ApplicationTaskResponseRequest struct {
+	Response string `json:"response"`
 }
 
 type ImportedTestScore struct {

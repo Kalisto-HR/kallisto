@@ -77,6 +77,13 @@ export async function submitApplicantApplication(universityId: string, cycle: st
   }
 }
 
+export async function deleteApplicantApplicationDraft(universityId: string, cycle: string): Promise<void> {
+  const result = await api.delete<{ msg: string }>(apiRoutes.applicant.applications.detail(universityId, cycle));
+  if (!result.ok) {
+    throw new Error(result.error ?? "Failed to delete draft application");
+  }
+}
+
 export async function importApplicantProfileTestScoresToApplication(
   universityId: string,
   cycle: string,
@@ -95,6 +102,21 @@ export async function importApplicantProfileTestScoresToApplication(
   }
 
   return normalizeApplicationTestScoreImportResult(envelope.data);
+}
+
+export async function respondToApplicantApplicationTask(
+  universityId: string,
+  cycle: string,
+  taskId: string,
+  response: string,
+): Promise<void> {
+  const result = await api.post<{ msg: string }>(
+    apiRoutes.applicant.applications.respondTask(universityId, cycle, taskId),
+    { response },
+  );
+  if (!result.ok) {
+    throw new Error(result.error ?? "Failed to submit task response");
+  }
 }
 
 export async function uploadApplicantApplicationFiles(

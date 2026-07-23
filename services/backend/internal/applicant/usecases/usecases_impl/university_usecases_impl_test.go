@@ -31,7 +31,7 @@ func TestGetUniversityByIdUsesLatestPublishedApplicationSchema(t *testing.T) {
 		            FROM university_application_structure_versions
 		            WHERE university_id = universities.id AND published = TRUE
 		        ) AS application_structure_published,
-		        university_profile, ranking,
+		        university_profile,
 		        created_at, metadata, application_fee
 		 FROM universities
 		 WHERE id=$1`)
@@ -44,7 +44,6 @@ func TestGetUniversityByIdUsesLatestPublishedApplicationSchema(t *testing.T) {
 	}`)
 	city := "Tashkent"
 	country := "Uzbekistan"
-	ranking := 8
 	applicationFee := 150.0
 
 	mock.ExpectQuery(queryPattern).
@@ -70,7 +69,6 @@ func TestGetUniversityByIdUsesLatestPublishedApplicationSchema(t *testing.T) {
 				"application_schema",
 				"application_structure_published",
 				"university_profile",
-				"ranking",
 				"created_at",
 				"metadata",
 				"application_fee",
@@ -94,7 +92,6 @@ func TestGetUniversityByIdUsesLatestPublishedApplicationSchema(t *testing.T) {
 				nil,
 				true,
 				nil,
-				&ranking,
 				time.Now().UTC(),
 				nil,
 				&applicationFee,
@@ -159,14 +156,13 @@ func TestGetUniversityByIdFallsBackWhenNoPublishedApplicationSchemaExists(t *tes
 		            FROM university_application_structure_versions
 		            WHERE university_id = universities.id AND published = TRUE
 		        ) AS application_structure_published,
-		        university_profile, ranking,
+		        university_profile,
 		        created_at, metadata, application_fee
 		 FROM universities
 		 WHERE id=$1`)
 
 	city := "Bukhara"
 	country := "Uzbekistan"
-	ranking := 14
 	applicationFee := 120.0
 
 	mock.ExpectQuery(queryPattern).
@@ -192,7 +188,6 @@ func TestGetUniversityByIdFallsBackWhenNoPublishedApplicationSchemaExists(t *tes
 				"application_schema",
 				"application_structure_published",
 				"university_profile",
-				"ranking",
 				"created_at",
 				"metadata",
 				"application_fee",
@@ -216,7 +211,6 @@ func TestGetUniversityByIdFallsBackWhenNoPublishedApplicationSchemaExists(t *tes
 				nil,
 				false,
 				nil,
-				&ranking,
 				time.Now().UTC(),
 				nil,
 				&applicationFee,

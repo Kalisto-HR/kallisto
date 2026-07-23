@@ -1,9 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ApplicantComparePage } from "./ApplicantComparePage";
 import { clearCompareList, fetchCompareList, removeCompareItem } from "../../services/applicant/compareService";
-import { addBasketItem, fetchBasketState, removeBasketItem } from "../../services/applicant/basketService";
+import type { CompareUniversityItem } from "../../types/domain";
 
 vi.mock("../../services/applicant/compareService", () => ({
   clearCompareList: vi.fn(),
@@ -11,52 +11,94 @@ vi.mock("../../services/applicant/compareService", () => ({
   removeCompareItem: vi.fn(),
   MAX_COMPARE_ITEMS: 4,
   COMPARE_LIMIT_MESSAGE: "You already have 4 universities in Compare. Remove one to add this university.",
+  PREMIUM_REQUIRED_MESSAGE: "PREMIUM_REQUIRED",
 }));
 
-vi.mock("../../services/applicant/basketService", () => ({
-  addBasketItem: vi.fn(),
-  fetchBasketState: vi.fn(),
-  removeBasketItem: vi.fn(),
-}));
+function compareUniversity(overrides: Partial<CompareUniversityItem>): CompareUniversityItem {
+  return {
+    id: "uni-1",
+    slug: "uni-1",
+    name: "Bukhara State University",
+    region: "bukhara",
+    city: "bukhara",
+    averageContractAmount: 32000000,
+    contractCurrency: "UZS",
+    contractPeriod: "year",
+    universityType: "public",
+    languagesOfInstruction: ["uzbek", "russian"],
+    studyFormats: ["full_time"],
+    financialSupport: {
+      scholarships: "available",
+      governmentGrants: "not_provided",
+      tuitionDiscounts: "varies",
+      otherSupport: "not_provided",
+    },
+    dormitoryStatus: "limited",
+    dormitoryNote: "Available for a limited number of students.",
+    accreditation: {
+      licenceStatus: "verified",
+      nationalAccreditationStatus: "not_provided",
+      internationalAccreditationStatus: "not_provided",
+    },
+    internationalPartnerships: {
+      status: "not_provided",
+      verifiedCount: 0,
+      partners: [],
+    },
+    mobility: {
+      exchange: "not_provided",
+      academicMobility: "not_provided",
+      doubleDegree: "not_provided",
+      semesterAbroad: "not_provided",
+    },
+    careerSupport: {
+      careerCentre: "available",
+      internshipSupport: "available",
+      employerPartnerships: "not_provided",
+      jobFairs: "not_provided",
+      entrepreneurshipSupport: "not_provided",
+      employmentData: null,
+    },
+    admissions: {
+      deadline: "2026-08-15",
+      deadlineStatus: "exact",
+      universityApplicationFee: { amount: 150000, currency: "UZS", status: "provided" },
+      kallistoApplicationFee: { amount: 10000, currency: "UZS", status: "provided" },
+      canApplyThroughKallisto: true,
+      kallistoApplicationStatus: "open",
+    },
+    ...overrides,
+  };
+}
 
 describe("ApplicantComparePage", () => {
   beforeEach(() => {
     vi.mocked(fetchCompareList).mockResolvedValue([
-      {
-        id: "uni-1",
-        name: "Bukhara State University",
-        province: null,
-        city: "Bukhara",
-        country: "Uzbekistan",
-        ranking: 42,
-        applicationFee: 120,
-        acceptanceRate: 0.32,
-        tuitionFee: 18000,
-        applicationDeadline: null,
-        ieltsMin: 6,
-        toeflMin: 80,
-        scholarshipAvailable: true,
-        cityType: "urban",
-        campusVibe: "historic",
-      },
+      compareUniversity({ id: "uni-1", name: "Bukhara State University", slug: "bukhara-state-university" }),
+      compareUniversity({
+        id: "uni-2",
+        name: "AKFA University",
+        slug: "akfa-university",
+        region: "tashkent",
+        city: "tashkent",
+        universityType: "private",
+        languagesOfInstruction: ["english"],
+        averageContractAmount: null,
+        admissions: {
+          deadline: null,
+          deadlineStatus: "not_provided",
+          universityApplicationFee: { amount: null, currency: "UZS", status: "not_provided" },
+          kallistoApplicationFee: { amount: 10000, currency: "UZS", status: "provided" },
+          canApplyThroughKallisto: false,
+          kallistoApplicationStatus: "not_available",
+        },
+      }),
     ]);
-    vi.mocked(fetchBasketState).mockResolvedValue({
-      items: [],
-      selectedPlanId: null,
-      recommendedPlanId: null,
-      totalUniversities: 0,
-      maxPlanCapacity: 4,
-    });
     vi.mocked(clearCompareList).mockResolvedValue(undefined);
     vi.mocked(removeCompareItem).mockResolvedValue(undefined);
-    vi.mocked(addBasketItem).mockResolvedValue(undefined);
-    vi.mocked(removeBasketItem).mockResolvedValue(undefined);
   });
 
-  it("surfaces basket failures instead of swallowing them", async () => {
-    const user = userEvent.setup();
-    vi.mocked(addBasketItem).mockRejectedValueOnce(new Error("basket update failed"));
-
+  it("renders approved institution-level criteria without program, ranking, or Match Score rows", async () => {
     render(
       <MemoryRouter>
         <Routes>
@@ -65,14 +107,29 @@ describe("ApplicantComparePage", () => {
       </MemoryRouter>,
     );
 
-    expect((await screen.findAllByText(/bukhara state university/i)).length).toBeGreaterThan(0);
+    expect(await screen.findAllByText(/bukhara state university/i)).not.toHaveLength(0);
+    expect(screen.getAllByText("Average contract amount")).not.toHaveLength(0);
+    expect(screen.getAllByText("Languages of instruction")).not.toHaveLength(0);
+    expect(screen.getAllByText("Application availability through Kallisto")).not.toHaveLength(0);
+    expect(screen.queryByText(/match score/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/program duration/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ranking/i)).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getAllByRole("button", { name: /add to basket/i })[0]);
+  it("hides equivalent rows in differences-only mode while keeping rows with missing data", async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <Routes>
+          <Route path="/" element={<ApplicantComparePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
 
-    await waitFor(() => {
-      expect(addBasketItem).toHaveBeenCalledWith("uni-1");
-    });
-    expect(await screen.findByText(/basket update failed/i)).toBeInTheDocument();
-    expect(screen.getByText(/unable to update your basket right now/i)).toBeInTheDocument();
+    await screen.findAllByText(/akfa university/i);
+    await user.click(screen.getByText("Show differences only"));
+
+    expect(screen.queryByText("Employment and career support")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Average contract amount")).not.toHaveLength(0);
   });
 });

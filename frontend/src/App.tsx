@@ -1,4 +1,4 @@
-import { Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
 import { SessionProvider } from "./context/SessionContext";
 import { RoleProtectedRoute } from "./components/routing/RoleProtectedRoute";
@@ -21,7 +21,6 @@ import { ApplicantComparePage } from "./pages/applicant/ApplicantComparePage";
 import { ApplicantSettingsPage } from "./pages/applicant/ApplicantSettingsPage";
 import { ApplicantHelpPage } from "./pages/applicant/ApplicantHelpPage";
 import { ApplicantBillingPage } from "./pages/applicant/ApplicantBillingPage";
-import { ApplicantCheckoutPage } from "./pages/applicant/ApplicantCheckoutPage";
 import { PartnerDashboardPage } from "./pages/partner/PartnerDashboardPage";
 import { PartnerUniversityProfilePage } from "./pages/partner/PartnerUniversityProfilePage";
 import { PartnerApplicationStructurePage } from "./pages/partner/PartnerApplicationStructurePage";
@@ -38,13 +37,75 @@ import { StaffUniversityEditPage } from "./pages/staff/StaffUniversityEditPage";
 import { ForbiddenPage } from "./pages/ForbiddenPage";
 import { LandingPage } from "./pages/LandingPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { ErrorState, LoadingState } from "./components/common/PageState";
+import { fetchApplicantProfile } from "./services/applicant/profileService";
+import { getApplicantProfileCompletion } from "./utils/applicantProfileCompletion";
+import { useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import type { Profile } from "./types/domain";
 
 function ApplicantAreaLayout() {
   return (
     <ApplicantShell>
-      <Outlet />
+      <ApplicantProfileGate>
+        <Outlet />
+      </ApplicantProfileGate>
     </ApplicantShell>
   );
+}
+
+function ApplicantProfileGate({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("common");
+  const location = useLocation();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isSettingsPage = location.pathname === routes.applicant.settings;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchApplicantProfile();
+        if (!cancelled) {
+          setProfile(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t("applicantFlow.profileGate.loadFailed"));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, t]);
+
+  if (loading) {
+    return <LoadingState label={t("applicantFlow.profileGate.loading")} />;
+  }
+
+  if (error) {
+    return <ErrorState message={error} />;
+  }
+
+  const completion = getApplicantProfileCompletion(profile);
+  if (!completion.complete && !isSettingsPage) {
+    const from = `${location.pathname}${location.search}`;
+    return <Navigate to={`${routes.applicant.settings}?onboarding=1&from=${encodeURIComponent(from)}`} replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function PartnerOrStaffLayout() {
@@ -85,7 +146,6 @@ export default function App() {
             <Route path="settings" element={<ApplicantSettingsPage />} />
             <Route path="help" element={<ApplicantHelpPage />} />
             <Route path="billing" element={<ApplicantBillingPage />} />
-            <Route path="checkout" element={<ApplicantCheckoutPage />} />
           </Route>
         </Route>
 
@@ -93,7 +153,8 @@ export default function App() {
           <Route path="/partner/:universityId" element={<PartnerOrStaffLayout />}>
             <Route path="dashboard" element={<PartnerDashboardPage />} />
             <Route path="profile" element={<PartnerUniversityProfilePage />} />
-            <Route path="application-structure" element={<PartnerApplicationStructurePage />} />
+            <Route path="application-builder" element={<PartnerApplicationStructurePage />} />
+            <Route path="application-structure" element={<Navigate to="../application-builder" replace />} />
             <Route path="applications" element={<PartnerApplicationsPage />} />
           </Route>
         </Route>

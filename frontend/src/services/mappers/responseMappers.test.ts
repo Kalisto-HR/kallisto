@@ -47,7 +47,6 @@ describe("response mappers", () => {
         province: "Tashkent",
         city: "Tashkent",
         country: "UZ",
-        ranking: 1,
         application_fee: 25,
         acceptance_rate: 65,
         tuition_fee: 1000,
@@ -65,7 +64,6 @@ describe("response mappers", () => {
       province: "Tashkent",
       city: "Tashkent",
       country: "UZ",
-      ranking: 1,
       applicationFee: 25,
       acceptanceRate: 65,
       tuitionFee: 1000,
@@ -177,6 +175,7 @@ describe("response mappers", () => {
   it("normalizes application and test-score payloads", () => {
     expect(
       normalizeApplicantApplicationListItem({
+        id: "app-1",
         university_id: "uni-1",
         university_name: "Example",
         application_cycle: "2026",
@@ -185,6 +184,7 @@ describe("response mappers", () => {
         submitted_at: null,
       }),
     ).toEqual({
+      id: "app-1",
       universityId: "uni-1",
       universityName: "Example",
       applicationCycle: "2026",
@@ -199,6 +199,7 @@ describe("response mappers", () => {
 
     expect(
       normalizeApplicantApplication({
+        id: "app-1",
         user_id: "user-1",
         university_id: "uni-1",
         application_cycle: "2026",
@@ -208,6 +209,7 @@ describe("response mappers", () => {
         created_at: "2026-01-01",
       }),
     ).toEqual({
+      id: "app-1",
       userId: "user-1",
       universityId: "uni-1",
       applicationCycle: "2026",
@@ -219,6 +221,9 @@ describe("response mappers", () => {
       statusStage: "application_received",
       isFinal: false,
       isSuccessfulOutcome: false,
+      history: [],
+      tasks: [],
+      decision: null,
     });
 
     expect(
@@ -291,3 +296,5 @@ describe("response mappers", () => {
     expect(toPortalRole("weird")).toBe("applicant");
   });
 });
+
+

@@ -14,7 +14,7 @@
     "help": "Yordam",
     "university": "Universitet",
     "universityProfile": "Universitet profili",
-    "applicationStructure": "Ariza tuzilmasi",
+    "applicationBuilder": "Ariza konstruktori",
     "submissions": "Arizalar",
     "staffWorkspace": "Staff ish maydoni",
     "students": "Talabalar",
@@ -38,7 +38,8 @@
     "applicantNavigation": "Abituriyent navigatsiyasi",
     "applicantNavigationDescription": "Abituriyent kabineti navigatsiya havolalari.",
     "portalNavigation": "Navigatsiya menyusi",
-    "portalNavigationDescription": "Hamkor va staff portali funksiyalariga kirish"
+    "portalNavigationDescription": "Hamkor va staff portali funksiyalariga kirish",
+    "billingAndCredits": "To‘lov va kreditlar"
   },
   "actions": {
     "view": "Ko‘rish",
@@ -51,7 +52,17 @@
     "logOut": "Chiqish",
     "save": "Saqlash",
     "uploading": "Yuklanmoqda...",
-    "uploadPhoto": "Rasm yuklash"
+    "uploadPhoto": "Rasm yuklash",
+    "add": "Qo‘shish",
+    "added": "Qo‘shildi",
+    "remove": "Olib tashlash",
+    "cancel": "Bekor qilish",
+    "delete": "O‘chirish",
+    "retry": "Qayta urinish",
+    "open": "Ochish",
+    "back": "Orqaga",
+    "clear": "Tozalash",
+    "saving": "Saqlanmoqda..."
   },
   "labels": {
     "applicantAccount": "Abituriyent akkaunti",
@@ -64,7 +75,9 @@
     "unknown": "Noma’lum",
     "planned": "rejalashtirilgan",
     "regionOfResidence": "Yashash hududi",
-    "selectRegion": "Hududni tanlang"
+    "selectRegion": "Hududni tanlang",
+    "applicant": "Abituriyent",
+    "workspaceUser": "Portal foydalanuvchisi"
   },
   "regions": {
     "tashkent_city": "Toshkent shahri",
@@ -84,6 +97,152 @@
   },
   "validation": {
     "invalidRegion": "O‘zbekiston hududi noto‘g‘ri ko‘rsatilgan."
+  },
+  "universityFilters": {
+    "title": "Filtr",
+    "contractPrice": "Kontrakt narxi (so'm)",
+    "currency": "O'zbek so'm",
+    "region": "Hudud",
+    "all": "Hammasi",
+    "studyFormat": "Ta'lim shakli",
+    "language": "Ta'lim tili",
+    "clear": "Filtrlarni tozalash",
+    "noResults": "Natija topilmadi",
+    "loading": "Filtrlar yuklanmoqda...",
+    "mobileDescription": "Narx, hudud, ta'lim shakli va ta'lim tili filtrlarini tanlang.",
+    "noOptions": "Hozircha tasdiqlangan variantlar mavjud emas.",
+    "noPriceData": "Hozircha tasdiqlangan kontrakt narxi ma'lumoti mavjud emas.",
+    "regionOptions": {
+      "tashkent": "Toshkent",
+      "samarkand": "Samarqand",
+      "bukhara": "Buxoro",
+      "andijan": "Andijon",
+      "fergana": "Farg'ona",
+      "namangan": "Namangan",
+      "nukus": "Nukus",
+      "qarshi": "Qarshi",
+      "urganch": "Urganch"
+    },
+    "studyFormatOptions": {
+      "full-time": "Kunduzgi",
+      "part-time": "Sirtqi",
+      "evening": "Kechki",
+      "distance": "Masofaviy"
+    },
+    "languageOptions": {
+      "uzbek": "O'zbek",
+      "russian": "Rus",
+      "english": "Ingliz",
+      "karakalpak": "Qoraqalpoq"
+    }
+  },
+  "comparePage": {
+    "title": "Universitetlarni taqqoslash",
+    "subtitle": "{{count}} ta O‘zbekiston universitetini muassasa darajasida taqqoslash",
+    "tableTitle": "Universitetlar taqqoslovi",
+    "criteria": "Mezon",
+    "loading": "Taqqoslash yuklanmoqda...",
+    "emptyTitle": "Kamida ikkita universitet tanlang",
+    "emptyDescription": "Qidiruv yoki universitet sahifasidan 2 tadan 4 tagacha O‘zbekiston universitetini qo‘shing.",
+    "rows": {
+      "location": "Hudud / shahar",
+      "averageContract": "O‘rtacha kontrakt miqdori",
+      "universityType": "Universitet turi",
+      "languages": "Ta’lim tillari",
+      "studyFormats": "Ta’lim shakllari",
+      "financialSupport": "Stipendiya va grantlar",
+      "dormitory": "Yotoqxona mavjudligi",
+      "accreditation": "Akkreditatsiya va litsenziya",
+      "partnerships": "Xalqaro hamkorliklar",
+      "mobility": "Almashinuv va mobillik",
+      "career": "Bandlik va karyera ko‘magi",
+      "deadline": "Ariza muddati",
+      "applicationFee": "Ariza to‘lovi",
+      "apply": "Kallisto orqali ariza topshirish"
+    },
+    "actions": {
+      "addMore": "Universitet qo‘shish",
+      "clear": "Taqqoslashni tozalash",
+      "remove": "Olib tashlash",
+      "apply": "Kallisto orqali topshirish",
+      "differencesOnly": "Faqat farqlarni ko‘rsatish"
+    },
+    "values": {
+      "notProvided": "Ko‘rsatilmagan",
+      "free": "Bepul",
+      "region": "Hudud",
+      "city": "Shahar",
+      "scholarships": "Universitet stipendiyalari",
+      "governmentGrants": "Davlat grantlari",
+      "tuitionDiscounts": "Kontrakt chegirmalari",
+      "otherSupport": "Boshqa yordam",
+      "licence": "Faoliyat litsenziyasi",
+      "nationalAccreditation": "Milliy akkreditatsiya",
+      "internationalAccreditation": "Xalqaro akkreditatsiya",
+      "verifiedPartnerships": "{{count}} tasdiqlangan hamkorlik",
+      "exchange": "Talabalar almashinuvi",
+      "academicMobility": "Akademik mobillik",
+      "doubleDegree": "Ikki diplom",
+      "semesterAbroad": "Chet elda semestr",
+      "careerCentre": "Karyera markazi",
+      "internshipSupport": "Amaliyot ko‘magi",
+      "employerPartnerships": "Ish beruvchilar bilan hamkorlik",
+      "jobFairs": "Bo‘sh ish o‘rinlari yarmarkasi",
+      "entrepreneurshipSupport": "Tadbirkorlik ko‘magi",
+      "employmentData": "Bandlik statistikasi",
+      "universityApplicationFee": "Universitet ariza to‘lovi",
+      "kallistoApplicationFee": "Kallisto servis to‘lovi"
+    },
+    "statuses": {
+      "available": "Mavjud",
+      "not_available": "Mavjud emas",
+      "limited": "Cheklangan",
+      "varies": "Farq qiladi",
+      "not_provided": "Ko‘rsatilmagan",
+      "verified": "Tasdiqlangan",
+      "active": "Faol",
+      "pending_verification": "Tekshiruv kutilmoqda",
+      "provided": "Ko‘rsatilgan",
+      "free": "Bepul",
+      "open": "Qabul ochiq",
+      "closed": "Qabul yopiq"
+    },
+    "deadlineStatuses": {
+      "exact": "Aniq sana",
+      "open": "Qabul ochiq",
+      "closed": "Qabul yopiq",
+      "varies_by_program": "Dasturga qarab farq qiladi",
+      "not_provided": "Ko‘rsatilmagan"
+    },
+    "applicationStatuses": {
+      "open": "Ariza topshirish",
+      "opening_soon": "Qabul tez orada ochiladi",
+      "closed": "Qabul yopiq",
+      "not_available": "Hozircha mavjud emas"
+    },
+    "universityTypes": {
+      "public": "Davlat",
+      "private": "Xususiy",
+      "international_university": "Xalqaro universitet",
+      "foreign_university_branch": "Xorijiy universitet filiali"
+    },
+    "languages": {
+      "uzbek": "O‘zbek",
+      "russian": "Rus",
+      "english": "Ingliz",
+      "karakalpak": "Qoraqalpoq"
+    },
+    "studyFormats": {
+      "full_time": "Kunduzgi",
+      "evening": "Kechki",
+      "part_time": "Sirtqi",
+      "online": "Onlayn"
+    },
+    "errors": {
+      "title": "Taqqoslashni yangilab bo‘lmadi",
+      "removeFailed": "Universitetni olib tashlab bo‘lmadi.",
+      "clearFailed": "Taqqoslashni tozalab bo‘lmadi."
+    }
   },
   "staffSections": {
     "status": "Bo‘lim ochiq",
@@ -137,6 +296,77 @@
       "nextStep": "Marshrut endi ochiq. Role management UI role-specific permissions yakunlangandan keyin qo‘shiladi."
     }
   },
+  "billing": {
+    "badge": "To'lov",
+    "title": "To'lov",
+    "subtitle": "Ariza topshirish uchun kreditlar va universitetlarni taqqoslash hamda Match Score uchun Premium sotib oling. Premium bepul ariza topshirishni o'z ichiga olmaydi.",
+    "loading": "To'lov ma'lumotlari yuklanmoqda...",
+    "emptyTitle": "To'lov ma'lumotlari mavjud emas",
+    "emptyDescription": "Akkauntingiz uchun to'lov mahsulotlarini yuklab bo'lmadi.",
+    "errors": {
+      "loadFailed": "To'lov xulosasini yuklab bo'lmadi"
+    },
+    "metrics": {
+      "availableCredits": "Mavjud kreditlar",
+      "availableCreditsHelp": "Har bir topshirish 1 kredit ishlatadi",
+      "purchased": "Sotib olingan kreditlar",
+      "purchasedHelp": "Muvaffaqiyatli kredit xaridlari",
+      "used": "Ishlatilgan kreditlar",
+      "usedHelp": "Topshirilgan arizalar",
+      "applications": "Qoralama / topshirilgan",
+      "applicationsHelp": "Akkauntingizdagi arizalar"
+    },
+    "rules": {
+      "title": "Ariza kreditlari va Premium alohida",
+      "description": "Ariza kreditlari ariza topshirish uchun ishlatiladi. Premium Compare va Match Score funksiyalarini ochadi."
+    },
+    "credits": {
+      "title": "Ariza kreditlari",
+      "description": "Qoralamalar bepul. Kredit faqat ariza muvaffaqiyatli topshirilganda yechiladi.",
+      "creditUnit": "kredit",
+      "perApplication": "har bir ariza uchun",
+      "save": "{{amount}} tejang"
+    },
+    "premium": {
+      "title": "Kallisto Premium",
+      "perMonth": "oyiga",
+      "compare": "Universitetlarni taqqoslash",
+      "matchScore": "Match Score",
+      "noCredits": "Premium ariza kreditlarini o'z ichiga olmaydi.",
+      "unavailable": "Premium tarifi mavjud emas."
+    },
+    "subscription": {
+      "none": "Faol Premium yo'q",
+      "status": "Obuna holati",
+      "expires": "Amal qilish muddati"
+    },
+    "actions": {
+      "buyCredits": "Kredit sotib olish",
+      "upgradePremium": "Premium'ga o'tish",
+      "renewPremium": "Premium'ni uzaytirish",
+      "processing": "Jarayonda...",
+      "confirmDevPayment": "Dev-to'lovni tasdiqlash"
+    },
+    "payment": {
+      "orderCreated": "Buyurtma yaratildi",
+      "orderFailed": "Buyurtma yaratib bo'lmadi",
+      "pendingTitle": "Dev checkout kutilmoqda",
+      "success": "To'lov muvaffaqiyatli amalga oshirildi",
+      "failed": "To'lov amalga oshmadi"
+    },
+    "history": {
+      "credits": "Kreditlar tarixi",
+      "payments": "To'lovlar tarixi",
+      "noCredits": "Kreditlar tarixi hali yo'q.",
+      "noPayments": "To'lovlar tarixi hali yo'q.",
+      "balance": "balans"
+    },
+    "premiumRequired": {
+      "title": "Premium talab qilinadi",
+      "description": "Compare va Match Score Premium funksiyalaridir. Davom etish uchun Premium'ga o'ting.",
+      "action": "To'lovni ochish"
+    }
+  },
   "applicationStatuses": {
     "draft": "Qoralama",
     "submitted": "Topshirildi",
@@ -154,5 +384,402 @@
     "decision_pending": "Qaror kutilmoqda",
     "final_decision": "Yakuniy qaror",
     "unknown": "Noma'lum"
+  },
+  "profileForm": {
+    "title": "Shaxsiy ma’lumotlarni kiriting",
+    "description": "Abituriyent ma’lumotlari va aloqa ma’lumotlarini yangilab turing.",
+    "uploadPhoto": "Rasm yuklash",
+    "photoHelp": "PNG, JPEG yoki WEBP. Maksimal hajm 2 MB.",
+    "lastName": "Familiya",
+    "firstName": "Ism",
+    "middleName": "Otasining ismi",
+    "gender": "Jinsi",
+    "genderOptions": {
+      "male": "Erkak",
+      "female": "Ayol",
+      "prefer_not_to_say": "Ko‘rsatmaslik"
+    },
+    "dateOfBirth": "Tug‘ilgan sana",
+    "region": "Hudud",
+    "district": "Tuman / shahar",
+    "select": "Tanlang",
+    "selectRegionFirst": "Avval hududni tanlang",
+    "email": "Email",
+    "additionalPhone": "Qo‘shimcha telefon raqami",
+    "cancel": "Bekor qilish",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "success": "Profil muvaffaqiyatli yangilandi.",
+    "errors": {
+      "lastName": "Familiya majburiy va ism uchun ruxsat etilgan belgilarni o‘z ichiga olishi kerak.",
+      "firstName": "Ism majburiy va ism uchun ruxsat etilgan belgilarni o‘z ichiga olishi kerak.",
+      "middleName": "Otasining ismida ruxsat etilmagan belgilar bor.",
+      "gender": "Profilni saqlashdan oldin jinsni tanlang.",
+      "dateOfBirth": "Tug‘ilgan sana kelajakda bo‘lishi mumkin emas.",
+      "region": "Hududni tanlang.",
+      "district": "Tanlangan hududga tegishli tuman yoki shaharni tanlang.",
+      "phone": "To‘g‘ri O‘zbekiston telefon raqamini kiriting, masalan +998901234567."
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Kirish",
+      "subtitle": "Kallisto ish maydoniga kiring",
+      "email": "Email",
+      "password": "Parol",
+      "submit": "Kirish",
+      "submitting": "Kirilmoqda...",
+      "needAccount": "Abituriyent akkaunti kerakmi?",
+      "createOne": "Yarating",
+      "errors": {
+        "failed": "Kirish amalga oshmadi",
+        "session": "Kirishdan keyin sessiyani aniqlab bo‘lmadi"
+      },
+      "reasons": {
+        "expired": "Sessiya muddati tugadi. Qayta kiring.",
+        "revoked": "Sessiya serverda yakunlandi. Qayta kiring.",
+        "passwordChanged": "Parol o‘zgardi. Yangi parol bilan qayta kiring.",
+        "accountUpdated": "Akkauntga kirish huquqi o‘zgardi. Qayta kiring."
+      }
+    },
+    "signUp": {
+      "title": "Abituriyent akkauntini yaratish",
+      "subtitle": "Faqat abituriyent ro‘yxatdan o‘tishi uchun",
+      "email": "Email",
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "password": "Parol",
+      "submit": "Akkaunt yaratish",
+      "submitting": "Akkaunt yaratilmoqda...",
+      "errors": {
+        "failed": "Ro‘yxatdan o‘tib bo‘lmadi"
+      }
+    },
+    "passwordReset": {
+      "title": "Parolni tiklash mavjud emas",
+      "subtitle": "Parolni tiklash hozircha mavjud emas.",
+      "description": "Xavfsiz yetkazib berish joriy qilinmaguncha parolni tiklash o‘chirilgan. Akkauntga kirishni tiklash uchun support yoki administratorga murojaat qiling.",
+      "remembered": "Parolingizni esladingizmi?",
+      "backToSignIn": "Kirishga qaytish",
+      "resetLinkDescription": "Parolni tiklash havolalari hozir faol emas. Kirish sahifasiga qayting va akkauntingizga kirish bo‘yicha yordam kerak bo‘lsa support yoki administratorga murojaat qiling.",
+      "backTo": "Qaytish:",
+      "signInLink": "kirish"
+    }
+  },
+  "applicantFlow": {
+    "profileGate": {
+      "loading": "Abituriyent profili tekshirilmoqda...",
+      "loadFailed": "Abituriyent profilini yuklab bo?lmadi"
+    },
+    "dashboard": {
+      "loading": "Abituriyent paneli yuklanmoqda...",
+      "noProfileTitle": "Profil topilmadi",
+      "noProfileDescription": "Profilni yuklash uchun qayta kiring.",
+      "title": "Boshqaruv paneli",
+      "subtitle": "Qaytganingiz bilan! Arizalaringiz haqida qisqa ma?lumot",
+      "shortlisted": "Tanlangan universitetlar",
+      "drafts": "Jarayondagi arizalar",
+      "submitted": "Topshirilgan arizalar",
+      "creditsAvailable": "Mavjud ariza kreditlari",
+      "buyCredits": "Kredit sotib olish va Premiumni boshqarish",
+      "readinessTitle": "Profil tayyorligi",
+      "readinessDescription": "Yaxshiroq moslik uchun profilingizni to?ldiring",
+      "complete": "To?liq",
+      "pending": "Kutilmoqda",
+      "profileComplete": "Profil to?ldirilgan",
+      "basicInformation": "Asosiy ma?lumot",
+      "applicationProfile": "Ariza profili",
+      "documentReadiness": "Hujjat tayyorligi",
+      "documentReadinessHelp": "Arizalar uchun tayyor hujjatlarni belgilang",
+      "testScores": "Test ballari",
+      "testScoresHelp": "Ixtiyoriy: IELTS, TOEFL, SAT, ACT, HSK yoki CSCA qo?shing",
+      "update": "Yangilash",
+      "manage": "Boshqarish",
+      "add": "Qo?shish",
+      "quickActions": "Tezkor amallar",
+      "findMore": "Universitetlarni topish",
+      "compareOptions": "Variantlarni taqqoslash",
+      "viewApplications": "Arizalarni ko?rish",
+      "recentApplications": "So?nggi arizalar",
+      "noApplicationsTitle": "Hozircha arizalar yo?q",
+      "noApplicationsDescription": "Universitet tanlab, birinchi qoralama arizani yarating.",
+      "cycle": "{{cycle}} sikli",
+      "openDraft": "Qoralamani ochish"
+    },
+    "basket": {
+      "loading": "Savat yuklanmoqda...",
+      "loadFailed": "Savatni yuklab bo?lmadi",
+      "removeFailed": "Elementni olib tashlab bo?lmadi",
+      "clearFailed": "Savatni tozalab bo?lmadi",
+      "emptyTitle": "Savat bo?sh",
+      "emptyDescription": "Qisqa ro?yxatni saqlash uchun universitetlarni batafsil sahifalardan qo?shing.",
+      "back": "Universitetlarga qaytish",
+      "title": "Ariza savati",
+      "description": "Ko?rib chiqayotgan universitetlaringizni bitta ro?yxatda saqlang.",
+      "clear": "Savatni tozalash",
+      "listTitle": "Savatdagi universitetlar",
+      "listDescription": "Saqlangan universitetlarni ko?rib chiqing va keraksizlarini olib tashlang.",
+      "locationUnavailable": "Joylashuv mavjud emas",
+      "applicationFee": "Ariza to?lovi",
+      "tuition": "Kontrakt"
+    },
+    "help": {
+      "title": "Yordam mavjud emas",
+      "subtitle": "Jonli chat, email yordam va hujjatlar markazi hali ishga tushmagan.",
+      "unavailableTitle": "Yordam markazi hali faol emas",
+      "unavailableDescription": "Bu sahifa navigatsiya uchun mavjud, ammo bu relizda support inbox, hujjatlar portali yoki live chat yo?q.",
+      "openSettings": "Akkaunt sozlamalarini ochish",
+      "selfService": "Mavjud mustaqil amallar",
+      "selfServiceFind": "Arizalarni boshlash yoki yangilash uchun Universitetlarni topish bo?limidan foydalaning.",
+      "selfServiceSettings": "Profil va test ballarini boshqarish uchun Sozlamalarni oching.",
+      "selfServiceApplications": "Qoralama va topshirilgan yozuvlarni ko?rish uchun Mening arizalarimdan foydalaning.",
+      "relatedRoutes": "Bog?liq bo?limlar",
+      "accountSettings": "Akkaunt sozlamalari",
+      "billingAvailability": "To?lov mavjudligi"
+    },
+    "applications": {
+      "loading": "Arizalar yuklanmoqda...",
+      "loadFailed": "Arizalarni yuklab bo?lmadi",
+      "emptyTitle": "Hozircha arizalar yo?q",
+      "emptyDescription": "Birinchi qoralama arizani yaratish uchun universitet qidiruvidan foydalaning.",
+      "cycle": "{{cycle}} sikli",
+      "created": "Yaratilgan: {{date}}",
+      "createdFallback": "Mavjud emas",
+      "openDraft": "Qoralamani ochish",
+      "open": "Ochish",
+      "deleteDraft": "Qoralamani o?chirish",
+      "deleteTitle": "Bu qoralama o?chirilsinmi?",
+      "deleteDescription": "{{university}} uchun qoralama ariza butunlay o?chiriladi. Topshirilgan arizalarga ta?sir qilmaydi.",
+      "deleteFallback": "bu universitet",
+      "deleting": "O?chirilmoqda...",
+      "deleteFailed": "Qoralamani o?chirib bo?lmadi"
+    },
+    "settings": {
+      "loading": "Sozlamalar yuklanmoqda...",
+      "loadFailed": "Sozlamalarni yuklab bo?lmadi",
+      "profileUnavailableTitle": "Profil mavjud emas",
+      "profileUnavailableDescription": "Sozlama ma?lumotlari topilmadi.",
+      "title": "Sozlamalar",
+      "description": "Akkaunt sozlamalari va afzalliklaringizni boshqaring",
+      "onboardingTitle": "Abituriyent profilini to?ldiring",
+      "onboardingDescription": "Universitet tanlash, taqqoslash yoki ariza topshirishdan oldin barcha majburiy maydonlarni to?ldiring.",
+      "missing": "Yetishmayapti: {{items}}.",
+      "chooseUniversities": "Universitetlarni tanlash",
+      "profileRequired": "Profil majburiy",
+      "tabs": {
+        "profile": "Profil",
+        "matchProfile": "Match Profile",
+        "security": "Xavfsizlik",
+        "notifications": "Bildirishnomalar",
+        "privacy": "Maxfiylik"
+      },
+      "testScores": {
+        "title": "Test ballari",
+        "description": "Standart testlarni qo?shing. Ularni arizalarga import qilish mumkin.",
+        "addNew": "Yangi qo?shish",
+        "loading": "Test ballari yuklanmoqda...",
+        "empty": "Hozircha test ballari yo?q. Birinchi ballni qo?shish uchun ?Yangi qo?shish?ni bosing.",
+        "type": "Test turi",
+        "selectType": "Test turini tanlang",
+        "otherName": "Boshqa test nomi",
+        "otherPlaceholder": "masalan, Duolingo English Test",
+        "score": "Ball",
+        "scorePlaceholder": "Ballni kiriting",
+        "outOf": "Maksimum",
+        "outOfPlaceholder": "Maksimal ball",
+        "takenOn": "Topshirilgan sana (ixtiyoriy)",
+        "removing": "Olib tashlanmoqda...",
+        "remove": "Olib tashlash",
+        "saving": "Saqlanmoqda...",
+        "save": "Ballni saqlash",
+        "add": "Ball qo?shish",
+        "removed": "Test balli olib tashlandi.",
+        "created": "Test balli saqlandi.",
+        "failedLoad": "Test ballarini yuklab bo?lmadi",
+        "failedSave": "Test ballini saqlab bo?lmadi",
+        "failedDelete": "Test ballini o?chirib bo?lmadi",
+        "outOfInvalid": "Maksimal ball 0 dan katta son bo'lishi kerak.",
+        "updated": "Test balli yangilandi."
+      },
+      "security": {
+        "title": "Parol va sessiyalar",
+        "description": "Joriy kirish ma?lumotlari orqali parolni xavfsiz yangilang.",
+        "current": "Joriy parol",
+        "new": "Yangi parol",
+        "confirm": "Yangi parolni tasdiqlang",
+        "update": "Parolni yangilash",
+        "updating": "Yangilanmoqda...",
+        "success": "Parol muvaffaqiyatli yangilandi."
+      },
+      "notifications": {
+        "title": "Bildirishnoma sozlamalari",
+        "description": "Bildirishnoma kanallarini boshqaring.",
+        "email": "Email bildirishnomalar",
+        "emailHelp": "Ariza yangiliklari va eslatmalar.",
+        "push": "Push bildirishnomalar",
+        "pushHelp": "Qo?llab-quvvatlanadigan qurilmalardagi ogohlantirishlar.",
+        "note": "O?zgarishlar akkaunt profilingizga saqlanadi.",
+        "save": "Afzalliklarni saqlash",
+        "success": "Bildirishnoma sozlamalari saqlandi."
+      },
+      "privacy": {
+        "title": "Maxfiylik sozlamalari",
+        "description": "Hamkor jarayonlarda profilingizni kim ko?rishini boshqaring.",
+        "visibility": "Profil ko?rinishi",
+        "select": "Ko?rinishni tanlang",
+        "partners": "Hamkor universitetlarga ko?rinadi",
+        "private": "Maxfiy",
+        "controls": "Ma?lumotlarni boshqarish",
+        "controlsDescription": "Ma?lumot eksporti va akkauntni o?chirish hozircha support orqali amalga oshiriladi.",
+        "save": "Maxfiylikni saqlash",
+        "success": "Maxfiylik sozlamalari saqlandi."
+      }
+    },
+    "search": {
+      "title": "Universitetlarni topish",
+      "showing": "{{shown}} / {{total}} universitet ko'rsatilmoqda",
+      "aiMatch": "AI moslik",
+      "searchPlaceholder": "Universitetlar, dasturlarni qidirish...",
+      "loading": "Universitetlar yuklanmoqda...",
+      "tryDifferentWithFilters": "Boshqa so'rov kiriting yoki filtrlarni tozalang.",
+      "tryDifferent": "Boshqa qidiruv so'rovini kiriting.",
+      "locationUnavailable": "Joylashuv ko'rsatilmagan",
+      "fee": "To'lov",
+      "programs": "Dasturlar",
+      "programsAvailable": "Dasturlar mavjud",
+      "applicationOpen": "Qabul ochiq",
+      "addToCompare": "Taqqoslashga qo'shish",
+      "added": "Qo'shildi",
+      "viewDetails": "Batafsil",
+      "compareTableFull": "Taqqoslash jadvali to'lgan",
+      "compareUpdateFailed": "Taqqoslashni yangilab bo'lmadi",
+      "updateCompareFailed": "Taqqoslash ro'yxatini yangilab bo'lmadi.",
+      "previous": "Oldingi",
+      "next": "Keyingi",
+      "pageOf": "{{page}} / {{totalPages}} sahifa"
+    },
+    "matchProfile": {
+      "title": "Moslik profili",
+      "description": "Bu maydonlar universitet va dastur sahifalaridagi Kallisto Match Score uchun ishlatiladi.",
+      "nationality": "Fuqarolik",
+      "nationalityPlaceholder": "masalan, Uzbekistan",
+      "educationLevel": "Ta'lim darajasi",
+      "selectLevel": "Darajani tanlang",
+      "gpa": "GPA",
+      "gpaScale": "GPA shkalasi",
+      "intendedMajor": "Tanlangan yo'nalish",
+      "intendedMajorPlaceholder": "masalan, Computer Science",
+      "budgetPerYear": "Yillik budjet",
+      "preferredLanguage": "Afzal til",
+      "preferredCity": "Afzal shahar",
+      "preferredCityPlaceholder": "masalan, Toshkent",
+      "achievements": "Yutuqlar (ixtiyoriy)",
+      "achievementsPlaceholder": "Har qatorda bitta yutuq",
+      "reset": "Qaytarish",
+      "save": "Profilni saqlash",
+      "saving": "Saqlanmoqda...",
+      "documentReadiness": "Hujjatlar tayyorligi",
+      "documentHelp": "Universitet tanlashdan oldin kamida bitta tayyor hujjatni belgilang.",
+      "readiness": "Tayyorlik",
+      "readyPercent": "{{percent}}% hujjatlar asosidagi baholashga tayyor.",
+      "educationLevels": {
+        "high_school": "Maktab",
+        "foundation": "Foundation",
+        "bachelor": "Bakalavr",
+        "master": "Magistratura",
+        "phd": "PhD"
+      },
+      "languages": {
+        "English": "Inglizcha",
+        "Chinese": "Xitoycha",
+        "Russian": "Ruscha",
+        "Any": "Istalgan"
+      },
+      "documents": {
+        "Passport": "Passport",
+        "Academic transcript": "Akademik transkript",
+        "Diploma or enrollment certificate": "Diplom yoki o'qish ma'lumotnomasi",
+        "Language certificate": "Til sertifikati",
+        "Personal statement": "Motivatsion xat",
+        "Recommendation letter": "Tavsiya xati",
+        "CV or resume": "CV yoki rezyume"
+      },
+      "validation": {
+        "budgetRequired": "Yillik budjet majburiy.",
+        "budgetInvalid": "Yillik budjet 0 yoki undan katta son bo'lishi kerak.",
+        "languageRequired": "Afzal til majburiy.",
+        "cityRequired": "Afzal shahar majburiy."
+      }
+    },
+    "universityDetail": {
+      "back": "Natijalarga qaytish",
+      "openApplication": "Arizani ochish",
+      "resumeDraft": "Qoralamani davom ettirish",
+      "applyNow": "Hozir ariza berish",
+      "locationUnavailable": "Joylashuv ko'rsatilmagan",
+      "universityProfile": "Universitet profili",
+      "noDescription": "Bu universitet uchun tavsif hali mavjud emas.",
+      "addToBasket": "Korzinkaga qo'shish",
+      "addedToBasket": "Korzinkaga qo'shildi",
+      "addToCompare": "Taqqoslashga qo'shish",
+      "addedToCompare": "Taqqoslashga qo'shildi",
+      "compareTableFull": "Taqqoslash jadvali to'lgan",
+      "compareUpdateFailed": "Taqqoslashni yangilab bo'lmadi",
+      "basketUpdateFailed": "Korzinkani yangilab bo'lmadi",
+      "basketUpdateMessage": "Korzinkani hozir yangilab bo'lmadi. Qayta urinib ko'ring.",
+      "tuitionFee": "Kontrakt / to'lov",
+      "country": "Mamlakat",
+      "admissions": "Qabul",
+      "open": "Ochiq",
+      "overview": "Umumiy",
+      "programs": "Dasturlar",
+      "programsOffered": "Taklif etilgan dasturlar",
+      "applicationFee": "Ariza to'lovi",
+      "applicationFeeLine": "Ariza to'lovi",
+      "tuition": "Kontrakt"
+    },
+    "applicationCreate": {
+      "selectedUniversity": "Tanlangan universitet",
+      "noProfileScores": "Import qilish uchun profilda test ballari yo'q.",
+      "selectOneScore": "Import qilish uchun kamida bitta test ballini tanlang.",
+      "importedScores": "{{count}} ta test balli qoralamaga import qilindi.",
+      "importFailed": "Test ballarini import qilib bo'lmadi",
+      "backToSearch": "Qidiruvga qaytish",
+      "back": "Orqaga",
+      "continue": "Davom etish",
+      "applicationForm": "Ariza shakli",
+      "applicationCycle": "Ariza sikli",
+      "importTitle": "Test ballarini import qilish",
+      "importDescription": "Profilda saqlangan test ballarini ushbu ariza qoralamasiga ko'chiring.",
+      "importing": "Import qilinmoqda...",
+      "importSelected": "Tanlanganlarni import qilish",
+      "loadingProfileScores": "Profil test ballari yuklanmoqda...",
+      "noSavedScores": "Saqlangan test ballari hali yo'q. Ularni Sozlamalar / Profil / Test ballari bo'limida qo'shing.",
+      "selectAll": "Hammasini tanlash",
+      "submitting": "Yuborilmoqda...",
+      "submit": "Arizani yuborish",
+      "requirements": "Talablar",
+      "review": "Tekshirish"
+    }
+  },
+  "matchScore": {
+    "title": "Match Score",
+    "premiumRequired": "Match Score ko'rish uchun Premium kerak",
+    "upgrade": "Premiumga o'tish",
+    "unavailable": "Ball mavjud emas",
+    "fullTitle": "Kallisto Match Score",
+    "deterministic": "Profil va dastur ma'lumotlariga asoslangan baho.",
+    "why": "Nega bunday ball",
+    "improve": "Match Score ni yaxshilash",
+    "fallbackRecommendation": "Baholash aniqligi uchun profilni to'ldiring.",
+    "disclaimer": "Fit Score mavjud profil va dastur ma'lumotlariga asoslangan taxmin. Bu qabul yoki stipendiyani kafolatlamaydi.",
+    "breakdown": {
+      "academicScore": "Akademik moslik",
+      "languageScore": "Til mosligi",
+      "majorScore": "Yo'nalish mosligi",
+      "budgetScore": "Budjet mosligi",
+      "documentScore": "Hujjatlar tayyorligi",
+      "deadlineScore": "Muddat riski"
+    }
   }
 }

@@ -12,7 +12,7 @@ const baseValue: ApplicantMatchProfileForm = {
   intendedMajor: "Computer Science",
   budgetPerYear: "22000",
   preferredLanguage: "English",
-  preferredCity: "Shanghai",
+  preferredCity: "Tashkent",
   documentsReady: ["Passport"],
   achievements: "Hackathon finalist",
 };

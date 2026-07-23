@@ -12,6 +12,9 @@ export async function calculateFitScore(
     program,
   });
   if (!result.ok || !result.data) {
+    if (result.error === "PREMIUM_REQUIRED") {
+      throw new Error("PREMIUM_REQUIRED");
+    }
     throw new Error(result.error ?? "Failed to calculate fit score");
   }
 

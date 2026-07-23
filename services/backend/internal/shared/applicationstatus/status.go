@@ -104,8 +104,10 @@ func Progress(status string) int {
 		return 80
 	case StatusWaitlisted:
 		return 90
-	case StatusAccepted, StatusRejected:
+	case StatusAccepted:
 		return 100
+	case StatusRejected:
+		return 80
 	default:
 		return 0
 	}
