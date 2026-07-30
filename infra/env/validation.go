@@ -18,9 +18,6 @@ func ValidateRuntimeConfig() error {
 	if secretKey == "" {
 		return errors.New("SECRET_KEY is required")
 	}
-	if len(secretKey) < 32 {
-		return errors.New("SECRET_KEY must be at least 32 characters")
-	}
 
 	if strings.EqualFold(strings.TrimSpace(os.Getenv("APP_ENV")), "production") {
 		if !strings.EqualFold(strings.TrimSpace(os.Getenv("COOKIE_SECURE")), "true") {
