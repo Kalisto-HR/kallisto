@@ -136,8 +136,8 @@ describe("PortalDashboard", () => {
         suspectsCount: 5,
         prospectsCount: 3,
         studentOriginStats: [
-          { country: "Kazakhstan", count: 6, percentage: 60 },
-          { country: "Uzbekistan", count: 4, percentage: 40 },
+          { country: "tashkent_city", count: 6, percentage: 60 },
+          { country: "andijan", count: 4, percentage: 40 },
         ],
         recentApplications: [],
         notifications: [],
@@ -160,7 +160,7 @@ describe("PortalDashboard", () => {
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText(/student origin statistics/i)).toBeInTheDocument();
-    expect(screen.getByText("Kazakhstan")).toBeInTheDocument();
+    expect(screen.getByText("Tashkent City")).toBeInTheDocument();
     expect(screen.getByText("60%")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /copy emails/i })).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: /^csv$/i })).toHaveLength(2);

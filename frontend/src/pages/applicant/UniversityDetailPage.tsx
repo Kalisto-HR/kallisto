@@ -516,8 +516,14 @@ export function UniversityDetailPage() {
 
       <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-          <div className="brand-logo-mark flex h-20 w-20 items-center justify-center rounded-[1.75rem] text-xl font-semibold text-white shadow-[0_26px_44px_-28px_rgba(20,90,67,0.7)]">
-            {university.name.slice(0, 2).toUpperCase()}
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border bg-muted/40 text-xl font-semibold shadow-[0_26px_44px_-28px_rgba(20,90,67,0.7)]">
+            {university.logoUrl ? (
+              <img src={university.logoUrl} alt={`${university.name} logo`} className="h-full w-full object-cover" />
+            ) : (
+              <span className="brand-logo-mark flex h-full w-full items-center justify-center text-white">
+                {university.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
           </div>
           <div className="min-w-0 flex-1 pt-1">
             <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">

@@ -3,6 +3,8 @@ import { api } from "../api/httpClient";
 import { normalizeEnvelope, normalizeProfile, normalizeApplicantTestScore } from "../mappers/responseMappers";
 import type { Profile, ApplicantTestScore, ApplicantTestScoreType } from "../../types/domain";
 
+export const APPLICANT_PHOTO_UPDATED_EVENT = "kallisto:applicant-photo-updated";
+
 export async function fetchApplicantProfile(): Promise<Profile> {
   const result = await api.get<unknown>(apiRoutes.applicant.profile.base());
   if (!result.ok || !result.data) {

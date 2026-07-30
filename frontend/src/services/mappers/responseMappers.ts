@@ -66,6 +66,7 @@ export function normalizeUniversityListItem(value: unknown): UniversityListItem 
   return {
     id: toString(source.id),
     name: toString(source.name),
+    logoUrl: toNullableString(source.logoUrl ?? source.logo_url),
     description: toNullableString(source.description),
     province: toNullableString(source.province),
     city: toNullableString(source.city),
@@ -89,6 +90,7 @@ export function normalizeUniversity(value: unknown): University {
     id: toString(source.id),
     managerId: toNullableString(source.manager_id ?? source.managerId),
     name: toString(source.name),
+    logoUrl: toNullableString(source.logoUrl ?? source.logo_url),
     description: toNullableString(source.description),
     province: toNullableString(source.province),
     city: toNullableString(source.city),

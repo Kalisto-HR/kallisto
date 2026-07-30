@@ -34,6 +34,7 @@ import {
 import {
   createApplicantTestScore,
   deleteApplicantTestScore,
+  APPLICANT_PHOTO_UPDATED_EVENT,
   fetchApplicantTestScores,
   fetchApplicantPhotoUrl,
   fetchApplicantProfile,
@@ -657,6 +658,7 @@ export function ApplicantSettingsPage() {
         }
         return fetchedPhotoUrl;
       });
+      window.dispatchEvent(new Event(APPLICANT_PHOTO_UPDATED_EVENT));
       setSuccess("Profile photo updated successfully.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload profile photo");

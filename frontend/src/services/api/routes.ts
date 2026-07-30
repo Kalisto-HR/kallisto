@@ -109,6 +109,7 @@ export const apiRoutes = {
     },
     university: {
       profile: () => `${API_PREFIX}/partner/university/profile`,
+      logo: () => `${API_PREFIX}/partner/university/profile/logo`,
       applicationStructure: () => `${API_PREFIX}/partner/university/application-structure`,
       applicationStructureHistory: (limit = 20) =>
         withQuery(`${API_PREFIX}/partner/university/application-structure/history`, { limit }),
@@ -124,6 +125,7 @@ export const apiRoutes = {
     universities: {
       list: (params: QueryParams) => withQuery(`${API_PREFIX}/staff/universities`, params),
       detail: (id: string) => `${API_PREFIX}/staff/universities/${segment(id)}`,
+      logo: (id: string) => `${API_PREFIX}/staff/universities/${segment(id)}/logo`,
       applicationStructure: (id: string) =>
         `${API_PREFIX}/staff/universities/${segment(id)}/application-structure`,
     },

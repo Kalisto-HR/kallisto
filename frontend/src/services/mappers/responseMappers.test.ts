@@ -60,6 +60,7 @@ describe("response mappers", () => {
     ).toEqual({
       id: "uni-1",
       name: "Example",
+      logoUrl: null,
       description: null,
       province: "Tashkent",
       city: "Tashkent",

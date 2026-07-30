@@ -453,28 +453,29 @@
     "mobileDescription": "Choose price, region, study format, and language filters.",
     "noOptions": "No verified options available yet.",
     "noPriceData": "No verified contract price data is available yet.",
+    "showFilters": "Show filters",
+    "hideFilters": "Hide filters",
     "regionOptions": {
-      "tashkent": "Tashkent",
-      "samarkand": "Samarkand",
-      "bukhara": "Bukhara",
-      "andijan": "Andijan",
-      "fergana": "Fergana",
-      "namangan": "Namangan",
-      "nukus": "Nukus",
-      "qarshi": "Qarshi",
-      "urganch": "Urganch"
+      "bektemir": "Bektemir",
+      "chilanzar": "Chilanzar",
+      "mirobod": "Mirobod",
+      "mirzo-ulugbek": "Mirzo Ulugbek",
+      "olmazor": "Olmazor",
+      "sergeli": "Sergeli",
+      "shaykhontohur": "Shaykhontohur",
+      "uchtepa": "Uchtepa",
+      "yakkasaray": "Yakkasaray",
+      "yashnobod": "Yashnobod",
+      "yunusabad": "Yunusabad",
+      "yangihayot": "Yangihayot"
     },
     "studyFormatOptions": {
-      "full-time": "Full-time",
-      "part-time": "Part-time",
-      "evening": "Evening",
-      "distance": "Distance"
+      "offline": "Offline",
+      "online": "Online"
     },
     "languageOptions": {
-      "uzbek": "Uzbek",
       "russian": "Russian",
-      "english": "English",
-      "karakalpak": "Karakalpak"
+      "english": "English"
     }
   },
   "comparePage": {

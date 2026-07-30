@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Header } from "../Header";
@@ -9,6 +9,7 @@ import { routes } from "../../routes/routeConfig";
 import { useSession } from "../../hooks/useSession";
 import { fetchApplicantApplications } from "../../services/applicant/applicationsService";
 import { fetchBasketState } from "../../services/applicant/basketService";
+import { APPLICANT_PHOTO_UPDATED_EVENT, fetchApplicantPhotoUrl } from "../../services/applicant/profileService";
 import { BASKET_UPDATED_EVENT } from "../../services/basketEvents";
 
 const pageRouteMap: Record<string, string> = {
@@ -41,8 +42,18 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useSession();
   const [applicationsCount, setApplicationsCount] = useState<number | null>(null);
   const [basketCount, setBasketCount] = useState<number | null>(null);
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
+  const userPhotoUrlRef = useRef<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const replaceUserPhotoUrl = useCallback((nextUrl: string | null) => {
+    if (userPhotoUrlRef.current) {
+      URL.revokeObjectURL(userPhotoUrlRef.current);
+    }
+    userPhotoUrlRef.current = nextUrl;
+    setUserPhotoUrl(nextUrl);
+  }, []);
 
   useEffect(() => {
     const loadHeaderCounts = async () => {
@@ -70,6 +81,38 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPhoto = async () => {
+      try {
+        const nextUrl = await fetchApplicantPhotoUrl();
+        if (cancelled) {
+          if (nextUrl) {
+            URL.revokeObjectURL(nextUrl);
+          }
+          return;
+        }
+        replaceUserPhotoUrl(nextUrl);
+      } catch {
+        if (!cancelled) {
+          replaceUserPhotoUrl(null);
+        }
+      }
+    };
+
+    void loadPhoto();
+    window.addEventListener(APPLICANT_PHOTO_UPDATED_EVENT, loadPhoto);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(APPLICANT_PHOTO_UPDATED_EVENT, loadPhoto);
+      if (userPhotoUrlRef.current) {
+        URL.revokeObjectURL(userPhotoUrlRef.current);
+        userPhotoUrlRef.current = null;
+      }
+    };
+  }, [replaceUserPhotoUrl, user?.id]);
+
   const currentPage = useMemo(() => getCurrentPage(location.pathname), [location.pathname]);
 
   const handleNavigate = (page: string) => {
@@ -84,6 +127,7 @@ export function ApplicantShell({ children }: { children: ReactNode }) {
     <div className="brand-shell flex h-screen flex-col overflow-hidden bg-background">
         <Header
         userName={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || t("labels.applicant")}
+        userPhotoUrl={userPhotoUrl}
         applicationsCount={applicationsCount}
         basketCount={basketCount}
         onNavigate={handleNavigate}

@@ -38,7 +38,7 @@ func TestLoadPartnerFunnelCountsUsesExclusiveStages(t *testing.T) {
 	}
 }
 
-func TestLoadPartnerStudentOriginStatsUsesCitizenshipFallbacks(t *testing.T) {
+func TestLoadPartnerStudentOriginStatsUsesRegionFallbacks(t *testing.T) {
 	t.Parallel()
 
 	mock, err := pgxmock.NewPool()
@@ -47,13 +47,13 @@ func TestLoadPartnerStudentOriginStatsUsesCitizenshipFallbacks(t *testing.T) {
 	}
 	defer mock.Close()
 
-	queryPattern := `(?s)WITH submitted AS.*a\.data->>'citizenship'.*a\.applicant_info->>'citizenship'.*u\.data->>'citizenship'.*u\.data->>'country'.*'Unknown'.*jsonb_array_elements_text`
+	queryPattern := `(?s)WITH submitted AS.*a\.data->>'regionOfResidence'.*a\.applicant_info->>'regionOfResidence'.*u\.data->>'regionOfResidence'.*jsonb_array_elements_text.*normalized_origins AS`
 	mock.ExpectQuery(queryPattern).
 		WithArgs("uni-1").
 		WillReturnRows(
 			pgxmock.NewRows([]string{"country", "count", "percentage"}).
-				AddRow("Kazakhstan", 2, 66.7).
-				AddRow("Unknown", 1, 33.3),
+				AddRow("tashkent_city", 2, 66.7).
+				AddRow("unknown", 1, 33.3),
 		)
 
 	stats, err := loadPartnerStudentOriginStats(context.Background(), mock, "uni-1")
@@ -63,11 +63,11 @@ func TestLoadPartnerStudentOriginStatsUsesCitizenshipFallbacks(t *testing.T) {
 	if len(stats) != 2 {
 		t.Fatalf("unexpected stats length: got %d want 2", len(stats))
 	}
-	if stats[0].Country != "Kazakhstan" || stats[0].Count != 2 || stats[0].Percentage != 66.7 {
+	if stats[0].Country != "tashkent_city" || stats[0].Count != 2 || stats[0].Percentage != 66.7 {
 		t.Fatalf("unexpected first stat: %+v", stats[0])
 	}
-	if stats[1].Country != "Unknown" {
-		t.Fatalf("expected Unknown fallback bucket, got %+v", stats[1])
+	if stats[1].Country != "unknown" {
+		t.Fatalf("expected unknown fallback bucket, got %+v", stats[1])
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unmet mock expectations: %v", err)

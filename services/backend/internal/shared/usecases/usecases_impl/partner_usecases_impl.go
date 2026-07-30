@@ -217,13 +217,25 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 		WITH submitted AS (
 			SELECT DISTINCT ON (a.user_id)
 				a.user_id,
-				COALESCE(
-					NULLIF(BTRIM(a.data->>'citizenship'), ''),
-					NULLIF(BTRIM(a.applicant_info->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'country'), ''),
-					'Unknown'
-				) AS country
+				COALESCE(NULLIF(BTRIM(
+					COALESCE(
+						a.data->>'regionOfResidence',
+						a.data->>'region_of_residence',
+						a.data->>'residenceRegion',
+						a.data->>'residence_region',
+						a.data->>'region',
+						a.applicant_info->>'regionOfResidence',
+						a.applicant_info->>'region_of_residence',
+						a.applicant_info->>'residenceRegion',
+						a.applicant_info->>'residence_region',
+						a.applicant_info->>'region',
+						u.data->>'regionOfResidence',
+						u.data->>'region_of_residence',
+						u.data->>'residenceRegion',
+						u.data->>'residence_region',
+						u.data->>'region'
+					)
+				), ''), 'unknown') AS region
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
 			WHERE a.university_id = $1::uuid AND a.status <> 'draft'
@@ -232,12 +244,20 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 		prospects AS (
 			SELECT DISTINCT ON (a.user_id)
 				a.user_id,
-				COALESCE(
-					NULLIF(BTRIM(a.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'country'), ''),
-					'Unknown'
-				) AS country
+				COALESCE(NULLIF(BTRIM(
+					COALESCE(
+						a.data->>'regionOfResidence',
+						a.data->>'region_of_residence',
+						a.data->>'residenceRegion',
+						a.data->>'residence_region',
+						a.data->>'region',
+						u.data->>'regionOfResidence',
+						u.data->>'region_of_residence',
+						u.data->>'residenceRegion',
+						u.data->>'residence_region',
+						u.data->>'region'
+					)
+				), ''), 'unknown') AS region
 			FROM applications a
 			JOIN users u ON u.id = a.user_id
 			WHERE a.university_id = $1::uuid
@@ -252,11 +272,15 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 		suspects AS (
 			SELECT
 				u.id AS user_id,
-				COALESCE(
-					NULLIF(BTRIM(u.data->>'citizenship'), ''),
-					NULLIF(BTRIM(u.data->>'country'), ''),
-					'Unknown'
-				) AS country
+				COALESCE(NULLIF(BTRIM(
+					COALESCE(
+						u.data->>'regionOfResidence',
+						u.data->>'region_of_residence',
+						u.data->>'residenceRegion',
+						u.data->>'residence_region',
+						u.data->>'region'
+					)
+				), ''), 'unknown') AS region
 			FROM users u
 			WHERE u.role = 'applicant'
 			  AND EXISTS (
@@ -271,17 +295,38 @@ func loadPartnerStudentOriginStats(ctx context.Context, conn middlewares.DB, uni
 			  )
 		),
 		student_origins AS (
-			SELECT country FROM submitted
+			SELECT region FROM submitted
 			UNION ALL
-			SELECT country FROM prospects
+			SELECT region FROM prospects
 			UNION ALL
-			SELECT country FROM suspects
+			SELECT region FROM suspects
+		),
+		normalized_origins AS (
+			SELECT
+				CASE
+					WHEN LOWER(region) IN ('tashkent_city', 'tashkent city', 'toshkent shahri', 'tashkent', 'toshkent') THEN 'tashkent_city'
+					WHEN LOWER(region) IN ('karakalpakstan', 'republic of karakalpakstan', 'qoraqalpogiston', 'qoraqalpogiston respublikasi') THEN 'karakalpakstan'
+					WHEN LOWER(region) IN ('andijan', 'andijon') THEN 'andijan'
+					WHEN LOWER(region) IN ('bukhara', 'buxoro') THEN 'bukhara'
+					WHEN LOWER(region) IN ('fergana', 'fargona', 'fargona viloyati') THEN 'fergana'
+					WHEN LOWER(region) IN ('jizzakh', 'jizzax') THEN 'jizzakh'
+					WHEN LOWER(region) IN ('khorezm', 'xorazm') THEN 'khorezm'
+					WHEN LOWER(region) IN ('namangan') THEN 'namangan'
+					WHEN LOWER(region) IN ('navoiy', 'navoi') THEN 'navoiy'
+					WHEN LOWER(region) IN ('qashqadaryo', 'kashkadarya', 'qarshi') THEN 'qashqadaryo'
+					WHEN LOWER(region) IN ('samarqand', 'samarkand') THEN 'samarqand'
+					WHEN LOWER(region) IN ('sirdaryo', 'syrdarya') THEN 'sirdaryo'
+					WHEN LOWER(region) IN ('surxondaryo', 'surkhandarya') THEN 'surxondaryo'
+					WHEN LOWER(region) IN ('tashkent_region', 'tashkent region', 'toshkent viloyati') THEN 'tashkent_region'
+					ELSE 'unknown'
+				END AS country
+			FROM student_origins
 		)
 		SELECT
 			country,
 			COUNT(*)::int AS count,
 			ROUND((COUNT(*)::numeric / NULLIF(SUM(COUNT(*)) OVER (), 0)) * 100, 1)::double precision AS percentage
-		FROM student_origins
+		FROM normalized_origins
 		GROUP BY country
 		ORDER BY count DESC, country ASC
 	`, universityId)

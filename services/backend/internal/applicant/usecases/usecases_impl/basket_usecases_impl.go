@@ -335,6 +335,7 @@ func getUniversitiesByIds(ctx context.Context, conn *pgxpool.Pool, universityIds
 	rows, err := conn.Query(ctx, `
 		SELECT
 			id, name, description, province, city, country, application_fee,
+			CASE WHEN logo IS NOT NULL AND length(logo) > 0 THEN '/api/v1.0/applicant/universities/' || id::text || '/logo' ELSE NULL END AS logo_url,
 			acceptance_rate, tuition_fee, application_deadline,
 			ielts_min, toefl_min, scholarship_available, city_type, campus_vibe,
 			NULL::text AS program_groups

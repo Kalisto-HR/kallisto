@@ -2,7 +2,7 @@ import { UniversityProfile } from "../../components/university/UniversityProfile
 import { resolveUniversityId } from "../../components/portal/portalRouting";
 import { usePortalNavigation } from "../../hooks/usePortalNavigation";
 import { useSession } from "../../hooks/useSession";
-import { fetchPartnerUniversityProfile, updatePartnerUniversityProfile } from "../../services/partner/universityService";
+import { fetchPartnerUniversityProfile, updatePartnerUniversityProfile, uploadPartnerUniversityLogo } from "../../services/partner/universityService";
 import { useParams } from "react-router-dom";
 
 export function PartnerUniversityProfilePage() {
@@ -16,6 +16,7 @@ export function PartnerUniversityProfilePage() {
       universityId={resolvedUniversityId}
       loadUniversity={async () => fetchPartnerUniversityProfile()}
       saveUniversity={async (_id, payload) => updatePartnerUniversityProfile(payload)}
+      uploadLogo={async (_id, logo) => uploadPartnerUniversityLogo(logo)}
       cancelLabel="Back to Dashboard"
       missingContextMessage="Missing valid university context. Re-open this page from the partner dashboard."
       onCancel={() => onNavigate("partner-dashboard")}

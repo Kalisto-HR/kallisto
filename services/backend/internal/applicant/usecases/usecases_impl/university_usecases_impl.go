@@ -24,6 +24,23 @@ var regionAliases = map[string]string{
 	"toshkent":      "tashkent",
 	"tashkent-city": "tashkent",
 	"toshkent-city": "tashkent",
+	"bektemir":      "bektemir",
+	"chilanzar":     "chilanzar",
+	"chilonzor":     "chilanzar",
+	"mirobod":       "mirobod",
+	"mirabad":       "mirobod",
+	"mirzo-ulugbek": "mirzo-ulugbek",
+	"olmazor":       "olmazor",
+	"sergeli":       "sergeli",
+	"shaykhontohur": "shaykhontohur",
+	"shayhontohur":  "shaykhontohur",
+	"uchtepa":       "uchtepa",
+	"yakkasaray":    "yakkasaray",
+	"yakkasaroy":    "yakkasaray",
+	"yashnobod":     "yashnobod",
+	"yunusabad":     "yunusabad",
+	"yunusobod":     "yunusabad",
+	"yangihayot":    "yangihayot",
 	"samarkand":     "samarkand",
 	"samarqand":     "samarkand",
 	"bukhara":       "bukhara",
@@ -41,43 +58,47 @@ var regionAliases = map[string]string{
 }
 
 var regionLabels = map[string]string{
-	"tashkent":  "Toshkent",
-	"samarkand": "Samarqand",
-	"bukhara":   "Buxoro",
-	"andijan":   "Andijon",
-	"fergana":   "Farg'ona",
-	"namangan":  "Namangan",
-	"nukus":     "Nukus",
-	"qarshi":    "Qarshi",
-	"urganch":   "Urganch",
+	"tashkent":      "Toshkent",
+	"bektemir":      "Bektemir",
+	"chilanzar":     "Chilanzar",
+	"mirobod":       "Mirobod",
+	"mirzo-ulugbek": "Mirzo Ulugbek",
+	"olmazor":       "Olmazor",
+	"sergeli":       "Sergeli",
+	"shaykhontohur": "Shaykhontohur",
+	"uchtepa":       "Uchtepa",
+	"yakkasaray":    "Yakkasaray",
+	"yashnobod":     "Yashnobod",
+	"yunusabad":     "Yunusabad",
+	"yangihayot":    "Yangihayot",
+	"samarkand":     "Samarqand",
+	"bukhara":       "Buxoro",
+	"andijan":       "Andijon",
+	"fergana":       "Farg'ona",
+	"namangan":      "Namangan",
+	"nukus":         "Nukus",
+	"qarshi":        "Qarshi",
+	"urganch":       "Urganch",
 }
 
 var studyFormatTerms = map[string][]string{
-	"full-time": {"full-time", "full time", "kunduzgi", "daytime"},
-	"part-time": {"part-time", "part time", "sirtqi"},
-	"evening":   {"evening", "kechki"},
-	"distance":  {"distance", "online", "remote", "masofaviy"},
+	"offline": {"offline", "in person", "on campus", "ochno", "full-time", "full time", "kunduzgi", "daytime"},
+	"online":  {"online", "remote", "distance", "masofaviy", "zaochno", "part-time", "part time", "sirtqi"},
 }
 
 var studyFormatLabels = map[string]string{
-	"full-time": "Kunduzgi",
-	"part-time": "Sirtqi",
-	"evening":   "Kechki",
-	"distance":  "Masofaviy",
+	"offline": "Offline",
+	"online":  "Online",
 }
 
 var languageTerms = map[string][]string{
-	"uzbek":      {"uzbek", "o'zbek", "ozbek", "uzbekcha", "o'zbekcha"},
-	"russian":    {"russian", "rus", "russian language", "rus tili"},
-	"english":    {"english", "ingliz", "english language", "ingliz tili"},
-	"karakalpak": {"karakalpak", "qoraqalpoq", "karakalpak language", "qoraqalpoq tili"},
+	"russian": {"russian", "rus", "russian language", "rus tili"},
+	"english": {"english", "ingliz", "english language", "ingliz tili"},
 }
 
 var languageLabels = map[string]string{
-	"uzbek":      "O'zbek",
-	"russian":    "Rus",
-	"english":    "Ingliz",
-	"karakalpak": "Qoraqalpoq",
+	"russian": "Rus",
+	"english": "Ingliz",
 }
 
 func GetAllUniversities(ctx context.Context, page, limit int) ([]models.UniversityListItem, int, error) {
@@ -94,7 +115,9 @@ func GetAllUniversities(ctx context.Context, page, limit int) ([]models.Universi
 
 	offset := (page - 1) * limit
 	rows, err := conn.Query(ctx,
-		`SELECT id, name, description, province, city, country, application_fee,
+		`SELECT id, name,
+		        CASE WHEN logo IS NOT NULL AND length(logo) > 0 THEN '/api/v1.0/applicant/universities/' || id::text || '/logo' ELSE NULL END AS logo_url,
+		        description, province, city, country, application_fee,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
 		        city_type, campus_vibe,
@@ -158,6 +181,7 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 	}
 	university.ApplicationSchema = applicationSchema
 	university.ApplicationStructurePublished = published
+	setApplicantUniversityLogoUrl(&university)
 
 	return &university, nil
 }
@@ -477,7 +501,9 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 
 	offset := (params.Page - 1) * params.Limit
 	selectQuery := fmt.Sprintf(
-		`SELECT id, name, description, province, city, country, application_fee,
+		`SELECT id, name,
+		        CASE WHEN logo IS NOT NULL AND length(logo) > 0 THEN '/api/v1.0/applicant/universities/' || id::text || '/logo' ELSE NULL END AS logo_url,
+		        description, province, city, country, application_fee,
 		        acceptance_rate, tuition_fee, application_deadline,
 		        ielts_min, toefl_min, scholarship_available,
 		        city_type, campus_vibe,
@@ -500,6 +526,34 @@ func SearchUniversities(ctx context.Context, params *models.UniversitySearchPara
 	}
 
 	return items, total, nil
+}
+
+func GetUniversityLogo(ctx context.Context, id string) ([]byte, error) {
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var logo []byte
+	if err := conn.QueryRow(ctx, "SELECT logo FROM universities WHERE id=$1 AND is_active = TRUE", id).Scan(&logo); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "university logo not found")
+		}
+		return nil, fmt.Errorf("failed to fetch university logo: %s", err.Error())
+	}
+	if len(logo) == 0 {
+		return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "university logo not found")
+	}
+	return logo, nil
+}
+
+func setApplicantUniversityLogoUrl(university *models.University) {
+	if university == nil || len(university.Logo) == 0 {
+		return
+	}
+	logoUrl := "/api/v1.0/applicant/universities/" + university.Id + "/logo"
+	university.LogoUrl = &logoUrl
+	university.Logo = nil
 }
 
 func GetUniversityFilterOptions(ctx context.Context) (*models.UniversityFilterOptions, error) {

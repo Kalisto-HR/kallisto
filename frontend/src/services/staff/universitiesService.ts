@@ -175,3 +175,19 @@ export async function updateStaffUniversity(id: string, payload: UniversityProfi
     throw new Error(result.error ?? "Failed to update university");
   }
 }
+
+export async function uploadStaffUniversityLogo(id: string, logo: File): Promise<string | null> {
+  const formData = new FormData();
+  formData.append("logo", logo);
+
+  const response = await api.raw(apiRoutes.staff.universities.logo(id), {
+    method: "PUT",
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error((await response.text()) || "Failed to upload university logo");
+  }
+
+  const payload = (await response.json()) as { data?: { logoUrl?: string | null } };
+  return payload.data?.logoUrl ?? null;
+}

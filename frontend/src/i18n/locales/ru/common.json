@@ -106,38 +106,39 @@
     "title": "Фильтр",
     "contractPrice": "Стоимость контракта",
     "currency": "узбекский сум",
-    "region": "Регион",
+    "region": "Район Ташкента",
     "all": "Все",
     "studyFormat": "Форма обучения",
     "language": "Язык обучения",
     "clear": "Очистить фильтры",
     "noResults": "Ничего не найдено",
     "loading": "Загрузка фильтров...",
-    "mobileDescription": "Выберите цену, регион, форму и язык обучения.",
+    "mobileDescription": "Выберите цену, район, форму и язык обучения.",
     "noOptions": "Пока нет подтвержденных вариантов.",
     "noPriceData": "Пока нет подтвержденных данных о стоимости контракта.",
+    "showFilters": "Показать фильтры",
+    "hideFilters": "Скрыть фильтры",
     "regionOptions": {
-      "tashkent": "Ташкент",
-      "samarkand": "Самарканд",
-      "bukhara": "Бухара",
-      "andijan": "Андижан",
-      "fergana": "Фергана",
-      "namangan": "Наманган",
-      "nukus": "Нукус",
-      "qarshi": "Карши",
-      "urganch": "Ургенч"
+      "bektemir": "Бектемир",
+      "chilanzar": "Чиланзар",
+      "mirobod": "Мирабад",
+      "mirzo-ulugbek": "Мирзо-Улугбек",
+      "olmazor": "Алмазар",
+      "sergeli": "Сергели",
+      "shaykhontohur": "Шайхантахур",
+      "uchtepa": "Учтепа",
+      "yakkasaray": "Яккасарай",
+      "yashnobod": "Яшнабад",
+      "yunusabad": "Юнусабад",
+      "yangihayot": "Янгихаёт"
     },
     "studyFormatOptions": {
-      "full-time": "Очная",
-      "part-time": "Заочная",
-      "evening": "Вечерняя",
-      "distance": "Дистанционная"
+      "offline": "Очно",
+      "online": "Заочно"
     },
     "languageOptions": {
-      "uzbek": "Узбекский",
       "russian": "Русский",
-      "english": "Английский",
-      "karakalpak": "Каракалпакский"
+      "english": "Английский"
     }
   },
   "comparePage": {

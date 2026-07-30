@@ -12,6 +12,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { ErrorState, LoadingState, SuccessState } from "../common/PageState";
 import { Badge } from "../ui/badge";
@@ -33,6 +34,7 @@ interface UniversityProfileProps {
   universityId: string | null;
   loadUniversity: (universityId: string) => Promise<University>;
   saveUniversity?: (universityId: string, payload: UniversityProfileUpdatePayload) => Promise<void>;
+  uploadLogo?: (universityId: string, logo: File) => Promise<string | null>;
   mode?: UniversityProfileMode;
   pageTitle?: string;
   pageDescription?: string;
@@ -353,6 +355,7 @@ export function UniversityProfile({
   universityId,
   loadUniversity,
   saveUniversity,
+  uploadLogo,
   mode = "edit",
   pageTitle = "University Profile",
   pageDescription = "Manage the live university profile shown across Kallisto.",
@@ -371,6 +374,8 @@ export function UniversityProfile({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [profileDraft, setProfileDraft] = useState<ProfileDraft>(EMPTY_PROFILE_DRAFT);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [programs, setPrograms] = useState<ProgramDraft[]>([]);
   const [intakeTerms, setIntakeTerms] = useState<IntakeTermDraft[]>([]);
   const [testRequirements, setTestRequirements] = useState<TestRequirementsDraft>(EMPTY_TEST_REQUIREMENTS);
@@ -394,6 +399,7 @@ export function UniversityProfile({
     try {
       const university = await loadUniversity(universityId);
       const loaded = buildProfileDraft(university);
+      setLogoUrl(university.logoUrl ?? null);
       setProfileDraft(loaded.profile);
       setPrograms(loaded.programs);
       setIntakeTerms(loaded.intakeTerms);
@@ -404,6 +410,32 @@ export function UniversityProfile({
       setLoading(false);
     }
   }, [loadUniversity, missingContextMessage, universityId]);
+
+  const handleLogoUpload = useCallback(async (file: File | null) => {
+    if (isReadOnly || !uploadLogo || !universityId || !file) return;
+
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setSaveError("University logo must be PNG, JPEG, or WEBP.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setSaveError("University logo must be 2MB or smaller.");
+      return;
+    }
+
+    setUploadingLogo(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+    try {
+      const nextLogoUrl = await uploadLogo(universityId, file);
+      setLogoUrl(nextLogoUrl ? `${nextLogoUrl}?v=${Date.now()}` : null);
+      setSaveSuccess("University logo updated successfully.");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to upload university logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }, [isReadOnly, universityId, uploadLogo]);
 
   useEffect(() => {
     void load();
@@ -541,6 +573,37 @@ export function UniversityProfile({
             </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:col-span-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-background">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt={`${profileDraft.universityName || "University"} logo`} className="h-full w-full object-cover" />
+                  ) : (
+                    <Building2 className="h-8 w-8 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium">University logo</div>
+                  <p className="text-sm text-muted-foreground">Shown on student search cards and university pages. PNG, JPEG, or WEBP. Max 2MB.</p>
+                </div>
+              </div>
+              {!isReadOnly && uploadLogo ? (
+                <div>
+                  <Input
+                    id="university-logo"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    disabled={uploadingLogo}
+                    onChange={(event) => void handleLogoUpload(event.target.files?.[0] ?? null)}
+                  />
+                  <Button type="button" variant="outline" disabled={uploadingLogo} onClick={() => document.getElementById("university-logo")?.click()}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    {uploadingLogo ? "Uploading..." : "Upload logo"}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
             <Field id="university-name" label="University Name" className="sm:col-span-2">
               <Input id="university-name" value={profileDraft.universityName} disabled={isReadOnly} onChange={(event) => setProfileDraft((current) => ({ ...current, universityName: event.target.value }))} />
             </Field>

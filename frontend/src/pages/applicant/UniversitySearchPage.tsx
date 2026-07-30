@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
+  Building2,
   CheckCircle2,
   ChevronDown,
   Filter,
@@ -65,6 +66,31 @@ function toggleListValue(values: string[] | undefined, value: string): string[] 
   return Array.from(selected).sort();
 }
 
+const TASHKENT_DISTRICT_OPTIONS = [
+  { value: "bektemir", label: "Bektemir" },
+  { value: "chilanzar", label: "Chilanzar" },
+  { value: "mirobod", label: "Mirobod" },
+  { value: "mirzo-ulugbek", label: "Mirzo Ulugbek" },
+  { value: "olmazor", label: "Olmazor" },
+  { value: "sergeli", label: "Sergeli" },
+  { value: "shaykhontohur", label: "Shaykhontohur" },
+  { value: "uchtepa", label: "Uchtepa" },
+  { value: "yakkasaray", label: "Yakkasaray" },
+  { value: "yashnobod", label: "Yashnobod" },
+  { value: "yunusabad", label: "Yunusabad" },
+  { value: "yangihayot", label: "Yangihayot" },
+];
+
+const STUDY_FORMAT_OPTIONS = [
+  { value: "offline", label: "Offline" },
+  { value: "online", label: "Online" },
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: "russian", label: "Russian" },
+  { value: "english", label: "English" },
+];
+
 export function UniversitySearchPage() {
   const { t } = useTranslation("common");
   const {
@@ -91,6 +117,7 @@ export function UniversitySearchPage() {
   const [compareFeedback, setCompareFeedback] = useState<string | null>(null);
   const [compareFeedbackId, setCompareFeedbackId] = useState<string | null>(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [filtersVisible, setFiltersVisible] = useState(true);
   const [studyFormatOpen, setStudyFormatOpen] = useState(true);
   const [languageOpen, setLanguageOpen] = useState(true);
   const [matchScores, setMatchScores] = useState<Record<string, FitScoreResult | null>>({});
@@ -173,6 +200,12 @@ export function UniversitySearchPage() {
   }, [result.items]);
 
   const cards = useMemo(() => result.items, [result.items]);
+  const displayedFilterOptions = useMemo(() => ({
+    ...filterOptions,
+    regions: TASHKENT_DISTRICT_OPTIONS,
+    studyFormats: STUDY_FORMAT_OPTIONS,
+    languages: LANGUAGE_OPTIONS,
+  }), [filterOptions]);
 
   const toggleCompare = async (universityId: string) => {
     const inCompare = compareIds.has(universityId);
@@ -268,7 +301,7 @@ export function UniversitySearchPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("universityFilters.all")}</SelectItem>
-            {filterOptions.regions.map((option) => (
+            {displayedFilterOptions.regions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {t(`universityFilters.regionOptions.${option.value}`, { defaultValue: option.label })}
               </SelectItem>
@@ -280,7 +313,7 @@ export function UniversitySearchPage() {
       <FilterSection title={t("universityFilters.studyFormat")} open={studyFormatOpen} onOpenChange={setStudyFormatOpen}>
         <CheckboxGroup
           emptyLabel={t("universityFilters.noOptions")}
-          options={filterOptions.studyFormats}
+          options={displayedFilterOptions.studyFormats}
           selected={selectedList(draftFilters.studyFormats)}
           labelPrefix="universityFilters.studyFormatOptions"
           onToggle={(value) => setFilter("studyFormats", toggleListValue(draftFilters.studyFormats, value))}
@@ -290,7 +323,7 @@ export function UniversitySearchPage() {
       <FilterSection title={t("universityFilters.language")} open={languageOpen} onOpenChange={setLanguageOpen}>
         <CheckboxGroup
           emptyLabel={t("universityFilters.noOptions")}
-          options={filterOptions.languages}
+          options={displayedFilterOptions.languages}
           selected={selectedList(draftFilters.languages)}
           labelPrefix="universityFilters.languageOptions"
           onToggle={(value) => setFilter("languages", toggleListValue(draftFilters.languages, value))}
@@ -334,14 +367,25 @@ export function UniversitySearchPage() {
               {t("universityFilters.title")}
               {activeFilterCount > 0 ? <Badge variant="secondary">{activeFilterCount}</Badge> : null}
             </Button>
+            <Button
+              variant="outline"
+              className="hidden gap-2 xl:inline-flex"
+              onClick={() => setFiltersVisible((prev) => !prev)}
+            >
+              <Filter className="h-4 w-4" />
+              {filtersVisible ? t("universityFilters.hideFilters") : t("universityFilters.showFilters")}
+              {activeFilterCount > 0 ? <Badge variant="secondary">{activeFilterCount}</Badge> : null}
+            </Button>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)] xl:items-start">
-        <aside className="hidden xl:sticky xl:top-24 xl:block xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto">
-          {filterPanel}
-        </aside>
+      <div className={cn("grid gap-6 xl:items-start", filtersVisible ? "xl:grid-cols-[340px_minmax(0,1fr)]" : "xl:grid-cols-1")}>
+        {filtersVisible ? (
+          <aside className="hidden xl:sticky xl:top-24 xl:block xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto">
+            {filterPanel}
+          </aside>
+        ) : null}
 
         <Sheet open={showMobileFilters} onOpenChange={setShowMobileFilters}>
           <SheetContent side="left" className="w-full max-w-[420px] overflow-y-auto p-4 sm:w-[420px]">
@@ -375,27 +419,36 @@ export function UniversitySearchPage() {
                 <Card key={item.id} className="transition-colors hover:border-primary/25">
                   <CardHeader>
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="flex-1">
-                        <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
-                          <CardTitle className="text-xl transition-colors hover:text-primary">
-                            {item.name}
-                          </CardTitle>
+                      <div className="flex min-w-0 flex-1 gap-4">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-muted/40">
+                          {item.logoUrl ? (
+                            <img src={item.logoUrl} alt={`${item.name} logo`} className="h-full w-full object-cover" />
+                          ) : (
+                            <Building2 className="h-7 w-7 text-muted-foreground" />
+                          )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground sm:gap-3">
-                          <span className="flex items-center gap-1.5">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {[item.city, item.country, item.province].filter(Boolean).join(", ") || t("applicantFlow.search.locationUnavailable")}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <TrendingUp className="h-3.5 w-3.5" />
-                            {t("applicantFlow.search.fee")} {formatUzs(item.tuitionFee ?? item.applicationFee, { fallback: t("labels.unknown") })}
-                          </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+                            <CardTitle className="text-xl transition-colors hover:text-primary">
+                              {item.name}
+                            </CardTitle>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground sm:gap-3">
+                            <span className="flex items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {[item.city, item.country, item.province].filter(Boolean).join(", ") || t("applicantFlow.search.locationUnavailable")}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <TrendingUp className="h-3.5 w-3.5" />
+                              {t("applicantFlow.search.fee")} {formatUzs(item.tuitionFee ?? item.applicationFee, { fallback: t("labels.unknown") })}
+                            </span>
+                          </div>
+                          {item.description ? (
+                            <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+                              {item.description}
+                            </p>
+                          ) : null}
                         </div>
-                        {item.description ? (
-                          <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-                            {item.description}
-                          </p>
-                        ) : null}
                       </div>
                       <div className="self-start sm:ml-4">
                         <KallistoMatchScoreSummary

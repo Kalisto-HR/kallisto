@@ -1,5 +1,5 @@
 import { CreditCard, HelpCircle, LogOut, Menu, Settings, ShoppingBasket } from "lucide-react";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ interface HeaderProps {
   userName: string;
   applicationsCount?: number | null;
   basketCount?: number | null;
+  userPhotoUrl?: string | null;
   onNavigate?: (page: string) => void;
   onLogout?: () => void;
   onMenuClick?: () => void;
@@ -32,6 +33,7 @@ export function Header({
   userName,
   applicationsCount,
   basketCount,
+  userPhotoUrl,
   onNavigate,
   onLogout,
   onMenuClick,
@@ -86,6 +88,7 @@ export function Header({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Avatar className="h-8 w-8">
+                  {userPhotoUrl ? <AvatarImage src={userPhotoUrl} alt={userName} className="object-cover" /> : null}
                   <AvatarFallback className="brand-avatar-mark text-sm">
                     {initials}
                   </AvatarFallback>
@@ -95,6 +98,7 @@ export function Header({
             <DropdownMenuContent align="end" className="w-56">
               <div className="flex items-center gap-2 p-2">
                 <Avatar className="h-10 w-10">
+                  {userPhotoUrl ? <AvatarImage src={userPhotoUrl} alt={userName} className="object-cover" /> : null}
                   <AvatarFallback className="brand-avatar-mark">
                     {initials}
                   </AvatarFallback>

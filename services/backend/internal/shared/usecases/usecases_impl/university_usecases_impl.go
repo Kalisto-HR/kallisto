@@ -91,6 +91,7 @@ func GetUniversityById(ctx context.Context, id string) (*models.University, erro
 	}
 
 	university.ApplicationSchema = utils.NormalizeApplicationSchema(university.ApplicationSchema)
+	setSharedUniversityLogoUrl(&university)
 
 	return &university, nil
 }
@@ -541,6 +542,58 @@ func UpdateUniversityApplicationStructure(ctx context.Context, id string, schema
 			Outcome:           "success",
 		})
 	})
+}
+
+func UpdateUniversityLogo(ctx context.Context, id string, logo []byte) error {
+	conn, ok := ctx.Value(middlewares.CtxPostgresKey).(*pgxpool.Pool)
+	if !ok {
+		return errors.New("could not establish connection with the database")
+	}
+
+	return pgx.BeginFunc(ctx, conn, func(tx pgx.Tx) error {
+		result, err := tx.Exec(ctx, "UPDATE universities SET logo = $1 WHERE id = $2", logo, id)
+		if err != nil {
+			return fmt.Errorf("failed to update university logo: %s", err.Error())
+		}
+		if result.RowsAffected() == 0 {
+			return utils.NewHandlerFuncErr(http.StatusNotFound, "university not found")
+		}
+		return insertAuditLog(ctx, tx, observability.AuditEntry{
+			ActionType:        "university.logo.update",
+			ActionDescription: "Updated university logo",
+			TargetEntity:      "university",
+			TargetID:          &id,
+			Outcome:           "success",
+		})
+	})
+}
+
+func GetUniversityLogo(ctx context.Context, id string) ([]byte, error) {
+	conn, err := middlewares.GetDBFromContext(ctx, middlewares.CtxPostgresKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var logo []byte
+	if err := conn.QueryRow(ctx, "SELECT logo FROM universities WHERE id=$1", id).Scan(&logo); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "university logo not found")
+		}
+		return nil, fmt.Errorf("failed to fetch university logo: %s", err.Error())
+	}
+	if len(logo) == 0 {
+		return nil, utils.NewHandlerFuncErr(http.StatusNotFound, "university logo not found")
+	}
+	return logo, nil
+}
+
+func setSharedUniversityLogoUrl(university *models.University) {
+	if university == nil || len(university.Logo) == 0 {
+		return
+	}
+	logoUrl := "/api/v1.0/applicant/universities/" + university.Id + "/logo"
+	university.LogoUrl = &logoUrl
+	university.Logo = nil
 }
 
 // joinStrings joins a slice of strings with a separator

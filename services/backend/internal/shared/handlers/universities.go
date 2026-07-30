@@ -4,7 +4,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
+	"strings"
 
 	"kallisto/infra/middlewares"
 	"kallisto/infra/utils"
@@ -15,6 +17,8 @@ import (
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
+
+const maxUniversityLogoBytes = 2 * 1024 * 1024
 
 func GetUniversityHandler(w http.ResponseWriter, r *http.Request) {
 	log := zap.L()
@@ -162,6 +166,112 @@ func UpdateUniversityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSONResponseWithMsg(w, "university updated", http.StatusOK)
+}
+
+func UpdateUniversityLogoHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		utils.WriteJSONResponseWithMsg(w, "university id is required", http.StatusBadRequest)
+		return
+	}
+	if err := validation.ValidateUUID(id, "id"); err != nil {
+		validation.WriteValidationErrors(w, []*validation.ValidationError{err})
+		return
+	}
+	if err := enforceUniversityRouteAccess(r.Context(), id); err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxUniversityLogoBytes+1024)
+	if err := r.ParseMultipartForm(maxUniversityLogoBytes + 1024); err != nil {
+		utils.WriteJSONResponseWithMsg(w, "logo file exceeds 2MB limit", http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("logo")
+	if err != nil {
+		utils.WriteJSONResponseWithMsg(w, "logo field is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	logo, err := io.ReadAll(io.LimitReader(file, maxUniversityLogoBytes+1))
+	if err != nil {
+		utils.WriteJSONResponseWithMsg(w, "failed to read uploaded logo", http.StatusBadRequest)
+		return
+	}
+	if len(logo) == 0 {
+		utils.WriteJSONResponseWithMsg(w, "logo file is empty", http.StatusBadRequest)
+		return
+	}
+	if len(logo) > maxUniversityLogoBytes {
+		utils.WriteJSONResponseWithMsg(w, "logo file exceeds 2MB limit", http.StatusBadRequest)
+		return
+	}
+	contentType := http.DetectContentType(logo)
+	if !isAllowedLogoContentType(contentType) {
+		utils.WriteJSONResponseWithMsg(w, "logo must be PNG, JPEG, or WEBP", http.StatusBadRequest)
+		return
+	}
+
+	if err := usecases_impl.UpdateUniversityLogo(r.Context(), id, logo); err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	utils.WriteJSONResponse(w, map[string]string{
+		"logoUrl": "/api/v1.0/applicant/universities/" + id + "/logo",
+	}, http.StatusOK)
+}
+
+func GetUniversityLogoHandler(w http.ResponseWriter, r *http.Request) {
+	log := zap.L()
+
+	id := mux.Vars(r)["id"]
+	if err := validation.ValidateUUID(id, "id"); err != nil {
+		validation.WriteValidationErrors(w, []*validation.ValidationError{err})
+		return
+	}
+
+	logo, err := usecases_impl.GetUniversityLogo(r.Context(), id)
+	if err != nil {
+		handleFuncErr, ok := err.(utils.HandlerFuncErr)
+		status := http.StatusInternalServerError
+		if ok {
+			status = handleFuncErr.Status()
+		}
+		log.Error(err.Error())
+		utils.WriteJSONResponseWithMsg(w, err.Error(), status)
+		return
+	}
+
+	w.Header().Set("Content-Type", http.DetectContentType(logo))
+	w.Header().Set("Cache-Control", "private, max-age=300")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(logo); err != nil {
+		log.Error("failed to write university logo", zap.Error(err))
+	}
+}
+
+func isAllowedLogoContentType(contentType string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(contentType))
+	return normalized == "image/png" || normalized == "image/jpeg" || normalized == "image/webp"
 }
 
 func DeleteUniversityHandler(w http.ResponseWriter, r *http.Request) {

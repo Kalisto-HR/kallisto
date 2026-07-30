@@ -45,24 +45,24 @@ export function KallistoMatchScoreSummary({
 
   if (loading) {
     return (
-      <div className="min-w-[126px] rounded-lg border border-primary/15 bg-card px-3 py-2 text-right">
-        <div className="mb-1 flex items-center justify-end gap-1.5 text-xs font-semibold text-slate-900">
-          <TrendingUp className="h-4 w-4 text-primary" />
+      <div className="min-w-[96px] rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-right shadow-sm">
+        <div className="mb-0.5 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+          <TrendingUp className="h-3 w-3 text-sky-600" />
           {t("matchScore.title")}
         </div>
-        <Skeleton className="ml-auto h-7 w-14" />
+        <Skeleton className="ml-auto h-5 w-10 rounded-full bg-sky-100" />
       </div>
     );
   }
 
   if (isLocked) {
     return (
-      <div className="min-w-[148px] rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-right">
-        <div className="mb-1 flex items-center justify-end gap-1.5 text-xs font-semibold text-slate-900">
-          <Lock className="h-3.5 w-3.5 text-primary" />
+      <div className="min-w-[118px] rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-right shadow-sm">
+        <div className="mb-0.5 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+          <Lock className="h-3 w-3 text-sky-600" />
           {t("matchScore.title")}
         </div>
-        <Button asChild size="sm" variant="link" className="h-auto p-0 text-xs">
+        <Button asChild size="sm" variant="link" className="h-auto p-0 text-[11px] text-sky-700 hover:text-sky-900">
           <Link to={routes.applicant.billing}>{t("matchScore.upgrade")}</Link>
         </Button>
       </div>
@@ -71,24 +71,24 @@ export function KallistoMatchScoreSummary({
 
   if (error || !score) {
     return (
-      <div className="min-w-[126px] rounded-lg border border-border bg-card px-3 py-2 text-right">
-        <div className="flex items-center justify-end gap-1.5 text-xs font-semibold">
-          <TrendingUp className="h-4 w-4 text-primary" />
+      <div className="min-w-[96px] rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-right shadow-sm">
+        <div className="flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+          <TrendingUp className="h-3 w-3 text-sky-600" />
           {t("matchScore.title")}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{t("matchScore.unavailable")}</p>
+        <p className="mt-0.5 text-[11px] text-sky-700">{t("matchScore.unavailable")}</p>
       </div>
     );
   }
 
   const finalScore = clampScore(score.finalScore);
   return (
-    <div className="min-w-[126px] rounded-lg border border-primary/20 bg-card px-3 py-2 text-right">
-      <div className="mb-0.5 flex items-center justify-end gap-1.5 text-xs font-semibold text-slate-900">
-        <TrendingUp className="h-3.5 w-3.5 text-primary" />
+    <div className="inline-flex min-w-[102px] items-center justify-between gap-2 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-sky-950 shadow-sm">
+      <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-sky-800">
+        <TrendingUp className="h-3 w-3 text-sky-600" />
         {t("matchScore.title")}
       </div>
-      <div className="text-2xl font-semibold tracking-normal text-slate-950">{finalScore}%</div>
+      <div className="text-lg font-semibold tracking-normal text-sky-950">{finalScore}%</div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ export interface Pagination<T> {
 export interface UniversityListItem {
   id: string;
   name: string;
+  logoUrl?: string | null;
   description?: string | null;
   province: string | null;
   city: string | null;
@@ -123,6 +124,7 @@ export interface University {
   id: string;
   managerId: string | null;
   name: string;
+  logoUrl?: string | null;
   description: string | null;
   province: string | null;
   city: string | null;

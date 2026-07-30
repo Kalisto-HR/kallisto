@@ -12,6 +12,7 @@ type University struct {
 	ManagerId            *string         `json:"manager_id,omitempty" db:"manager_id"`
 	Name                 string          `json:"name" db:"name"`
 	Logo                 []byte          `json:"logo,omitempty" db:"logo"`
+	LogoUrl              *string         `json:"logoUrl,omitempty" db:"-"`
 	Description          *string         `json:"description,omitempty" db:"description"`
 	Province             *string         `json:"province,omitempty" db:"province"`
 	City                 *string         `json:"city,omitempty" db:"city"`

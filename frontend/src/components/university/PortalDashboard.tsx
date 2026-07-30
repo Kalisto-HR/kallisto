@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Award, Bell, Copy, Download, FileText, Mail, PieChart as PieChartIcon, TrendingUp, UserPlus, Users } from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
 import { useNavigate, useParams } from "react-router-dom";
@@ -15,6 +16,7 @@ import {
   fetchPartnerAnalyticsContacts,
 } from "../../services/partner/analyticsService";
 import type { PartnerAnalyticsStage, PartnerStudentOriginStat } from "../../types/domain";
+import { translateRegionCode } from "../../i18n/regions";
 
 interface PortalDashboardProps {
   onNavigate?: (page: string) => void;
@@ -31,29 +33,14 @@ function formatPercentage(value: number): string {
 
 function buildOriginChartRows(stats: PartnerStudentOriginStat[]) {
   const filtered = stats.filter((item) => item.count > 0);
-  const total = filtered.reduce((sum, item) => sum + item.count, 0);
-  const topRows = filtered.slice(0, 6);
-  const overflow = filtered.slice(6);
-
-  const rows = topRows.map((item, index) => ({
+  return filtered.map((item, index) => ({
     ...item,
     fill: originColors[index % originColors.length],
   }));
-
-  if (overflow.length > 0) {
-    const otherCount = overflow.reduce((sum, item) => sum + item.count, 0);
-    rows.push({
-      country: "Other",
-      count: otherCount,
-      percentage: total > 0 ? Math.round((otherCount / total) * 1000) / 10 : 0,
-      fill: originColors[originColors.length - 1],
-    });
-  }
-
-  return rows;
 }
 
 export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
+  const { t } = useTranslation(["dashboard", "common"]);
   const { universityId } = useParams();
   const navigate = useNavigate();
   const { data, loading, error } = usePartnerDashboardData(universityId);
@@ -177,8 +164,11 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
     [genderDistribution],
   );
   const originRows = useMemo(
-    () => buildOriginChartRows(data?.studentOriginStats ?? []),
-    [data?.studentOriginStats],
+    () => buildOriginChartRows(data?.studentOriginStats ?? []).map((row) => ({
+      ...row,
+      country: translateRegionCode(t, row.country),
+    })),
+    [data?.studentOriginStats, t],
   );
   const originChartConfig = useMemo<ChartConfig>(() => {
     return originRows.reduce<ChartConfig>((config, row) => {
@@ -274,15 +264,15 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <PieChartIcon className="h-5 w-5 text-muted-foreground" />
-                <CardTitle>Student Origin Statistics</CardTitle>
+                <CardTitle>{t("partner.studentOrigin.title")}</CardTitle>
               </div>
-              <CardDescription>Countries represented across suspects, prospects, and submitted students.</CardDescription>
+              <CardDescription>{t("partner.studentOrigin.description")}</CardDescription>
             </CardHeader>
             <CardContent>
               {isInitialLoading ? (
-                <p className="text-sm text-muted-foreground">Loading origin statistics...</p>
+                <p className="text-sm text-muted-foreground">{t("partner.studentOrigin.loading")}</p>
               ) : originRows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No origin data is available yet.</p>
+                <p className="text-sm text-muted-foreground">{t("partner.studentOrigin.empty")}</p>
               ) : (
                 <div className="grid gap-6 min-[1180px]:grid-cols-[minmax(200px,0.9fr)_minmax(0,1fr)] min-[1180px]:items-center">
                   <ChartContainer config={originChartConfig} className="h-[280px] w-full aspect-auto">
@@ -312,7 +302,7 @@ export function PortalDashboard({ onNavigate }: PortalDashboardProps) {
                             <p className="truncate text-sm font-medium">{row.country}</p>
                           </div>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {row.count} {row.count === 1 ? "student" : "students"}
+                            {t("partner.studentOrigin.student", { count: row.count })}
                           </p>
                         </div>
                         <p className="whitespace-nowrap text-right text-sm font-semibold">{formatPercentage(row.percentage)}%</p>

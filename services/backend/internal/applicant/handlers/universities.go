@@ -122,6 +122,8 @@ func SearchUniversitiesHandler(w http.ResponseWriter, r *http.Request) {
 		params.Region = &region
 	}
 	studyFormats, ok := parseAllowedCSVQuery(query.Get("studyFormats"), map[string]bool{
+		"offline":   true,
+		"online":    true,
 		"full-time": true,
 		"part-time": true,
 		"evening":   true,
